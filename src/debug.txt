@@ -24,3 +24,8 @@ for i in range(heat.cpu().numpy().shape[1]):
     new_image=cv2.cvtColor((normalization(heat[0][i].cpu().numpy())*255).astype(np.uint8), cv2.COLOR_GRAY2RGB)
     putText(new_image,str(i+1),(10,10))
     Image.fromarray(new_image).show()
+
+import cv2
+from PIL import Image
+import numpy as np
+Image.fromarray(img_anns).show()

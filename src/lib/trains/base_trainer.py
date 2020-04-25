@@ -21,8 +21,7 @@ class ModelWithLoss(torch.nn.Module):
     return outputs[-1], loss, loss_stats
 
 class BaseTrainer(object):
-  def __init__(
-    self, opt, model, optimizer=None):
+  def __init__(self, opt, model, optimizer=None):
     self.opt = opt
     self.optimizer = optimizer
     self.loss_stats, self.loss = self._get_losses(opt)
@@ -56,7 +55,7 @@ class BaseTrainer(object):
       data_time, batch_time = AverageMeter(), AverageMeter()
       avg_loss_stats = {l: AverageMeter() for l in self.loss_stats}
       num_iters = len(data_loader) if opt.num_iters < 0 else opt.num_iters
-      bar = Bar('{}/{}'.format(opt.task, opt.exp_id), max=num_iters)
+      bar = Bar('{}/{}'.format('ctdet', opt.exp_id), max=num_iters)
       end = time.time()
       for iter_id, batch in enumerate(data_loader):
           if iter_id >= num_iters:
@@ -87,7 +86,7 @@ class BaseTrainer(object):
                 '|Net {bt.avg:.3f}s'.format(dt=data_time, bt=batch_time)
           if opt.print_iter > 0:
               if iter_id % opt.print_iter == 0:
-                print('{}/{}| {}'.format(opt.task, opt.exp_id, Bar.suffix))
+                print('{}/{}| {}'.format(ctdet, opt.exp_id, Bar.suffix))
           else:
               bar.next()
 
