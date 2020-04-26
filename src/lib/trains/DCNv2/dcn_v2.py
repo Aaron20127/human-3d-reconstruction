@@ -17,7 +17,7 @@ class _DCNv2(Function):
     @staticmethod
     def forward(ctx, input, offset, mask, weight, bias,
                 stride, padding, dilation, deformable_groups):
-        ctx.stride = _pair(stride)ctx
+        ctx.stride = _pair(stride)
         ctx.padding = _pair(padding)
         ctx.dilation = _pair(dilation)
         ctx.kernel_size = _pair(weight.shape[2:4])
