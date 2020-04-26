@@ -10,7 +10,7 @@ def _sigmoid(x):
   return y
 
 def _gather_feat(feat, ind, mask=None):
-    '''use index(ind) to get value from feat'''
+    '''use index(ind) to get value from feature map '''
     dim  = feat.size(2)
     ind  = ind.unsqueeze(2).expand(ind.size(0), ind.size(1), dim)
     feat = feat.gather(1, ind)

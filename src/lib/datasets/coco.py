@@ -34,11 +34,11 @@ class COCO(data.Dataset):
     self.img_dir = os.path.join(self.data_dir, '{}2017'.format(split))
     if split == 'test':
       self.annot_path = os.path.join(
-          self.data_dir, 'image_info_test2017/annotations',
+          self.data_dir, 'annotations',
           'image_info_test-dev2017.json').format(split)
     else:
       self.annot_path = os.path.join(
-        self.data_dir, 'annotations_trainval2017/annotations',
+        self.data_dir, 'annotations',
         'instances_{}2017.json').format(split)
 
     self.max_objs = 128 # max objects num from one image?

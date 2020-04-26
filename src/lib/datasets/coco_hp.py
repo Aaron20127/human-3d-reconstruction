@@ -52,11 +52,11 @@ class COCOHP(data.Dataset):
         self.img_dir = os.path.join(self.data_dir, '{}2017'.format(split))
         if split == 'test':
             self.annot_path = os.path.join(
-                self.data_dir, 'annotations_trainval2017/annotations',
+                self.data_dir, 'annotations',
                 'image_info_test-dev2017.json').format(split)
         else:
             self.annot_path = os.path.join(
-                self.data_dir, 'annotations_trainval2017/annotations',
+                self.data_dir, 'annotations',
                 'person_keypoints_{}2017.json').format(split)
         self.max_objs = 32 # max number of objects in one image
         self._data_rng = np.random.RandomState(123) # for data color augment
@@ -346,6 +346,7 @@ class COCOHP(data.Dataset):
                 num_joints * 2, output_res, output_res)
             ret.update({'dense_hps': dense_kps, 'dense_hps_mask': dense_kps_mask})
             del ret['hps'], ret['hps_mask']
+
         if self.opt.reg_offset:
             ret.update({'reg': reg})
         if self.opt.hm_hp:

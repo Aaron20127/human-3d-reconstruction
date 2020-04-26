@@ -23,7 +23,6 @@ def main(opt):
     opt.device = torch.device('cuda' if opt.gpus[0] >= 0 else 'cpu')
     opt.logger = Logger(opt)
 
-
     ## 2. create model
     trainer = HMRTrainer(opt)
 

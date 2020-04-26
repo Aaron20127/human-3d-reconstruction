@@ -53,10 +53,10 @@ def _neg_loss(pred, gt):
 
   loss = 0
 
-  pos_loss = torch.log(pred) * torch.pow(1 - pred, 2) * pos_inds # loss of object center
+  pos_loss = torch.log(pred) * torch.pow(1 - pred, 2) * pos_inds # loss of center points key points heat map
   neg_loss = torch.log(1 - pred) * torch.pow(pred, 2) * neg_weights * neg_inds # loss of other points
 
-  num_pos  = pos_inds.float().sum()
+  num_pos  = pos_inds.float().sum() # number of key
   pos_loss = pos_loss.sum()
   neg_loss = neg_loss.sum()
 
@@ -167,10 +167,10 @@ class RegWeightedL1Loss(nn.Module):
     super(RegWeightedL1Loss, self).__init__()
   
   def forward(self, output, mask, ind, target):
-    pred = _transpose_and_gather_feat(output, ind)
-    mask = mask.float()
+    pred = _transpose_and_gather_feat(output, ind) ## get prediction value from feature map.
+    mask = mask.float() ## which prediction value has ground truth
     # loss = F.l1_loss(pred * mask, target * mask, reduction='elementwise_mean')
-    loss = F.l1_loss(pred * mask, target * mask, size_average=False)
+    loss = F.l1_loss(pred * mask, target * mask, size_average=False) # l1 loss
     loss = loss / (mask.sum() + 1e-4)
     return loss
 

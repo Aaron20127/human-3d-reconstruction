@@ -162,15 +162,6 @@ class opts(object):
     agt('--not_reg_bbox', action='store_true', help='not regression bounding box size.')
 
 
-    # ground truth validation
-    agt('--eval_oracle_hm', action='store_true', help='use ground center heatmap.')
-    agt('--eval_oracle_wh', action='store_true', help='use ground truth bounding box size.')
-    agt('--eval_oracle_offset', action='store_true', help='use ground truth local heatmap offset.')
-    agt('--eval_oracle_kps', action='store_true', help='use ground truth human pose offset.')
-    agt('--eval_oracle_hmhp', action='store_true', help='use ground truth human joint heatmaps.')
-    agt('--eval_oracle_hp_offset', action='store_true', help='use ground truth human joint local offset.')
-    agt('--eval_oracle_dep', action='store_true', help='use ground truth depth.')
-
 
   def parse(self, args=''):
     if args == '':
@@ -194,7 +185,6 @@ class opts(object):
     if opt.head_conv == -1: # init default head_conv
       opt.head_conv = 256 if 'dla' in opt.arch else 64
     opt.pad = 127 if 'hourglass' in opt.arch else 31
-    opt.num_stacks = 2 if opt.arch == 'hourglass' else 1
 
     if opt.trainval:
       opt.val_intervals = 100000000
