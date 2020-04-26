@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import os
+import time
 import sys
 
 from .model_object_detection import dla_net
@@ -157,9 +158,11 @@ class HMRModelWithLoss(torch.nn.Module):
         return outputs[-1], loss, loss_stats
 
 
-class HMRTrainer():
+class HMRTrainer(object):
   def __init__(self, opt):
       self.opt = opt
+      self.min_val_loss = 1e10  # for save best val model
+
       self._build_model(opt)
       self._create_data_loader(opt)
 
@@ -210,6 +213,41 @@ class HMRTrainer():
   #         for k, v in state.items():
   #             if isinstance(v, torch.Tensor):
   #                 state[k] = v.to(device=device, non_blocking=True)
+
+
+  def run_train(self, epoch):
+      """ train """
+      ret, _ = self.run_epoch('train', epoch, self.train_loader)
+
+      ## save train.txt
+      logger = self.opt.logger
+      text = time.strftime('%Y-%m-%d_%H-%M-%S: ')
+      text += 'epoch: {} |'.format(epoch)
+      for k, v in ret.items():
+          logger.scalar_summary('train_{}'.format(k), v, epoch)
+          text += '{} {:8f} | '.format(k, v)
+      logger.write('train', text + '\n')
+
+  def run_val(self, epoch):
+      """ val """
+      with torch.no_grad():
+          ret, _ = self.run_epoch('val', epoch, self.val_loader)
+
+      ## save val.txt
+      logger = self.opt.logger
+      text = time.strftime('%Y-%m-%d_%H-%M-%S: ')
+      text += 'epoch: {} |'.format(epoch)
+      for k, v in ret.items():
+          logger.scalar_summary('val_{}'.format(k), v, epoch)
+          text += '{} {:8f} | '.format(k, v)
+      logger.write('val', text + '\n')
+
+      ## save best model
+      if ret['loss'] < self.min_val_loss:
+          self.min_val_loss = ret['loss']
+          self.save_model(os.path.join(self.opt.save_dir,
+                          'model_best.pth'),
+                           epoch, self.model)
 
 
   def run_epoch(self, phase, epoch, data_loader):
@@ -278,58 +316,80 @@ class HMRTrainer():
           del output, loss, loss_stats
           clock.elapsed()
 
+
       ret = {k: v.avg for k, v in avg_loss_stats.items()}
-      ret['time'] = clock_ETA.total() / 60.
+      ret['time'] = clock_ETA.total() / 60. # spending time of each epoch.
       return ret, results
 
-  def train(self, opt):
+
+  def train(self):
       print('Starting training ...')
-      logger = opt.logger
-      model = self.model
-      optimizer = self.optimizer
 
+      opt = self.opt
       start_epoch = 0
-      best = 1e10
       for epoch in range(start_epoch + 1, opt.num_epochs + 1):
-          mark = epoch if opt.save_all else 'last'
-          log_dict_train, _ = self.run_epoch('train', epoch, self.train_loader)
-          logger.write('epoch: {} |'.format(epoch))
-          for k, v in log_dict_train.items():
-              logger.scalar_summary('train_{}'.format(k), v, epoch)
-              logger.write('{} {:8f} | '.format(k, v))
-          if opt.val_intervals > 0 and epoch % opt.val_intervals == 0:
-              self.save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(mark)),
-                         epoch, model, optimizer)
-              with torch.no_grad():
-                  log_dict_val, preds = self.run_epoch('val', epoch, self.val_loader)
-              for k, v in log_dict_val.items():
-                  logger.scalar_summary('val_{}'.format(k), v, epoch)
-                  logger.write('{} {:8f} | '.format(k, v))
-              if log_dict_val[opt.metric] < best:
-                  best = log_dict_val[opt.metric]
-                  self.save_model(os.path.join(opt.save_dir, 'model_best.pth'),
-                             epoch, model)
-          else:
-              self.save_model(os.path.join(opt.save_dir, 'model_last.pth'),
-                         epoch, model, optimizer)
+          self.run_train(epoch)
 
-          logger.write('\n')
+          if opt.val_intervals > 0 and \
+              epoch % opt.val_intervals == 0:
+              self.run_val(epoch)
 
           if epoch in opt.lr_step:
-              self.save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(epoch)),
-                         epoch, model, optimizer)
               lr = opt.lr * (0.1 ** (opt.lr_step.index(epoch) + 1))
               print('Drop LR to', lr)
-              for param_group in optimizer.param_groups:
+              for param_group in self.optimizer.param_groups:
                   param_group['lr'] = lr
 
-      logger.close()
+          self.save_model(os.path.join(opt.save_dir,'model_last.pth'),
+                      epoch, self.model, self.optimizer)
+  # def train(self, opt):
+  #     print('Starting training ...')
+  #     logger = opt.logger
+  #     model = self.model
+  #     optimizer = self.optimizer
+  #
+  #     start_epoch = 0
+  #     best = 1e10
+  #     for epoch in range(start_epoch + 1, opt.num_epochs + 1):
+  #         mark = epoch if opt.save_all else 'last'
+  #         log_dict_train, _ = self.run_epoch('train', epoch, self.train_loader)
+  #         logger.write('epoch: {} |'.format(epoch))
+  #         for k, v in log_dict_train.items():
+  #             logger.scalar_summary('train_{}'.format(k), v, epoch)
+  #             logger.write('{} {:8f} | '.format(k, v))
+  #         if opt.val_intervals > 0 and epoch % opt.val_intervals == 0:
+  #             self.save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(mark)),
+  #                        epoch, model, optimizer)
+  #             with torch.no_grad():
+  #                 log_dict_val, preds = self.run_epoch('val', epoch, self.val_loader)
+  #
+  #             for k, v in log_dict_val.items():
+  #                 logger.scalar_summary('val_{}'.format(k), v, epoch)
+  #                 logger.write('{} {:8f} | '.format(k, v))
+  #             if log_dict_val[opt.metric] < best:
+  #                 best = log_dict_val[opt.metric]
+  #                 self.save_model(os.path.join(opt.save_dir, 'model_best.pth'),
+  #                            epoch, model)
+  #         else:
+  #             self.save_model(os.path.join(opt.save_dir, 'model_last.pth'),
+  #                        epoch, model, optimizer)
+  #
+  #         logger.write('\n')
+  #
+  #         if epoch in opt.lr_step:
+  #             self.save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(epoch)),
+  #                        epoch, model, optimizer)
+  #             lr = opt.lr * (0.1 ** (opt.lr_step.index(epoch) + 1))
+  #             print('Drop LR to', lr)
+  #             for param_group in optimizer.param_groups:
+  #                 param_group['lr'] = lr
+  #
+  #     logger.close()
 
 
-  def val(self, opt):
-      self.opt = opt
+  def val(self):
       _, preds = self.run_epoch('val', 0, self.val_loader)
-      self.val_loader.dataset.run_eval(preds, opt.save_dir)
+      self.val_loader.dataset.run_eval(preds, self.opt.save_dir)
 
 
   def _get_losses(self, opt):

@@ -27,9 +27,9 @@ def main(opt):
     trainer = HMRTrainer(opt)
 
     if opt.test:
-        trainer.val(opt)
+        trainer.val()
     else:
-        trainer.train(opt)
+        trainer.train()
 
     ## 3. send email
     send_email(opt)

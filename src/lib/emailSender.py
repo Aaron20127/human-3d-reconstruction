@@ -39,7 +39,7 @@ class emailSender(object):
             smtpObj = smtplib.SMTP_SSL(self.host, 465)  # 启用SSL发信, 端口一般是465
             smtpObj.login(self.user, self.pwd)  # 登录验证
             smtpObj.sendmail(self.sender, self.receiver, self.msg.as_string())  # 发送
-            print("send mail to {} successfully.".format(self.receiver))
+            print("Send mail to {} successfully.".format(self.receiver))
         except smtplib.SMTPException as e:
             print(e)
 
@@ -65,13 +65,15 @@ class emailSender(object):
 
 
 def send_email(opt):
+    """send email when complete training. """
     sender = emailSender(opt.mail_host, opt.mail_user, opt.mail_pwd,
                          opt.mail_sender, opt.mail_receiver)
 
     title = opt.title
     text = 'train over.'
     file_paths = [opt.save_dir + '/opt.txt',
-                  opt.save_dir + '/logs/log.txt']
+                  opt.save_dir + '/logs/train.txt',
+                  opt.save_dir + '/logs/val.txt']
 
     sender.send_email(title, text, file_paths)
 
@@ -84,13 +86,12 @@ if __name__ == '__main__':
     mail_sender = 'lwalgorithm@163.com'  # 发件人邮箱(最好写全, 不然会失败)
     mail_receivers = 'lwalgorithm@163.com'
 
-    sender = baseEmailSender(mail_host, mail_user, mail_pwd,
+    sender = emailSender(mail_host, mail_user, mail_pwd,
                              mail_sender, mail_receivers)
 
     ## message
     title = '人生苦短 go'  # 邮件主题
-    content = '我用Python,'
-    msg = MIMEText(content, 'plain', 'utf-8')  # 内容, 格式, 编码
+    text = '我用Python,'
 
     ## send email
-    sender.send(title, msg)
+    sender.send_email(title, text)

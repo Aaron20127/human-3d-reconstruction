@@ -44,7 +44,7 @@ class Logger(object):
             for k, v in sorted(args.items()):
                 opt_file.write('    %s: %s\n' % (str(k), str(v)))
           
-        ## save log
+        ## log file of train and val
         log_dir = opt.save_dir + '/logs'
         if USE_TENSORBOARD:
             self.writer = tensorboardX.SummaryWriter(log_dir=log_dir)
@@ -53,24 +53,24 @@ class Logger(object):
                 os.mkdir(os.path.dirname(log_dir))
             if not os.path.exists(log_dir):
                 os.mkdir(log_dir)
-        self.log = open(log_dir + '/log.txt', 'w')
-        self.start_line = True
 
-    def write(self, txt):
-        """ write text to log.txt """
-        if self.start_line:
-            time_str = time.strftime('%Y-%m-%d-%H-%M')
-            self.log.write('{}: {}'.format(time_str, txt))
+        self.train_file = log_dir + '/train.txt'
+        self.val_file = log_dir + '/val.txt'
+
+
+    def write_file(self, file, text):
+        """ write text to file """
+        with open(file, 'a') as f:
+            f.write(text)
+
+    def write(self, split, text):
+        """ write text  """
+        if split =='train':
+            self.write_file(self.train_file, text)
+        elif split == 'val':
+            self.write_file(self.val_file, text)
         else:
-            self.log.write(txt)
-        self.start_line = False
-        if '\n' in txt:
-            self.start_line = True
-            self.log.flush()
-
-    def close(self):
-        """ close log.txt """
-        self.log.close()
+            assert 0, 'invalid log file.'
 
     def scalar_summary(self, tag, value, step):
         """ Log a scalar variable. """
