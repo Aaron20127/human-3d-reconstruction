@@ -31,8 +31,7 @@ def main(opt):
     else:
         trainer.train()
 
-
-    ### 3. send email
+    #### 3. send email
     send_email(opt)
 
 if __name__ == '__main__':
