@@ -31,6 +31,7 @@ def main(opt):
     else:
         trainer.train()
 
+
     ## 3. send email
     send_email(opt)
 
