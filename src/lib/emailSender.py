@@ -55,6 +55,10 @@ class emailSender(object):
 
     def pack_file(self, file_path):
         """ package file """
+        if not os.path.exists(file_path):
+            print('file {} does not exist.'.format(file_path))
+            return
+
         fr = open(file_path, 'rb').read()
         text = MIMEText(fr, 'base64', 'utf-8')
         text["Content-Type"] = 'application/octet-stream'
@@ -80,10 +84,10 @@ def send_email(opt):
 
 if __name__ == '__main__':
     mail_host = "smtp.163.com"  # SMTP服务器
-    mail_user = "lwalgorithm@163.com"  # 用户名
-    mail_pwd = "RZVYBFVFKEASVHQO"  # 授权密码，非登录密码
+    mail_user = "test_aaron@163.com"  # 用户名
+    mail_pwd = "RNHKUQZIGAXXRIYZ"  # 授权密码，非登录密码
 
-    mail_sender = 'lwalgorithm@163.com'  # 发件人邮箱(最好写全, 不然会失败)
+    mail_sender = 'test_aaron@163.com'  # 发件人邮箱(最好写全, 不然会失败)
     mail_receivers = 'lwalgorithm@163.com'
 
     sender = emailSender(mail_host, mail_user, mail_pwd,
@@ -91,7 +95,7 @@ if __name__ == '__main__':
 
     ## message
     title = '人生苦短 go'  # 邮件主题
-    text = '我用Python,'
+    text = '我用Python'
 
     ## send email
     sender.send_email(title, text)

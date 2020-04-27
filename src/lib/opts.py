@@ -49,9 +49,9 @@ class opts(object):
 
     # email
     agt('--mail_host',     default="smtp.163.com",         help='SMTP server.')
-    agt('--mail_user',     default='lwalgorithm@163.com',  help='email name.')
-    agt('--mail_pwd',      default='RZVYBFVFKEASVHQO',     help='SMTP server password.')
-    agt('--mail_sender',   default='lwalgorithm@163.com',  help='mail sender.')
+    agt('--mail_user',     default='test_aaron@163.com',  help='email name.')
+    agt('--mail_pwd',      default='RNHKUQZIGAXXRIYZ',     help='SMTP server password.')
+    agt('--mail_sender',   default='test_aaron@163.com',  help='mail sender.')
     agt('--mail_receiver', default='lwalgorithm@163.com',  help='mail receiver.')
 
     

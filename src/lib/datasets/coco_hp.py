@@ -104,11 +104,11 @@ class COCOHP(data.Dataset):
                         bbox[2] -= bbox[0]
                         bbox[3] -= bbox[1]
                         score = dets[4]
-                        bbox_out = list(map(self._to_float, bbox))
+                        bbox_out = list(map(_to_float, bbox))
                         keypoints = np.concatenate([
                             np.array(dets[5:39], dtype=np.float32).reshape(-1, 2),
                             np.ones((17, 1), dtype=np.float32)], axis=1).reshape(51).tolist()
-                        keypoints = list(map(self._to_float, keypoints))
+                        keypoints = list(map(_to_float, keypoints))
 
                         detection = {
                             "image_id": int(image_id),

@@ -9,15 +9,15 @@ import os
 import time
 import sys
 
-from .model_object_detection import dla_net
+from models.model import dla_net
 
 from models.losses import FocalLoss
 from models.losses import RegL1Loss, RegLoss, NormRegL1Loss, RegWeightedL1Loss
 from models.decode import ctdet_decode, multi_pose_decode
 from models.utils import _sigmoid
+
 from utils.debugger import Debugger
 from utils.post_process import ctdet_post_process, multi_pose_post_process
-from utils.oracle_utils import gen_oracle_map
 
 
 from utils.utils import AverageMeter
@@ -44,19 +44,6 @@ class loss_obj_detection(torch.nn.Module):
           output = outputs[s]
           if not opt.mse_loss:
                 output['hm'] = _sigmoid(output['hm'])
-
-          if opt.eval_oracle_hm:
-                output['hm'] = batch['hm']
-          if opt.eval_oracle_wh:
-                output['wh'] = torch.from_numpy(gen_oracle_map(
-                  batch['wh'].detach().cpu().numpy(),
-                  batch['ind'].detach().cpu().numpy(),
-                  output['wh'].shape[3], output['wh'].shape[2])).to(opt.device)
-          if opt.eval_oracle_offset:
-                output['reg'] = torch.from_numpy(gen_oracle_map(
-                  batch['reg'].detach().cpu().numpy(),
-                  batch['ind'].detach().cpu().numpy(),
-                  output['reg'].shape[3], output['reg'].shape[2])).to(opt.device)
 
           hm_loss += self.crit(output['hm'], batch['hm']) # heat map loss
           if opt.wh_weight > 0:
@@ -127,15 +114,18 @@ class loss_multi_pose(torch.nn.Module):
             off_loss += self.crit_reg(output['reg'], batch['reg_mask'],
                                       batch['ind'], batch['reg'])
 
+        ## 2.loss of humman key points
+        ## decimal of humman key points center, use l1 loss and do not use heat map
         if opt.reg_hp_offset and opt.off_weight > 0:
             hp_offset_loss += self.crit_reg(
                 output['hp_offset'], batch['hp_mask'],
                 batch['hp_ind'], batch['hp_offset'])
 
+        ## heat map of all key points (17,128,128)
         if opt.hm_hp and opt.hm_hp_weight > 0:
             if opt.hm_hp and not opt.mse_loss:
                 output['hm_hp'] = _sigmoid(output['hm_hp'])
-            hm_hp_loss += self.crit_hm_hp( output['hm_hp'], batch['hm_hp'])
+            hm_hp_loss += self.crit_hm_hp(output['hm_hp'], batch['hm_hp'])
 
         loss = opt.hm_weight * hm_loss + opt.wh_weight * wh_loss + \
                opt.off_weight * off_loss + opt.hp_weight * hp_loss + \
@@ -145,6 +135,7 @@ class loss_multi_pose(torch.nn.Module):
                       'hm_hp_loss': hm_hp_loss, 'hp_offset_loss': hp_offset_loss,
                       'wh_loss': wh_loss, 'off_loss': off_loss}
         return loss, loss_stats
+
 
 class HMRModelWithLoss(torch.nn.Module):
     def __init__(self, model, loss):
@@ -201,19 +192,6 @@ class HMRTrainer(object):
               dataset(opt, 'train'), batch_size=opt.batch_size,
               shuffle=True, num_workers=opt.num_workers, pin_memory=True, drop_last=True)
 
-  # def set_device(self, gpus, chunk_sizes, device):
-  #     if len(gpus) > 1:
-  #         self.model_with_loss = DataParallel(
-  #             self.model_with_loss, device_ids=gpus,
-  #             chunk_sizes=chunk_sizes).to(device)
-  #     else:
-  #         self.model_with_loss = self.model_with_loss.to(device)
-  #
-  #     for state in self.optimizer.state.values():
-  #         for k, v in state.items():
-  #             if isinstance(v, torch.Tensor):
-  #                 state[k] = v.to(device=device, non_blocking=True)
-
 
   def run_train(self, epoch):
       """ train """
@@ -251,6 +229,7 @@ class HMRTrainer(object):
 
 
   def run_epoch(self, phase, epoch, data_loader):
+      """ run one epoch """
       model_with_loss = self.model_with_loss
       ### 1. train or eval
       if phase == 'train':
@@ -342,49 +321,6 @@ class HMRTrainer(object):
 
           self.save_model(os.path.join(opt.save_dir,'model_last.pth'),
                       epoch, self.model, self.optimizer)
-  # def train(self, opt):
-  #     print('Starting training ...')
-  #     logger = opt.logger
-  #     model = self.model
-  #     optimizer = self.optimizer
-  #
-  #     start_epoch = 0
-  #     best = 1e10
-  #     for epoch in range(start_epoch + 1, opt.num_epochs + 1):
-  #         mark = epoch if opt.save_all else 'last'
-  #         log_dict_train, _ = self.run_epoch('train', epoch, self.train_loader)
-  #         logger.write('epoch: {} |'.format(epoch))
-  #         for k, v in log_dict_train.items():
-  #             logger.scalar_summary('train_{}'.format(k), v, epoch)
-  #             logger.write('{} {:8f} | '.format(k, v))
-  #         if opt.val_intervals > 0 and epoch % opt.val_intervals == 0:
-  #             self.save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(mark)),
-  #                        epoch, model, optimizer)
-  #             with torch.no_grad():
-  #                 log_dict_val, preds = self.run_epoch('val', epoch, self.val_loader)
-  #
-  #             for k, v in log_dict_val.items():
-  #                 logger.scalar_summary('val_{}'.format(k), v, epoch)
-  #                 logger.write('{} {:8f} | '.format(k, v))
-  #             if log_dict_val[opt.metric] < best:
-  #                 best = log_dict_val[opt.metric]
-  #                 self.save_model(os.path.join(opt.save_dir, 'model_best.pth'),
-  #                            epoch, model)
-  #         else:
-  #             self.save_model(os.path.join(opt.save_dir, 'model_last.pth'),
-  #                        epoch, model, optimizer)
-  #
-  #         logger.write('\n')
-  #
-  #         if epoch in opt.lr_step:
-  #             self.save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(epoch)),
-  #                        epoch, model, optimizer)
-  #             lr = opt.lr * (0.1 ** (opt.lr_step.index(epoch) + 1))
-  #             print('Drop LR to', lr)
-  #             for param_group in optimizer.param_groups:
-  #                 param_group['lr'] = lr
-  #
-  #     logger.close()
 
 
   def val(self):
@@ -459,12 +395,12 @@ class HMRTrainer(object):
           dets_gt = batch['meta']['gt_det'].numpy().reshape(1, -1, dets.shape[2])
           dets_gt[:, :, :4] *= opt.input_res / opt.output_res
           dets_gt[:, :, 5:39] *= opt.input_res / opt.output_res
+
           for i in range(1):
               debugger = Debugger(
                   dataset=opt.dataset, ipynb=(opt.debug == 3), theme=opt.debugger_theme)
               img = batch['input'][i].detach().cpu().numpy().transpose(1, 2, 0)
-              img = np.clip(((
-                                     img * opt.std + opt.mean) * 255.), 0, 255).astype(np.uint8)
+              img = np.clip(((img * opt.std + opt.mean) * 255.), 0, 255).astype(np.uint8)
               pred = debugger.gen_colormap(output['hm'][i].detach().cpu().numpy())
               gt = debugger.gen_colormap(batch['hm'][i].detach().cpu().numpy())
               debugger.add_blend_img(img, pred, 'pred_hm')

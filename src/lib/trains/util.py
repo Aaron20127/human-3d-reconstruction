@@ -100,9 +100,12 @@ def addCocoAnns(anns, img, draw_skeleton=True, draw_key_points=True, draw_bbox=T
     if datasetType == 'instances':
         for ann in anns:
             if 'keypoints' in ann and type(ann['keypoints']) == list:
+                # sks = [[15, 13], [13, 11], [16, 14], [14, 12], [11, 12], [5, 11], [6, 12], [5, 6],
+                #        [5, 7], [6, 8], [7, 9], [8, 10], [1, 2], [0, 1], [0, 2], [1, 3],
+                #        [2, 4], [3, 5], [4, 6]]
                 sks = [[15, 13], [13, 11], [16, 14], [14, 12], [11, 12], [5, 11], [6, 12], [5, 6],
-                       [5, 7], [6, 8], [7, 9], [8, 10], [1, 2], [0, 1], [0, 2], [1, 3],
-                       [2, 4], [3, 5], [4, 6]]
+                       [5, 7], [6, 8], [7, 9], [8, 10],  [0, 1], [0, 2], [1, 3],
+                       [2, 4], [3, 5], [4, 6]] # do not use [1,2], then it looks better
                 kp = np.array(ann['keypoints'])
                 x = kp[0::3]
                 y = kp[1::3]
