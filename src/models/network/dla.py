@@ -484,21 +484,11 @@ class DLASeg(nn.Module):
 
         z = {}
         for head in self.heads:
-            # modelsize(self.__getattr__(head),y[-1])
             z[head] = self.__getattr__(head)(y[-1])
         return [z]
 
 
-# def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
-#   model = DLASeg('dla{}'.format(num_layers), heads,
-#                  pretrained=False,
-#                  down_ratio=down_ratio,
-#                  final_kernel=1,
-#                  last_level=5,
-#                  head_conv=head_conv)
-#   return model
-
-def dla_net(heads, num_layers=34, head_conv=256, down_ratio=4, not_use_dcn=False):
+def DlaSeg(heads, num_layers=34, head_conv=256, down_ratio=4, not_use_dcn=False):
     global USE_DCN
     USE_DCN = not not_use_dcn
 
@@ -514,5 +504,3 @@ def dla_net(heads, num_layers=34, head_conv=256, down_ratio=4, not_use_dcn=False
                    last_level=5,
                    head_conv=head_conv)
     return model
-
-

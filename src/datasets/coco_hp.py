@@ -5,28 +5,28 @@ from __future__ import print_function
 import os
 import sys
 
-abspath = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, abspath + '/../trains')
-sys.path.insert(0, abspath + '/../utils')
+# abspath = os.path.abspath(os.path.dirname(__file__))
+# sys.path.insert(0, abspath + '/../trains')
+# sys.path.insert(0, abspath + '/../utils')
 
 import argparse
 
 import pycocotools.coco as coco
 from pycocotools.cocoeval import COCOeval
 import numpy as np
+import math
 
 import torch.utils.data as data
 
 import json
 import cv2
 
-from image import flip, color_aug
-from image import get_affine_transform, affine_transform
-from image import gaussian_radius, draw_umich_gaussian, draw_msra_gaussian
-from image import draw_dense_reg
-import math
+from .data_util import flip, color_aug
+from .data_util  import get_affine_transform, affine_transform
+from .data_util  import gaussian_radius, draw_umich_gaussian, draw_msra_gaussian
+from .data_util  import draw_dense_reg
+from .data_util import addCocoAnns
 
-from util import addCocoAnns
 
 class COCOHP(data.Dataset):
     num_classes = 1

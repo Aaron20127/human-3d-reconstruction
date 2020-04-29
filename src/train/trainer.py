@@ -9,149 +9,24 @@ import os
 import time
 import sys
 
-from models.model import dla_net
+abspath = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, abspath + '/../')
 
-from models.losses import FocalLoss
-from models.losses import RegL1Loss, RegLoss, NormRegL1Loss, RegWeightedL1Loss
 from models.decode import ctdet_decode, multi_pose_decode
-from models.utils import _sigmoid
-
 from utils.debugger import Debugger
-from utils.post_process import ctdet_post_process, multi_pose_post_process
-
-
-from utils.utils import AverageMeter
-from .util import Clock, str_time, show_net_para
+from .train_util import AverageMeter, Clock, str_time, show_net_para
 
 from datasets.coco import COCO
 from datasets.coco_hp import COCOHP
-
-class loss_obj_detection(torch.nn.Module):
-  def __init__(self, opt):
-    super(loss_obj_detection, self).__init__()
-    self.crit = torch.nn.MSELoss() if opt.mse_loss else FocalLoss()
-    self.crit_reg = RegL1Loss() if opt.reg_loss == 'l1' else \
-              RegLoss() if opt.reg_loss == 'sl1' else None
-    self.crit_wh = torch.nn.L1Loss(reduction='sum') if opt.dense_wh else \
-              NormRegL1Loss() if opt.norm_wh else \
-              RegWeightedL1Loss() if opt.cat_spec_wh else self.crit_reg
-    self.opt = opt
-
-  def forward(self, outputs, batch):
-      opt = self.opt
-      hm_loss, wh_loss, off_loss = 0, 0, 0
-      for s in range(opt.num_stacks):
-          output = outputs[s]
-          if not opt.mse_loss:
-                output['hm'] = _sigmoid(output['hm'])
-
-          hm_loss += self.crit(output['hm'], batch['hm']) # heat map loss
-          if opt.wh_weight > 0:
-                if opt.dense_wh:
-                      mask_weight = batch['dense_wh_mask'].sum() + 1e-4
-                      wh_loss += (
-                        self.crit_wh(output['wh'] * batch['dense_wh_mask'],
-                        batch['dense_wh'] * batch['dense_wh_mask']) /
-                        mask_weight)
-                elif opt.cat_spec_wh:
-                      wh_loss += self.crit_wh(
-                        output['wh'], batch['cat_spec_mask'],
-                        batch['ind'], batch['cat_spec_wh'])
-                else:
-                      wh_loss += self.crit_reg(
-                        output['wh'], batch['reg_mask'],
-                        batch['ind'], batch['wh'])
-
-          if opt.reg_offset and opt.off_weight > 0:
-                off_loss += self.crit_reg(output['reg'], batch['reg_mask'],
-                                     batch['ind'], batch['reg'])
-
-      loss = opt.hm_weight * hm_loss + opt.wh_weight * wh_loss + \
-             opt.off_weight * off_loss
-      loss_stats = {'loss': loss, 'hm_loss': hm_loss,
-                    'wh_loss': wh_loss, 'off_loss': off_loss}
-      return loss, loss_stats
-
-class loss_multi_pose(torch.nn.Module):
-    def __init__(self, opt):
-        super(loss_multi_pose, self).__init__()
-        self.crit = FocalLoss()
-        self.crit_hm_hp = torch.nn.MSELoss() if opt.mse_loss else FocalLoss()
-        self.crit_kp = RegWeightedL1Loss() if not opt.dense_hp else \
-            torch.nn.L1Loss(reduction='sum')
-        self.crit_reg = RegL1Loss() if opt.reg_loss == 'l1' else \
-            RegLoss() if opt.reg_loss == 'sl1' else None
-        self.opt = opt
-
-    def forward(self, outputs, batch):
-        opt = self.opt
-        output = outputs[0]
-        hm_loss, wh_loss, off_loss = 0, 0, 0
-        hp_loss, off_loss, hm_hp_loss, hp_offset_loss = 0, 0, 0, 0
-
-        ## 1.loss of object center
-        output['hm'] = _sigmoid(output['hm']) # do sigmoid
-        hm_loss += self.crit(output['hm'], batch['hm'])
-
-
-        if opt.dense_hp:
-            mask_weight = batch['dense_hps_mask'].sum() + 1e-4
-            hp_loss += (self.crit_kp(output['hps'] * batch['dense_hps_mask'],
-                                     batch['dense_hps'] * batch['dense_hps_mask']) /
-                        mask_weight)
-        else:
-            ## vector of object center to key points, use l1 loss and do not use heat map.
-            hp_loss += self.crit_kp(output['hps'], batch['hps_mask'],
-                                    batch['ind'], batch['hps'])
-
-        if opt.wh_weight > 0:
-            ## height and width of bbox, use l1 loss and do not use heat map
-            wh_loss += self.crit_reg(output['wh'], batch['reg_mask'],
-                                     batch['ind'], batch['wh'])
-
-        if opt.reg_offset and opt.off_weight > 0:
-            ## decimal of bbox center points, use l1 loss and do not use heat map
-            off_loss += self.crit_reg(output['reg'], batch['reg_mask'],
-                                      batch['ind'], batch['reg'])
-
-        ## 2.loss of humman key points
-        ## decimal of humman key points center, use l1 loss and do not use heat map
-        if opt.reg_hp_offset and opt.off_weight > 0:
-            hp_offset_loss += self.crit_reg(
-                output['hp_offset'], batch['hp_mask'],
-                batch['hp_ind'], batch['hp_offset'])
-
-        ## heat map of all key points (17,128,128)
-        if opt.hm_hp and opt.hm_hp_weight > 0:
-            if opt.hm_hp and not opt.mse_loss:
-                output['hm_hp'] = _sigmoid(output['hm_hp'])
-            hm_hp_loss += self.crit_hm_hp(output['hm_hp'], batch['hm_hp'])
-
-        loss = opt.hm_weight * hm_loss + opt.wh_weight * wh_loss + \
-               opt.off_weight * off_loss + opt.hp_weight * hp_loss + \
-               opt.hm_hp_weight * hm_hp_loss + opt.off_weight * hp_offset_loss
-
-        loss_stats = {'loss': loss, 'hm_loss': hm_loss, 'hp_loss': hp_loss,
-                      'hm_hp_loss': hm_hp_loss, 'hp_offset_loss': hp_offset_loss,
-                      'wh_loss': wh_loss, 'off_loss': off_loss}
-        return loss, loss_stats
-
-
-class HMRModelWithLoss(torch.nn.Module):
-    def __init__(self, model, loss):
-        super(HMRModelWithLoss, self).__init__()
-        self.model = model
-        self.loss = loss
-
-    def forward(self, batch):
-        outputs = self.model(batch['input'])
-        loss, loss_stats = self.loss(outputs, batch)
-        return outputs[-1], loss, loss_stats
-
+from models.model_util import HmrNetBase, ModelWithLoss, HmrLoss
 
 class HMRTrainer(object):
   def __init__(self, opt):
       self.opt = opt
+      self.loss_states = ['loss', 'hm_loss', 'wh_loss',
+                          'pose_loss', 'shape_loss',
+                          '2d_loss', '3d_loss']
+      self.start_epoch = 0
       self.min_val_loss = 1e10  # for save best val model
 
       self._build_model(opt)
@@ -162,22 +37,25 @@ class HMRTrainer(object):
 
       ### 1.object detection model
       print('Building object detection model.')
-      model = dla_net(opt.heads, not_use_dcn=opt.not_use_dcn)
+      model = HmrNetBase()
       optimizer = torch.optim.Adam(model.parameters(), opt.lr)
       if os.path.exists(opt.load_model):
-          model, optimizer, start_epoch = self.load_model(
-              model, opt.load_model, optimizer, opt.resume, opt.lr, opt.lr_step)
-
-      # self.model_obj_detection = nn.DataParallel(model).cuda()
-      # self.loss_obj_detection = nn.DataParallel(loss_obj_detection()).cuda()
+          model, optimizer, start_epoch = \
+              self.load_model(
+                  model, opt.load_model,
+                  optimizer, opt.resume,
+                  opt.lr, opt.lr_step
+              )
 
       self.model = model
-      self.loss_stats, self.loss = self._get_losses(opt)
-      self.model_with_loss = nn.DataParallel(HMRModelWithLoss(model, self.loss)).cuda()
       self.optimizer = optimizer
+      self.start_epoch = start_epoch
+      self.model_with_loss = \
+          nn.DataParallel(ModelWithLoss(model, HmrLoss)).cuda()
 
       show_net_para(model)
       print('Finished build model.')
+
 
   def _create_data_loader(self, opt):
       print('Create data loader.')
@@ -305,7 +183,7 @@ class HMRTrainer(object):
       print('Starting training ...')
 
       opt = self.opt
-      start_epoch = 0
+      start_epoch = self.start_epoch
       for epoch in range(start_epoch + 1, opt.num_epochs + 1):
           self.run_train(epoch)
 
@@ -327,19 +205,6 @@ class HMRTrainer(object):
       _, preds = self.run_epoch('val', 0, self.val_loader)
       self.val_loader.dataset.run_eval(preds, self.opt.save_dir)
 
-
-  def _get_losses(self, opt):
-      if opt.task == 'ctdet':
-          loss_states = ['loss', 'hm_loss', 'wh_loss', 'off_loss']
-          loss = loss_obj_detection(opt)
-      elif opt.task == 'multi_pose':
-          loss_states = ['loss', 'hm_loss', 'hp_loss', 'hm_hp_loss',
-                         'hp_offset_loss', 'wh_loss', 'off_loss']
-          loss = loss_multi_pose(opt)
-      else:
-          assert 0, 'task not defined!'
-
-      return loss_states, loss
 
 
   def debug(self, batch, output, iter_id):
@@ -434,39 +299,6 @@ class HMRTrainer(object):
                   debugger.save_all_imgs(opt.debug_dir, prefix='{}'.format(iter_id))
               else:
                   debugger.show_all_imgs(pause=True)
-
-      else:
-          assert 0, 'task not defined!'
-
-
-  def save_result(self, output, batch, results):
-      opt = self.opt
-      if opt.task == 'ctdet':
-          reg = output['reg'] if self.opt.reg_offset else None
-          dets = ctdet_decode(
-            output['hm'], output['wh'], reg=reg,
-            cat_spec_wh=self.opt.cat_spec_wh, K=self.opt.K)
-          dets = dets.detach().cpu().numpy().reshape(1, -1, dets.shape[2])
-          dets_out = ctdet_post_process(
-            dets.copy(), batch['meta']['c'].cpu().numpy(),
-            batch['meta']['s'].cpu().numpy(),
-            output['hm'].shape[2], output['hm'].shape[3], output['hm'].shape[1])
-          results[batch['meta']['img_id'].cpu().numpy()[0]] = dets_out[0]
-
-      elif opt.task == 'multi_pose':
-          reg = output['reg'] if self.opt.reg_offset else None
-          hm_hp = output['hm_hp'] if self.opt.hm_hp else None
-          hp_offset = output['hp_offset'] if self.opt.reg_hp_offset else None
-          dets = multi_pose_decode(
-              output['hm'], output['wh'], output['hps'],
-              reg=reg, hm_hp=hm_hp, hp_offset=hp_offset, K=self.opt.K)
-          dets = dets.detach().cpu().numpy().reshape(1, -1, dets.shape[2])
-
-          dets_out = multi_pose_post_process(
-              dets.copy(), batch['meta']['c'].cpu().numpy(),
-              batch['meta']['s'].cpu().numpy(),
-              output['hm'].shape[2], output['hm'].shape[3])
-          results[batch['meta']['img_id'].cpu().numpy()[0]] = dets_out[0]
 
       else:
           assert 0, 'task not defined!'

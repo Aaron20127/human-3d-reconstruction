@@ -7,15 +7,15 @@ from pycocotools.cocoeval import COCOeval
 import numpy as np
 import json
 import os
+import math
 
 import torch.utils.data as data
 
 import cv2
-from utils.image import flip, color_aug
-from utils.image import get_affine_transform, affine_transform
-from utils.image import gaussian_radius, draw_umich_gaussian, draw_msra_gaussian
-from utils.image import draw_dense_reg
-import math
+from .data_util  import flip, color_aug
+from .data_util  import get_affine_transform, affine_transform
+from .data_util  import gaussian_radius, draw_umich_gaussian, draw_msra_gaussian
+from .data_util  import draw_dense_reg
 
 class COCO(data.Dataset):
   def __init__(self, opt, split):

@@ -1,7 +1,7 @@
 
 import torch
 import torch.nn as nn
-from .utils import _gather_feat, _transpose_and_gather_feat
+from .model_util import _gather_feat, _transpose_and_gather_feat
 
 def _nms(heat, kernel=3):
     ''' find the heat map center.'''

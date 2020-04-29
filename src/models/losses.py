@@ -3,14 +3,11 @@
 # CornerNet (https://github.com/princeton-vl/CornerNet)
 # Copyright (c) 2018, University of Michigan
 # Licensed under the BSD 3-Clause License
-# ------------------------------------------------------------------------------
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+# -----------------------------------------------------------------------------
 
 import torch
 import torch.nn as nn
-from .utils import _transpose_and_gather_feat
+from .model_util import _transpose_and_gather_feat
 import torch.nn.functional as F
 
 
@@ -111,6 +108,7 @@ def _reg_loss(regr, gt_regr, mask):
   regr_loss = regr_loss / (num + 1e-4)
   return regr_loss
 
+
 class FocalLoss(nn.Module):
   '''nn.Module warpper for focal loss'''
   def __init__(self):
@@ -119,6 +117,7 @@ class FocalLoss(nn.Module):
 
   def forward(self, out, target):
         return self.neg_loss(out, target)
+
 
 class RegLoss(nn.Module):
   '''Regression loss for an output tensor
@@ -136,6 +135,7 @@ class RegLoss(nn.Module):
     loss = _reg_loss(pred, target, mask)
     return loss
 
+
 class RegL1Loss(nn.Module):
   def __init__(self):
     super(RegL1Loss, self).__init__()
@@ -147,6 +147,7 @@ class RegL1Loss(nn.Module):
     loss = F.l1_loss(pred * mask, target * mask, size_average=False)
     loss = loss / (mask.sum() + 1e-4)
     return loss
+
 
 class NormRegL1Loss(nn.Module):
   def __init__(self):

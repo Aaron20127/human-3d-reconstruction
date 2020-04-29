@@ -4,15 +4,10 @@ import sys
 import torch
 import torch.utils.data
 
-
-abspath = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, abspath + '/lib')
-
-from opts import opts
-from logger import Logger
-from emailSender import send_email
-
-from trains.trainer import HMRTrainer
+from utils.opts import opts
+from utils.logger import Logger
+from utils.emailSender import send_email
+from train.trainer import HMRTrainer
 
 
 def main(opt):

@@ -237,28 +237,7 @@ class opts(object):
       opt.input_res = max(opt.input_h, opt.input_w)
       opt.output_res = max(opt.output_h, opt.output_w)
 
-
-      if opt.task == 'ctdet':
-          # assert opt.dataset in ['pascal', 'coco']
-          opt.num_classes = 80
-          opt.heads = {'hm': opt.num_classes,
-                       'wh': 2 if not opt.cat_spec_wh else 2 * opt.num_classes}
-          if opt.reg_offset:
-              opt.heads.update({'reg': 2})
-      elif opt.task == 'multi_pose':
-          # assert opt.dataset in ['coco_hp']
-          opt.num_classes = 1
-          opt.flip_idx = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10],[11, 12], [13, 14], [15, 16]]
-          opt.heads = {'hm': opt.num_classes, 'wh': 2, 'hps': 34}
-          if opt.reg_offset:
-              opt.heads.update({'reg': 2})
-          if opt.hm_hp:
-              opt.heads.update({'hm_hp': 17})
-          if opt.reg_hp_offset:
-              opt.heads.update({'hp_offset': 2})
-      else:
-          assert 0, 'task not defined!'
-
+      opt.heads = {'hm': 1, 'wh': 2, 'cam': 3, 'pose': 72, 'shape': 10}
       print('heads', opt.heads)
 
   def init(self, args=''):
