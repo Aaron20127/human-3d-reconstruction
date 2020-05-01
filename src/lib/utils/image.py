@@ -67,6 +67,29 @@ def affine_transform(pt, t):
     new_pt = np.dot(t, new_pt)
     return new_pt[:2]
 
+def affine_transform_bbox(bbox, t):
+    p =  np.array([
+        [bbox[0], bbox[1], 1.],
+        [bbox[0], bbox[3], 1.],
+        [bbox[2], bbox[1], 1.],
+        [bbox[2], bbox[3], 1.],
+    ], dtype=np.float32).T
+
+    pt = np.dot(t, p)
+    pt = pt[:2, :]
+
+    x_min = 10000
+    x_max = -10000
+    y_min = 10000
+    y_max = -10000
+    for i in range(pt.shape[1]):
+        x_min = min(x_min, pt[0,i])
+        x_max = max(x_max, pt[0,i])
+        y_min = min(y_min, pt[1,i])
+        y_max = max(y_max, pt[1,i])
+
+    bbox = np.array([x_min, y_min, x_max, y_max])
+    return bbox
 
 def get_3rd_point(a, b):
     direct = a - b

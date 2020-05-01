@@ -21,7 +21,7 @@ import json
 import cv2
 
 from image import flip, color_aug
-from image import get_affine_transform, affine_transform
+from image import get_affine_transform, affine_transform, affine_transform_bbox
 from image import gaussian_radius, draw_umich_gaussian, draw_msra_gaussian
 from image import draw_dense_reg
 import math
@@ -255,8 +255,9 @@ class COCOHP(data.Dataset):
                 for e in self.flip_idx:
                     pts[e[0]], pts[e[1]] = pts[e[1]].copy(), pts[e[0]].copy()
             ## affine transform bbox to feature map 128x128
-            bbox[:2] = affine_transform(bbox[:2], trans_output)
-            bbox[2:] = affine_transform(bbox[2:], trans_output)
+            # bbox[:2] = affine_transform(bbox[:2], trans_output)
+            # bbox[2:] = affine_transform(bbox[2:], trans_output)
+            bbox = affine_transform_bbox(bbox, trans_output_rot)
             bbox = np.clip(bbox, 0, output_res - 1)
             h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
             if (h > 0 and w > 0) or (rot != 0):
