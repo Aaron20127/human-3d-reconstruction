@@ -1,14 +1,8 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import os
 import sys
-
-# abspath = os.path.abspath(os.path.dirname(__file__))
-# sys.path.insert(0, abspath + '/../trains')
-# sys.path.insert(0, abspath + '/../utils')
-
+import json
+import cv2
 import argparse
 
 import pycocotools.coco as coco
@@ -18,9 +12,6 @@ import math
 
 import torch.utils.data as data
 
-import json
-import cv2
-
 from .data_util import flip, color_aug
 from .data_util  import get_affine_transform, affine_transform
 from .data_util  import gaussian_radius, draw_umich_gaussian, draw_msra_gaussian
@@ -28,9 +19,8 @@ from .data_util  import draw_dense_reg
 from .data_util import addCocoAnns
 
 
-class COCOHP(data.Dataset):
-    num_classes = 1
-    num_joints = 17
+class COCO2017(data.Dataset):
+
     default_resolution = [512, 512]
     mean = np.array([0.40789654, 0.44719302, 0.47026115],
                     dtype=np.float32).reshape(1, 1, 3)
@@ -41,13 +31,6 @@ class COCOHP(data.Dataset):
 
     def __init__(self, opt, split):
         super(COCOHP, self).__init__()
-        self.edges = [[0, 1], [0, 2], [1, 3], [2, 4],
-                      [4, 6], [3, 5], [5, 6],
-                      [5, 7], [7, 9], [6, 8], [8, 10],
-                      [6, 12], [5, 11], [11, 12],
-                      [12, 14], [14, 16], [11, 13], [13, 15]]
-
-        self.acc_idxs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
         self.data_dir = opt.data_dir
         self.img_dir = os.path.join(self.data_dir, '{}2017'.format(split))
         if split == 'test':
@@ -363,6 +346,30 @@ class COCOHP(data.Dataset):
 
 
     def __getitem__(self, index):
+        """
+        return: {
+                    'hm':           '(n, 1, 128, 128)',  # bbox center heat map
+
+                    'wh_ind':       '(n, max_obj)', # bbox width, height
+                    'wh_mask':      '(n, max_obj)',
+                    'wh':           '(n, max_obj, 2)',
+
+                    'theta_ind':    '(n, max_obj)'
+                    'theta_mask':   '(n, max_obj)'
+                    'pose':         '(n, max_obj, 72)',
+                    'shape':        '(n, max_obj, 10)',
+
+                    'kp_2d_ind':    '(n, max_obj)'
+                    'kp_3d_mask':   '(n, max_obj)'
+                    'kp_3d':        '(n, 19, 3)',
+
+                    'kp_2d_ind':    '(n, max_obj)'
+                    'kp_3d_mask':   '(n, max_obj)'
+                    'kp_2d':        '(n, 19, 3)', # 第三列是否可见可以作为索引，加上coco数据集的眼睛、耳朵和鼻子
+
+                    'dataset':      'coco2017'
+                }
+        """
         ## 1.get img and anns
         img, anns, img_id = self._get_image(index)
 
@@ -385,6 +392,7 @@ class COCOHP(data.Dataset):
                     inp, hm, reg, reg_mask, ind, wh, \
                     kps, kps_mask, hm_hp, hp_offset, hp_ind, hp_mask,\
                     c, s, gt_det, img_id)
+
         return ret
 
 
