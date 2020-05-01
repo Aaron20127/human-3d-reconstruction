@@ -301,10 +301,10 @@ class COCOHP(data.Dataset):
                 gt_det.append([bbox[0], bbox[1], bbox[2], bbox[3], 1] + # [0:4] bbox，[4] 1, [5:39] key points, [40] class id 0
                               pts[:, :2].reshape(num_joints * 2).tolist() + [cls_id])
 
-        if rot != 0:
-            hm = hm * 0 + 0.9999
-            reg_mask *= 0
-            kps_mask *= 0
+        # if rot != 0:
+        #     hm = hm * 0 + 0.9999
+        #     reg_mask *= 0
+        #     kps_mask *= 0
 
         return gt_det, hm, reg, reg_mask, ind, wh, kps, kps_mask, hm_hp, \
                hp_offset, hp_ind, hp_mask, dense_kps, dense_kps_mask
