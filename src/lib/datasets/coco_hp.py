@@ -250,8 +250,8 @@ class COCOHP(data.Dataset):
             cls_id = int(ann['category_id']) - 1
             pts = np.array(ann['keypoints'], np.float32).reshape(num_joints, 3)
             if flipped:
-                bbox[[0, 2]] = width - bbox[[2, 0]] - 1
-                pts[:, 0] = width - pts[:, 0] - 1
+                bbox[[0, 2]] = width - bbox[[2, 0]] - 1 # bbox need non-mirror flip
+                pts[:, 0] = width - pts[:, 0] - 1 # mirror flip
                 for e in self.flip_idx:
                     pts[e[0]], pts[e[1]] = pts[e[1]].copy(), pts[e[0]].copy()
             ## affine transform bbox to feature map 128x128
@@ -270,9 +270,9 @@ class COCOHP(data.Dataset):
                 wh[k] = 1. * w, 1. * h  # width and height of bbox
                 ind[k] = ct_int[1] * output_res + ct_int[0] # center of bbox in feature map index 0-16384
                 reg[k] = ct - ct_int # decimal of center of bbox
-                reg_mask[k] = 1 # center mask ???
-                num_kpts = pts[:, 2].sum()
-                if num_kpts == 0: # if no key points, hm=0.9999, reg_mask[k]=0
+                reg_mask[k] = 1 # mask of ind
+                num_kpts = pts[:, 2].sum() # TODO debug
+                if num_kpts == 0: # if no key points, donnot use hm and center decimal for loss
                     hm[cls_id, ct_int[1], ct_int[0]] = 0.9999
                     reg_mask[k] = 0
 
