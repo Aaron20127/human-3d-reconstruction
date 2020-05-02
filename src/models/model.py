@@ -43,27 +43,25 @@ class HmrLoss(nn.Module):
                 'kp_3d':        '(n, 19, 3)',
 
                 'kp_2d_ind':    '(n, max_obj)'
-                'kp_3d_mask':   '(n, max_obj)'
+                'kp_2d_mask':   '(n, max_obj)'
                 'kp_2d':        '(n, 19, 3)', # 第三列是否可见可以作为索引，加上coco数据集的眼睛、耳朵和鼻子
             }
 
             output
             {
-                'hm':           '(n,1,128,128)',
-                'wh':           '(n,2,128,128)',
+                'box_hm':       '(n, 1, 128,128)',
+                'box_wh':       '(n, 2, 128,128)',
+                'box_dc':       '(n, 2, 128,128)',
+                'box_num':      '(n, 2, 1,  1)',
 
-                'pose':         '(n,72,128,128)',
-                'shape':        '(n,10,128,128)',
-                'cam':          '(n, 3,128,128)',
+                'pose':          '(n,72,128,128)',
+                'shape':         '(n,10,128,128)',
+                'cam':           '(n, 3,128,128)',
 
-                'kp_2d':        '(n, 128, 128, 19, 2)'
-                'kp_3d':        '(n, 128, 128, 19, 3)'
+                'kp2d':          '(n, 128, 128, 19, 2)'
+                'kp3d':          '(n, 128, 128, 19, 3)'
             }
         """
-
-        hm_loss, wh_loss = 0, 0
-        pose_loss, shape_loss = 0, 0
-        kp_2d_loss, kp_3d_loss = 0, 0
 
         batch = self.merge_batches(batches)
 

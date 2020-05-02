@@ -53,10 +53,52 @@ def get_affine_transform(center,
     return trans
 
 
-def affine_transform(pt, t):
-    new_pt = np.array([pt[0], pt[1], 1.], dtype=np.float32).T
-    new_pt = np.dot(t, new_pt)
-    return new_pt[:2]
+def affine_transform(pt, M):
+    """
+    Argments
+        pt (array,(n,2)): points
+        M (array,(3,3)): matrix of affine transform
+    """
+    new_pt = np.hstack((pt, np.ones((pt.shape[0],1)))).T
+    new_pt = np.dot(M, new_pt)
+    return new_pt[:2].T
+
+
+def affine_transform_kps(pt, M):
+    """
+    Argments
+        pt (array,(n,3)): points
+        M (array,(3,3)): matrix of affine transform
+    """
+    new_pt = np.hstack((pt[:,:2], np.ones((pt.shape[0],1)))).T
+    new_pt = np.dot(M, new_pt)
+    new_pt = np.hstack((new_pt.T, pt[:, 2]))
+    return new_pt
+
+
+def affine_transform_bbox(bbox, t):
+    p =  np.array([
+        [bbox[0], bbox[1], 1.],
+        [bbox[0], bbox[3], 1.],
+        [bbox[2], bbox[1], 1.],
+        [bbox[2], bbox[3], 1.],
+    ], dtype=np.float32).T
+
+    pt = np.dot(t, p)
+    pt = pt[:2, :]
+
+    x_min = 10000
+    x_max = -10000
+    y_min = 10000
+    y_max = -10000
+    for i in range(pt.shape[1]):
+        x_min = min(x_min, pt[0,i])
+        x_max = max(x_max, pt[0,i])
+        y_min = min(y_min, pt[1,i])
+        y_max = max(y_max, pt[1,i])
+
+    bbox = np.array([x_min, y_min, x_max, y_max])
+    return bbox
 
 
 def get_3rd_point(a, b):
