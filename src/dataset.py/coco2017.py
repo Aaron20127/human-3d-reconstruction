@@ -49,6 +49,7 @@ class COCO2017(Dataset):
         self.flip_prob = flip_prob
         self.rot_prob = rot_prob
         self.rot_degree = rot_degree
+        self.color_aug = color_aug
         self.min_vis_kps = min_vis_kps
         self.normalize = normalize
 
@@ -59,6 +60,16 @@ class COCO2017(Dataset):
         self.not_exist_kps = [12, 13] # not exist kps in cocoplus
         self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
                          [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
+
+        # data color augment
+        self._data_rng = np.random.RandomState(123)
+        self._eig_val = np.array([0.2141788, 0.01817699, 0.00341571],
+                                 dtype=np.float32)
+        self._eig_vec = np.array([
+            [-0.58752847, -0.69563484, 0.41340352],
+            [-0.5832747, 0.00994535, -0.81221408],
+            [-0.56089297, 0.71832671, 0.41158938]
+        ], dtype=np.float32)
 
         # load data set
         self._load_data_set()
@@ -156,14 +167,17 @@ class COCO2017(Dataset):
                              (self.output_res, self.output_res),
                              flags=cv2.INTER_LINEAR)
 
+        # cv2.imshow('no color_aug', cv2.resize(inp.astype(np.uint8), (512, 512), interpolation=cv2.INTER_CUBIC))
+
         # normalize, color augment and standardize image
-        # inp = (inp.astype(np.float32) / 255.)  # normalize
-        # if not self.no_color_aug:  # color augment
-        #     color_aug(self._data_rng, inp, self._eig_val, self._eig_vec)
-        # inp = inp / 255. * 2.0 - 1.0  # standardize
+        inp = (inp.astype(np.float32) / 255.)
+        if self.color_aug:  # color augment
+            color_aug(self._data_rng, inp, self._eig_val, self._eig_vec)
 
         if self.normalize:
-            inp = (inp.astype(np.float32) / 255) * 2.0 - 1.0  # normalize
+            inp =  inp * 2.0 - 1.0  # normalize
+        else:
+            inp = inp * 255
 
         inp = inp.transpose(2, 0, 1)  # change channel (3, 512, 512)
 

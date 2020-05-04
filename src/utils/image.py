@@ -15,6 +15,42 @@ def transform_preds(coords, center, scale, output_size):
     return target_coords
 
 
+def similarity_transformation_2D(p, scale, theta, trans):
+    rad = np.pi * theta / 180
+
+    R = np.array([[np.cos(rad), -np.sin(rad)],
+                  [np.sin(rad), np.cos(rad)]])
+
+    ts = trans.reshape((2, 1))
+    ret = scale * np.dot(R, p.T) + ts
+
+    return ret.T
+
+
+def get_similarity_transform(scale, translate,
+                             rotate, flip,
+                             input_w, input_h):
+    ## get dst
+    start = np.array([[0., 0.],
+                      [input_w/2., 0.],
+                      [0., input_h/2.]])
+    dst = similarity_transformation_2D(start, scale, rotate, translate)
+
+    ## get src
+    p0 = [input_w/2., input_h/2.]
+    p1 = np.array([input_w, input_h/2.]) if not flip \
+                    else np.array([0, input_h/2.])
+    p2 = [input_w/2., input_h]
+
+    src = np.stack((p0, p1, p2), 0)
+
+    ## get mat
+    M = cv2.getAffineTransform(np.float32(src), np.float32(dst))
+
+    return M
+
+
+
 def get_affine_transform(center,
                          scale,
                          rot,
