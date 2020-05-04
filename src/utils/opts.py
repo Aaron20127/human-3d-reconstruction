@@ -87,10 +87,6 @@ agt('--flip', type=float, default=0.5, help='probability of applying flip augmen
 agt('--no_color_aug', action='store_true', help='not use the color augmenation from CornerNet')
 
 
-
-
-
-
 # other parameters
 opt = parser.parse_args()
 
@@ -123,16 +119,6 @@ opt.gpus = [i for i in range(len(opt.gpus))] if opt.gpus[0] >= 0 else [-1]
 opt.lr_step = [int(i) for i in opt.lr_step.split(',')]
 opt.test_scales = [float(i) for i in opt.test_scales.split(',')]
 
-opt.fix_res = not opt.keep_res
-print('Fix size testing.' if opt.fix_res else 'Keep resolution testing.')
-opt.reg_offset = not opt.not_reg_offset
-opt.reg_bbox = not opt.not_reg_bbox
-opt.hm_hp = not opt.not_hm_hp
-opt.reg_hp_offset = (not opt.not_reg_hp_offset) and opt.hm_hp
-
-if opt.head_conv == -1:  # init default head_conv
-  opt.head_conv = 256 if 'dla' in opt.arch else 64
-opt.pad = 127 if 'hourglass' in opt.arch else 31
 
 if opt.trainval:
   opt.val_intervals = 100000000
@@ -158,6 +144,6 @@ opt.root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
 opt.exp_dir = os.path.join(opt.root_dir, 'exp')
 # opt.save_dir = os.path.join(opt.exp_dir, opt.exp_id, time.strftime('%Y-%m-%d_%H-%M-%S'))
 dir_name = opt.title.replace(" ", "_") + '_' + time.strftime('%Y-%m-%d_%H-%M-%S')
-opt.save_dir = os.path.join(opt.exp_dir, opt.exp_id, dir_name)
+opt.save_dir = os.path.join(opt.exp_dir, dir_name)
 opt.debug_dir = os.path.join(opt.save_dir, 'debug')
 print('The output will be saved to ', opt.save_dir)

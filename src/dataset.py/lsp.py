@@ -1,4 +1,5 @@
 
+import scipy.io as scio
 import os
 import sys
 abspath = os.path.abspath(os.path.dirname(__file__))
@@ -11,43 +12,54 @@ from pycocotools.cocoeval import COCOeval
 import numpy as np
 import math
 
-import torch.utils.data as data
+from torch.utils.data import Dataset, DataLoader, ConcatDataset
 
 from utils.util import Clock
 from utils import opts
+from utils.debugger import Debugger
 
 from utils.image import flip, color_aug
-
 from utils.image  import get_affine_transform, affine_transform_bbox, affine_transform_kps
 from utils.image   import gaussian_radius, draw_umich_gaussian
 from utils.image   import draw_dense_reg
 from utils.image  import addCocoAnns
 
 
-class COCO2017(data.Dataset):
+class Lsp(Dataset):
     def __init__(self,
                 data_path,
+                rand_scale=True,
                 scale_range=(0.6, 1.4),
+                rand_crop =True,
                 flip_prob=0.5,
                 rot_prob=0.0,
-                rot_degree=np.pi/4,
+                rot_degree=0.0,
                 output_res=512,
                 max_objs = 32,
-                split = 'train'):
+                split = 'train', # train, val, test
+                min_vis_kps = 6,
+                normalize = True,
+                box_stretch = 10):
 
         self.data_path = data_path
         self.max_objs = max_objs  # max number of objects in one image
         self.split = split
         self.output_res = output_res
+        self.rand_scale = rand_scale
         self.scale_range = scale_range
+        self.rand_crop = rand_crop
         self.flip_prob = flip_prob
         self.rot_prob = rot_prob
         self.rot_degree = rot_degree
+        self.min_vis_kps = min_vis_kps
+        self.normalize = normalize
+        self.box_stretch = box_stretch
 
         # defaut parameters
         self.num_joints = 19
-        self.kps_map = [16, 14, 12, 11, 13, 15, 10, 8, 6,
-                        5, 7, 9, 0, 0, 0, 1, 2, 3, 4]  # key points map coco to smpl cocoplus key points
+        self.kps_map = [0, 1, 2, 3, 4, 5, 6, 7, 8,
+                        9, 10, 11, 12, 13, 0, 0, 0, 0, 0]  # key points map lsp to smpl cocoplus key points
+        self.not_exist_kps = [14, 15, 16, 17, 18]
         self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
                          [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
 
@@ -57,46 +69,42 @@ class COCO2017(data.Dataset):
 
     def _load_data_set(self):
         clk = Clock()
-        print('=> start load coco2017 {} data.'.format(self.split))
-        self.image_ids = []
+        print('==> loading LSP data.'.format(self.split))
+        self.images = []
+        self.kp2ds = []
 
-        self.img_dir = os.path.join(self.data_path, '{}2017'.format(self.split))
-        if self.split == 'eval':
-            self.annot_path = os.path.join(
-                self.data_path, 'annotations',
-                'image_info_test-dev2017.json').format(self.split)
-        else:
-            self.annot_path = os.path.join(
-                self.data_path, 'annotations',
-                'person_keypoints_{}2017.json').format(self.split)
-        self.coco = coco.COCO(self.annot_path)
+        anno_file_path = os.path.join(self.data_path, 'joints.mat') # joints.mat 0 visible, 1 invisible
+        anno = scio.loadmat(anno_file_path)
 
-        # person and not crowd
-        ids = self.coco.getImgIds()
-        for img_id in ids:  # only save the image ids who have annotations
-            idxs = self.coco.getAnnIds(imgIds=[img_id], catIds=1, iscrowd=0)
-            if len(idxs) > 0:
-                self.img_ids.append(img_id)
+        # key points
+        kp2d = anno['joints'].transpose(2, 1, 0).astype(np.float32) # N x k x 3
+        visible = np.logical_not(kp2d[:, :, 2])
+        kp2d[:, :, 2] = visible.astype(kp2d.dtype) # 1 visible, 0 invisible
 
-        print('loaded {} samples, time elapsed {}.'.format(len(self.img_ids), clk.elapesd()))
+        # images
+        self.img_dir = os.path.join(self.data_path, 'images')
+        images = sorted(os.listdir(self.img_dir))
+
+        # key points
+        for i in range(len(images)):
+            if kp2d[i, :, 2].sum() >= self.min_vis_kps:
+                self.kp2ds.append(kp2d[i])
+                self.images.append(images[i])
+
+        print('loaded {} samples (t={:.2f}s)'.format(len(self.images), clk.elapsed()))
 
 
     def __len__(self):
-        return len(self.img_ids)
+        return len(self.images)
 
 
     def _get_image(self, index):
-        img_id = self.images[index]
-        file_name = self.coco.loadImgs(ids=[img_id])[0]['file_name']
-        img_path = os.path.join(self.img_dir, file_name)
-        ann_ids = self.coco.getAnnIds(imgIds=[img_id], catIds=1, iscrowd=0) # remove crowd annotations
-        anns = self.coco.loadAnns(ids=ann_ids)
-
-        img = cv2.imread(img_path)
+        img_name = self.images[index]
+        img = cv2.imread(os.path.join(self.img_dir, img_name))
         # import jpeg4py as jpeg
         # img = jpeg.JPEG(img_path).decode() # accelerate jpeg image read speed
 
-        return img, anns, img_id
+        return img
 
 
     def _get_input(self, img):
@@ -118,8 +126,10 @@ class COCO2017(data.Dataset):
         rot = 0
         flipped = False
         if self.split == 'train':
-            if not opt.not_rand_crop:  # random crop, get center and scale
+            if self.rand_scale:
                 s = s * np.random.choice(np.arange(self.scale_range[0], self.scale_range[1], 0.1))
+
+            if self.rand_crop:  # random crop, get center and scale
                 # to make sure that we can get a random cneter point, namely img.shape > 2*border
                 w_border = _get_border(128, img.shape[1])
                 h_border = _get_border(128, img.shape[0])
@@ -128,9 +138,9 @@ class COCO2017(data.Dataset):
 
             if np.random.random() < self.rot_prob:  # whether or not to rotate
                 rf = self.rot_degree
-                rot = np.clip(np.random.randn() * rf, -rf * 2, rf * 2)
+                rot = np.clip(np.random.randn() * rf / 3, -rf, rf)
 
-            if np.random.random() < opt.flip:  # flip
+            if np.random.random() < self.flip_prob:  # flip
                 flipped = True
                 img = img[:, ::-1, :]
                 c[0] = img.shape[1] - c[0] - 1
@@ -148,13 +158,15 @@ class COCO2017(data.Dataset):
         #     color_aug(self._data_rng, inp, self._eig_val, self._eig_vec)
         # inp = inp / 255. * 2.0 - 1.0  # standardize
 
-        inp = (inp.astype(np.float) / 255) * 2.0 - 1.0  # normalize
+        if self.normalize:
+            inp = (inp.astype(np.float32) / 255) * 2.0 - 1.0  # normalize
+
         inp = inp.transpose(2, 0, 1)  # change channel (3, 512, 512)
 
         return inp, c, s, rot, flipped
 
 
-    def _convert_kps_coco_to_smpl(self, pts):
+    def _convert_kps_to_smpl(self, pts):
         """
          covert coco key pints to smpl cocoplus key points.
 
@@ -162,9 +174,29 @@ class COCO2017(data.Dataset):
             coco_pts (array, (17,3)): coco key points list.
         """
         kps = pts[self.kps_map].copy()
-        kps[12:14] = 0  # no neck, top head
+        kps[self.not_exist_kps] = 0
         kps[:, 2] = kps[:, 2] > 0  # visible points to be 1 # TODO debug
         return kps
+
+    def _generate_bbox(self, kp, img_size): # TODO use object detection to get bbox
+
+        v_kp = kp[kp[:, 2] > 0]
+        x_min = v_kp[:, 0].min()
+        x_max = v_kp[:, 0].max()
+        y_min = v_kp[:, 1].min()
+        y_max = v_kp[:, 1].max()
+
+        x_l = x_min - self.box_stretch if x_min - self.box_stretch > 0 else 0
+        y_l = y_min - self.box_stretch/1.5 if y_min - self.box_stretch/1.5 > 0 else 0 # head special handle
+        x_r = x_max + self.box_stretch if x_max + self.box_stretch < img_size[1]-1 else img_size[1]-1
+        y_r = y_max + self.box_stretch if y_max + self.box_stretch < img_size[0]-1 else img_size[0]-1
+
+        coco_bbox = [x_l,
+                     y_l,
+                     x_r - x_l,
+                     y_r - y_l]
+
+        return coco_bbox
 
 
     def _get_bbox(self, bbox, flipped, width, affine_mat):
@@ -191,10 +223,8 @@ class COCO2017(data.Dataset):
 
 
     def _get_kps(self, kps, flipped, width, affine_mat):
-        kps = np.array(kps).reshape(-1, 3)
-
         # convert key points serial number
-        kps = self._convert_kps_coco_to_smpl(kps)
+        kps = self._convert_kps_to_smpl(kps)
 
         # flip
         if flipped:
@@ -217,7 +247,7 @@ class COCO2017(data.Dataset):
         box_cd = np.zeros((self.max_objs, 2), dtype=np.float32) # bbox center decimal
 
         kp2d_mask = np.zeros((self.max_objs), dtype=np.uint8)
-        kp2d = np.zeros((self.max_objs, self.num_joints * 3), dtype=np.float32)
+        kp2d = np.zeros((self.max_objs, self.num_joints, 3), dtype=np.float32)
 
         gt = []
 
@@ -258,15 +288,15 @@ class COCO2017(data.Dataset):
                 if kps[j, 2] > 0: # key points is visible
                     if kps[j, 0] >= 0 and kps[j, 0] < self.output_res and \
                        kps[j, 1] >= 0 and kps[j, 1] < self.output_res: # key points in output feature map
-                       real_vis_kps += 1
+                       vis_kps += 1
                        kp2d[k, j] = kps[j]
-            if vis_kps > self.min_vis_kps:
+            if vis_kps > 0:
                 kp2d_mask[k] = 1
 
             ### 3. groud truth
             gt.append([bbox, kps])
 
-            return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, gt
+        return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, gt
 
 
     def __getitem__(self, index):
@@ -295,7 +325,13 @@ class COCO2017(data.Dataset):
                 }
         """
         ## 1.get img and anns
-        img, anns, img_id = self._get_image(index)
+        img = self._get_image(index)
+        kp = self.kp2ds[index]
+        coco_bbox = self._generate_bbox(kp, img.shape)
+        anns = [{
+            'bbox': coco_bbox,
+            'keypoints': kp
+        }]
 
         ## 2. handle input of network to 512x512, namely crop and normalize image
         inp, c, s, rot, flipped = self._get_input(img)
@@ -318,38 +354,30 @@ class COCO2017(data.Dataset):
             'dataset': 'coco2017'
         }
 
+
 if __name__ == '__main__':
-    opt = argparse.ArgumentParser()
-    opt.data_dir = 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2017'
-    opt.not_rand_crop = False
-    opt.aug_rot = 0
-    opt.scale = 0.4
-    opt.shift = 0.1
-    opt.rotate = 0
-    opt.flip = 0.5
-    opt.input_res = 512
-    opt.output_res = 512
-    opt.no_color_aug = False
-    opt.mse_loss = False
-    opt.dense_hp = False
-    opt.reg_offset = True
-    opt.hm_hp = True
-    opt.reg_hp_offset = True
-    opt.debug = 0
-    opt.mean = np.array([0.40789654, 0.44719302, 0.47026115],
-                    dtype=np.float32).reshape(1, 1, 3)
-    opt.std = np.array([0.28863828, 0.27408164, 0.27809835],
-                    dtype=np.float32).reshape(1, 1, 3)
+    data = Lsp('D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp',
+                split='train',
+                rand_scale=False,
+                scale_range=(1.0,1.01),
+                rand_crop=False,
+                rot_prob=0,
+                rot_degree=10)
+    data_loader = DataLoader(data, batch_size=1, shuffle=True)
 
-    val_loader = data.DataLoader(
-        COCOHP(opt, 'val'), batch_size=1, shuffle=False, num_workers=0, pin_memory=True)
-    train_loader = data.DataLoader(
-        COCOHP(opt, 'train'), batch_size=1, shuffle=True, num_workers=0, pin_memory=True)
+    for batch in data_loader:
 
-    data_loder = train_loader
-
-    for i, batch in enumerate(data_loder):
+        debugger = Debugger()
         img = batch['input'][0].detach().cpu().numpy().transpose(1, 2, 0)
-        img = np.clip(((img * opt.std + opt.mean) * 255.), 0, 255).astype(np.uint8)
-        cv2.imshow('img', img)
-        cv2.waitKey(0)
+        img = np.clip(((img + 1) / 2 * 255.), 0, 255).astype(np.uint8)
+        # gt heat map
+        gt_box_hm = debugger.gen_colormap(batch['box_hm'].detach().cpu().numpy())
+        debugger.add_blend_img(img, gt_box_hm, 'gt_box_hm')
+        # gt bbox, key points
+        gt_id = 'gt'
+        debugger.add_img(img, img_id=gt_id)
+        for obj in batch['gt']:
+            debugger.add_coco_bbox(obj[0][0], 0, img_id=gt_id)
+            debugger.add_coco_hp(obj[1][0], img_id=gt_id)
+
+        debugger.show_all_imgs(pause=True)
