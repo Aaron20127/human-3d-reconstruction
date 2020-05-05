@@ -90,7 +90,7 @@ class Debugger(object):
     color_map = cv2.resize(color_map, (output_res[0], output_res[1]))
     return color_map
 
-  def add_coco_bbox(self, bbox, cat, conf=1, show_txt=True, img_id='default'): 
+  def add_coco_bbox(self, bbox, cat=0, conf=1, show_txt=True, img_id='default'):
     bbox = np.array(bbox, dtype=np.int32)
     # cat = (int(cat) + 1) % 80
     cat = int(cat)
