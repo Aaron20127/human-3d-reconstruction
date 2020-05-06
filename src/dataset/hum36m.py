@@ -13,7 +13,7 @@ import h5py
 
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 
-from utils.util import Clock
+from utils.util import Clock, reflect_pose
 from utils import opts
 from utils.debugger import Debugger
 
@@ -86,10 +86,10 @@ class Hum36m(Dataset):
         print('==> loading hum3.6m data.'.format(self.split))
         self.images = []
 
-        anno_file_path = os.path.join(self.data_path, 'annot.h5')
-        with h5py.File(anno_file_path) as fp:
+        anno_file_path = os.path.join(self.data_path, 'annot_cocoplus_19_3dkp.h5')
+        with h5py.File(anno_file_path, 'r') as fp:
             self.kp2ds = np.array(fp['gt2d']).reshape(-1,14,3)
-            self.kp3ds = np.array(fp['gt3d']).reshape(-1,14,3)
+            self.kp3ds = np.array(fp['gt3d']).reshape(-1,19,3)
             self.shape = np.array(fp['shape'])
             self.pose = np.array(fp['pose'])
 
@@ -194,7 +194,7 @@ class Hum36m(Dataset):
         y_max = v_kp[:, 1].max()
 
         x_l = x_min - self.box_stretch if x_min - self.box_stretch > 0 else 0
-        y_l = y_min - self.box_stretch / 1.5 if y_min - self.box_stretch / 1.5 > 0 else 0  # head special handle
+        y_l = y_min - self.box_stretch if y_min - self.box_stretch > 0 else 0  # head special handle
         x_r = x_max + self.box_stretch if x_max + self.box_stretch < img_size[1] - 1 else img_size[1] - 1
         y_r = y_max + self.box_stretch if y_max + self.box_stretch < img_size[0] - 1 else img_size[0] - 1
 
@@ -240,14 +240,25 @@ class Hum36m(Dataset):
 
     def _get_kp_3d(self, kps, flipped):
         # convert key points serial number
-        kps = self._convert_kp3d_to_smpl(kps)
+        # kps = self._convert_kp3d_to_smpl(kps)
 
         # flip
-        # if flipped: # TODO whether need to debug
-        #     for e in self.flip_idx:
-        #         kps[e[0]], kps[e[1]] = kps[e[1]].copy(), kps[e[0]].copy()  # key points name mirror
+        if flipped: # TODO whether need to
+            for e in self.flip_idx:
+                kps[e[0]], kps[e[1]] = kps[e[1]].copy(), kps[e[0]].copy()  # key points name mirror
+
+            kps[:, 0] = -kps[:, 0]
 
         return kps
+
+
+    def _get_pose(self, pose, flipped):
+
+        # flip
+        if flipped: # TODO whether need to
+            pose = reflect_pose(pose.flatten())
+        return pose
+
 
     def _get_label(self, trans_mat, flip, anns):
         box_hm = np.zeros((self.output_res, self.output_res), dtype=np.float32)
@@ -314,7 +325,7 @@ class Hum36m(Dataset):
 
 
                 ### 4. handle pose and shape
-                pose[k] = ann['pose']
+                pose[k] = self._get_pose(ann['pose'], flip)
                 shape[k] = ann['shape']
                 theta_mask[k] = 1
 
@@ -340,16 +351,13 @@ class Hum36m(Dataset):
                     'wh_mask':      '(n, max_obj)',
                     'wh':           '(n, max_obj, 2)',
 
-                    'theta_ind':    '(n, max_obj)'
                     'theta_mask':   '(n, max_obj)'
                     'pose':         '(n, max_obj, 72)',
                     'shape':        '(n, max_obj, 10)',
 
-                    'kp_2d_ind':    '(n, max_obj)'
                     'kp_3d_mask':   '(n, max_obj)'
                     'kp_3d':        '(n, 19, 3)',
 
-                    'kp_2d_ind':    '(n, max_obj)'
                     'kp_3d_mask':   '(n, max_obj)'
                     'kp_2d':        '(n, 19, 3)', # 第三列是否可见可以作为索引，加上coco数据集的眼睛、耳朵和鼻子
 
@@ -426,7 +434,7 @@ if __name__ == '__main__':
         gt_id = 'smpl'
         debugger.add_img(img, img_id=gt_id)
         for obj in batch['gt']:
-            debugger.add_smpl(obj['pose'][0], obj['shape'][0], img_id=gt_id)
+            debugger.add_smpl(obj['pose'][0], obj['shape'][0], obj['kp3d'][0], img_id=gt_id)
 
 
         debugger.show_all_imgs(pause=True)

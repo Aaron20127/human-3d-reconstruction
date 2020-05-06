@@ -11,7 +11,7 @@ sys.path.insert(0, abspath + '/../')
 from models.network.smpl import SMPL
 from .smpl_np import SMPL_np
 from .render import rotation_x, weak_perspective, weak_perspective_render_obj
-from .util import Clock, Rx_mat, Ry_mat, Rz_mat, rotationMatrixToEulerAngles
+from .util import Clock, Rx_mat
 
 class Debugger(object):
   def __init__(self, theme='white', down_ratio=4):
@@ -135,26 +135,34 @@ class Debugger(object):
                      lineType=cv2.LINE_AA)
 
 
-  def add_smpl(self, pose, shape, camera=[0.8, 0, 0], img_id='default'):
+  def add_smpl(self, pose, shape, kp3d=None, camera=[1, 0, 0], img_id='default'):
     clk = Clock()
 
     camera = torch.tensor(camera, dtype=torch.float32).cuda()
-    pose = torch.tensor(pose, dtype=torch.float32).reshape(24,3).cuda()
-    shape = torch.tensor(shape, dtype=torch.float32).reshape(1,10).cuda()
+    pose = pose.reshape(24,3).cuda()
+    shape = shape.reshape(1,10).cuda()
 
     ## rotate from x axis, just for view. note pyrender y axis from bottom to top
-    rot_v = pose[0].detach().clone().cpu().numpy()
-    R_mat, _ = cv2.Rodrigues(rot_v)
-    R_mat = Rx_mat(np.pi) * R_mat
-    rot_v, _ = cv2.Rodrigues(R_mat)
-    pose[0] = torch.tensor(rot_v.flatten())
+    # rot_v = pose[0].detach().clone().cpu().numpy()
+    # R_mat, _ = cv2.Rodrigues(rot_v)
+    # R_mat = Rx_mat(np.pi) * R_mat
+    # rot_v, _ = cv2.Rodrigues(R_mat)
+    # pose[0] = torch.tensor(rot_v.flatten())
 
-    # pose[0][0] = pose[0][0] + math.pi
+    # smpl
     verts, joints, r, faces = self.smpl(shape, pose)
 
+    rot_x = torch.tensor(Rx_mat(np.pi).T, dtype=torch.float32).cuda()
     ## render
-    verts = weak_perspective(verts[0], camera).detach().cpu().numpy()  # 对x,y弱透视投影，投影，平移，放缩
-    J = weak_perspective(joints[0], camera).detach().cpu().numpy()
+    verts = weak_perspective(torch.matmul(verts[0], rot_x),
+                             camera).detach().cpu().numpy()  # 对x,y弱透视投影，投影，平移，放缩
+
+    if kp3d is None:
+        J = weak_perspective(torch.matmul(joints[0], rot_x),
+                             camera).detach().cpu().numpy()
+    else:
+        J = weak_perspective(torch.matmul(kp3d.cuda(), rot_x),
+                             camera).detach().cpu().numpy()
 
     obj = {
         'verts': verts,  # 模型顶点

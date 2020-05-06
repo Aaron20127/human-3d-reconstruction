@@ -147,7 +147,7 @@ if __name__ == '__main__':
     smpl = SMPL("D:/paper/human_body_reconstruction/code/master/data/neutral_smpl_with_cocoplus_reg.pkl",).to(device)
 
 
-    ## get pose shape
+    ###1. get pose shape
     pose = (np.random.rand(24,3) - 0.5) * 0.4
     beta = (np.random.rand(10) - 0.5) * 0.6
     vbeta = torch.tensor(np.array([beta])).float().to(device)
@@ -159,21 +159,35 @@ if __name__ == '__main__':
     ## render
     camera = torch.tensor([1, 0, 0]).to(device)  # 弱透视投影参数s,cx,cy
     verts = weak_perspective(verts[0], camera).detach().cpu().numpy() # 对x,y弱透视投影，投影，平移，放缩
-    # verts = rotation_x(verts.T, np.pi)
     J = weak_perspective(joints[0], camera).detach().cpu().numpy()
-    # J = rotation_x(J.T, np.pi)
-
     obj = {
         'verts': verts,  # 模型顶点
         'faces': faces,  # 面片序号
         'J': J,  # 3D关节点
     }
+    color_origin, depth = weak_perspective_render_obj(obj, width=512, height=512, show_smpl_joints=True)
 
-    # 弱透视投影
-    color, depth = weak_perspective_render_obj(obj, width=512, height=512, show_smpl_joints=True)
+
+    ### 2. reflect pose
+    rpose = reflect_pose(pose)
+    vpose = torch.tensor(np.array([rpose])).float().to(device)
+
+    ## get vertices and joints
+    verts, joints, r, faces = smpl(vbeta, vpose)
+
+    ## render
+    verts = weak_perspective(verts[0], camera).detach().cpu().numpy() # 对x,y弱透视投影，投影，平移，放缩
+    J = weak_perspective(joints[0], camera).detach().cpu().numpy()
+    obj = {
+        'verts': verts,  # 模型顶点
+        'faces': faces,  # 面片序号
+        'J': J,  # 3D关节点
+    }
+    color_reflect, depth = weak_perspective_render_obj(obj, width=512, height=512, show_smpl_joints=True)
 
     # show
-    cv2.imshow('img', color)
+    cv2.imshow('origin', color_origin)
+    cv2.imshow('reflect', color_reflect)
     cv2.waitKey(0)
 
     # rpose = reflect_pose(pose)

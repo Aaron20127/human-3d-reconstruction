@@ -36,7 +36,8 @@ class Lsp(Dataset):
                 rot_prob=0.0,
                 rot_degree=0.0,
                 color_aug=True,
-                output_res=512,
+                input_res=512,
+                output_res=128,
                 max_objs = 32,
                 split = 'train', # train, val, test
                 min_vis_kps = 6,
@@ -51,11 +52,13 @@ class Lsp(Dataset):
         self.rot_degree = rot_degree
         self.color_aug = color_aug
         self.output_res = output_res
+        self.input_res = input_res
         self.max_objs = max_objs
         self.split = split  # train, val, test
         self.min_vis_kps = min_vis_kps
         self.normalize = normalize
         self.box_stretch = box_stretch
+        self.down_ratio = output_res / input_res
 
         # defaut parameters
         # key points
@@ -106,8 +109,10 @@ class Lsp(Dataset):
 
         print('loaded {} samples (t={:.2f}s)'.format(len(self.images), clk.elapsed()))
 
+
     def __len__(self):
         return len(self.images)
+
 
     def _get_image(self, index):
         img_name = self.images[index]
@@ -119,8 +124,8 @@ class Lsp(Dataset):
 
     def _get_input(self, img):
         h, w = img.shape[0], img.shape[1]
-        s = self.output_res * 1.0 / max(w, h)  # defalut scale
-        t = np.array([self.output_res / 2., self.output_res / 2.])  # translate to image center
+        s = self.input_res * 1.0 / max(w, h)  # defalut scale
+        t = np.array([self.input_res / 2., self.input_res / 2.])  # translate to image center
         r = 0
         flip = False
 
@@ -131,9 +136,9 @@ class Lsp(Dataset):
 
             ## translate
             t[0] = t[0] + self.trans_scale * (np.random.random() * 2 - 1) \
-                   * (self.output_res / 2.0 + s * w / 2.0)
+                   * (self.input_res / 2.0 + s * w / 2.0)
             t[1] = t[1] + self.trans_scale * (np.random.random() * 2 - 1) \
-                   * (self.output_res / 2.0 + s * h / 2.0)
+                   * (self.input_res / 2.0 + s * h / 2.0)
 
             if self.rot_prob > np.random.random():  # whether or not to rotate
                 r = (np.random.random() * 2 - 1) * self.rot_degree
@@ -146,7 +151,7 @@ class Lsp(Dataset):
         # use affine transform to scale, rotate and crop image
         trans_mat = get_similarity_transform(s, t, r, flip, w, h)
         inp = cv2.warpAffine(img, trans_mat,
-                             (self.output_res, self.output_res),
+                             (self.input_res, self.input_res),
                              flags=cv2.INTER_LINEAR)
 
         # cv2.imshow('img', img)
@@ -167,6 +172,7 @@ class Lsp(Dataset):
 
         return inp, trans_mat, flip
 
+
     def _convert_kp2d_to_smpl(self, pts):
         """
          covert coco key pints to smpl cocoplus key points.
@@ -179,6 +185,19 @@ class Lsp(Dataset):
         kps[:, 2] = kps[:, 2] > 0  # visible points to be 1 # TODO debug
         return kps
 
+
+    def _convert_kp3d_to_smpl(self, pts):
+        """
+         covert coco key pints to smpl cocoplus key points.
+
+         Argument
+             pts (array, (14,3)): lsp 3d key points list.
+        """
+        kps = pts[self.kps_map].copy()
+        kps[self.not_exist_kps] = 0
+        return kps
+
+
     def _generate_bbox(self, kp, img_size):  # TODO use object detection to get bbox
 
         v_kp = kp[kp[:, 2] > 0]
@@ -188,7 +207,7 @@ class Lsp(Dataset):
         y_max = v_kp[:, 1].max()
 
         x_l = x_min - self.box_stretch if x_min - self.box_stretch > 0 else 0
-        y_l = y_min - self.box_stretch / 1.5 if y_min - self.box_stretch / 1.5 > 0 else 0  # head special handle
+        y_l = y_min - self.box_stretch if y_min - self.box_stretch > 0 else 0  # head special handle
         x_r = x_max + self.box_stretch if x_max + self.box_stretch < img_size[1] - 1 else img_size[1] - 1
         y_r = y_max + self.box_stretch if y_max + self.box_stretch < img_size[0] - 1 else img_size[0] - 1
 
@@ -198,6 +217,7 @@ class Lsp(Dataset):
                      y_r - y_l]
 
         return coco_bbox
+
 
     def _get_bbox(self, bbox, affine_mat):
         """
@@ -214,9 +234,10 @@ class Lsp(Dataset):
 
         ## bbox transform
         bbox = affine_transform_bbox(bbox, affine_mat)  # auto flip
-        bbox = np.clip(bbox, 0, self.output_res - 1)  # save the bbox in the image
+        bbox = np.clip(bbox, 0, self.input_res - 1)  # save the bbox in the image
 
         return bbox
+
 
     def _get_kp_2d(self, kps, flipped, affine_mat):
         # convert key points serial number
@@ -229,6 +250,18 @@ class Lsp(Dataset):
 
         # affine transform
         kps = affine_transform_kps(kps, affine_mat)
+
+        return kps
+
+
+    def _get_kp_3d(self, kps, flipped):
+        # convert key points serial number
+        kps = self._convert_kp3d_to_smpl(kps)
+
+        # flip
+        # if flipped: # TODO whether need to debug
+        #     for e in self.flip_idx:
+        #         kps[e[0]], kps[e[1]] = kps[e[1]].copy(), kps[e[0]].copy()  # key points name mirror
 
         return kps
 
@@ -257,7 +290,7 @@ class Lsp(Dataset):
 
             if (h > 0 and w > 0):  # if outside the image, discard
                 ### 1. handle bbox
-                ct = np.array([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2])  # center of bbox
+                ct = np.array([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]) / self.down_ratio  # down ratio
                 ct_int = ct.astype(np.int32)
 
                 box_wh[k] = 1. * w, 1. * h  # width and height of bbox
@@ -265,7 +298,8 @@ class Lsp(Dataset):
                 box_cd[k] = ct - ct_int  # decimal of center of bbox
                 box_mask[k] = 1  # box ind mask
 
-                radius = gaussian_radius((math.ceil(h), math.ceil(w)))
+                radius = gaussian_radius((math.ceil(h / self.down_ratio),
+                                          math.ceil(w / self.down_ratio)))
                 radius = max(0, int(radius))
                 draw_gaussian(box_hm, ct_int, radius)  # draw heat map
 
@@ -275,12 +309,21 @@ class Lsp(Dataset):
                 vis_kps = 0
                 for j in range(self.num_joints):
                     if kps[j, 2] > 0:  # key points is visible
-                        if kps[j, 0] >= 0 and kps[j, 0] < self.output_res and \
-                                kps[j, 1] >= 0 and kps[j, 1] < self.output_res:  # key points in output feature map
+                        if kps[j, 0] >= 0 and kps[j, 0] < self.input_res and \
+                                kps[j, 1] >= 0 and kps[j, 1] < self.input_res:  # key points in output feature map
                             vis_kps += 1
                             kp2d[k, j] = kps[j]
                 if vis_kps > 0:
                     kp2d_mask[k] = 1
+
+                # ### 3. handle 3d key points
+                # kp3d[k] = self._get_kp_3d(ann['kp3d'], flip)
+                # kp3d_mask[k] = 1
+                #
+                # ### 4. handle pose and shape
+                # pose[k] = ann['pose']
+                # shape[k] = ann['shape']
+                # theta_mask[k] = 1
 
                 ### groud truth
                 gt.append({
@@ -288,8 +331,7 @@ class Lsp(Dataset):
                     'kp2d': kp2d[k]
                 })
 
-        return box_hm, box_wh, box_cd, box_ind, box_mask, \
-               kp2d, kp2d_mask, gt
+        return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, gt
 
     def __getitem__(self, index):
         """
@@ -349,12 +391,12 @@ class Lsp(Dataset):
 if __name__ == '__main__':
     data = Lsp('D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp',
                   split='train',
-                  image_scale_range=(0.05, 1.1),
-                  trans_scale=0.7,
+                  image_scale_range=(1, 1.01),
+                  trans_scale=0,
                   flip_prob=-1,
-                  rot_prob=-1,
+                  rot_prob=1,
                   rot_degree=10)
-    data_loader = DataLoader(data, batch_size=1, shuffle=True)
+    data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
     for batch in data_loader:
 
@@ -370,7 +412,7 @@ if __name__ == '__main__':
         gt_id = 'gt'
         debugger.add_img(img, img_id=gt_id)
         for obj in batch['gt']:
-            debugger.add_coco_bbox(obj['bbox'][0], img_id=gt_id)
-            debugger.add_coco_hp(obj['kp2d'][0], img_id=gt_id)
+            debugger.add_bbox(obj['bbox'][0], img_id=gt_id)
+            debugger.add_kp2d(obj['kp2d'][0], img_id=gt_id)
 
         debugger.show_all_imgs(pause=True)

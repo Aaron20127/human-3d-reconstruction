@@ -71,49 +71,45 @@ def Rx_mat(theta):
     """
     cos = math.cos(theta)
     sin = math.sin(theta)
-    return np.mat([[1, 0, 0], [0, cos, -sin], [0, sin, cos]])
+    return np.array([[1, 0, 0], [0, cos, -sin], [0, sin, cos]])
 
 def Ry_mat(theta):
     """绕y轴旋转
     """
     cos = math.cos(theta)
     sin = math.sin(theta)
-    return np.mat([[cos, 0, sin], [0, 1, 0], [-sin, 0, cos]])
+    return np.array([[cos, 0, sin], [0, 1, 0], [-sin, 0, cos]])
 
 def Rz_mat(theta):
     """绕z轴旋转
     """
     cos = math.cos(theta)
     sin = math.sin(theta)
-    return np.mat([[cos, -sin, 0], [sin, cos, 0], [0, 0, 1]])
+    return np.array([[cos, -sin, 0], [sin, cos, 0], [0, 0, 1]])
 
 
-# Checks if a matrix is a valid rotation matrix.
-def isRotationMatrix(R):
-    Rt = np.transpose(R)
-    shouldBeIdentity = np.dot(Rt, R)
-    I = np.identity(3, dtype=R.dtype)
-    n = np.linalg.norm(I - shouldBeIdentity)
-    return n < 1e-6
+'''
+    purpose:
+        reflect poses, when the image is reflect by left-right
 
+    Argument:
+        poses (array, 72): 72 real number
+'''
+def reflect_pose(poses):
+    swap_inds = np.array([
+        0, 1, 2, 6, 7, 8, 3, 4, 5, 9, 10, 11, 15, 16, 17, 12, 13, 14, 18,
+        19, 20, 24, 25, 26, 21, 22, 23, 27, 28, 29, 33, 34, 35, 30, 31, 32,
+        36, 37, 38, 42, 43, 44, 39, 40, 41, 45, 46, 47, 51, 52, 53, 48, 49,
+        50, 57, 58, 59, 54, 55, 56, 63, 64, 65, 60, 61, 62, 69, 70, 71, 66,
+        67, 68
+    ])
 
-# Calculates rotation matrix to euler angles
-# The result is the same as MATLAB except the order
-# of the euler angles ( x and z are swapped ).
-def rotationMatrixToEulerAngles(R):
-    assert (isRotationMatrix(R))
+    sign_flip = np.array([
+        1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1,
+        -1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1,
+        -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, -1,
+        1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1,
+        -1, 1, -1, -1
+    ])
 
-    sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
-
-    singular = sy < 1e-6
-
-    if not singular:
-        x = math.atan2(R[2, 1], R[2, 2])
-        y = math.atan2(-R[2, 0], sy)
-        z = math.atan2(R[1, 0], R[0, 0])
-    else:
-        x = math.atan2(-R[1, 2], R[1, 1])
-        y = math.atan2(-R[2, 0], sy)
-        z = 0
-
-    return np.array([x, y, z])
+    return poses[swap_inds] * sign_flip
