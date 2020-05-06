@@ -34,7 +34,8 @@ class Hum36m(Dataset):
                 rot_prob=0.0,
                 rot_degree=0.0,
                 color_aug=True,
-                output_res=512,
+                input_res=512,
+                output_res=128,
                 max_objs = 32,
                 split = 'train', # train, val, test
                 min_vis_kps = 6,
@@ -48,12 +49,14 @@ class Hum36m(Dataset):
         self.rot_prob = rot_prob
         self.rot_degree = rot_degree
         self.color_aug = color_aug
+        self.input_res = input_res
         self.output_res = output_res
         self.max_objs = max_objs
         self.split = split  # train, val, test
         self.min_vis_kps = min_vis_kps
         self.normalize = normalize
         self.box_stretch = box_stretch
+        self.down_ratio = input_res / output_res
 
         # defaut parameters
         # key points
@@ -85,8 +88,8 @@ class Hum36m(Dataset):
 
         anno_file_path = os.path.join(self.data_path, 'annot.h5')
         with h5py.File(anno_file_path) as fp:
-            self.kp2ds = np.array(fp['gt2d']).reshape(-1,14,3).astype(np.float32)
-            self.kp3ds = np.array(fp['gt3d']).reshape(-1,14,3).astype(np.float32)
+            self.kp2ds = np.array(fp['gt2d']).reshape(-1,14,3)
+            self.kp3ds = np.array(fp['gt3d']).reshape(-1,14,3)
             self.shape = np.array(fp['shape'])
             self.pose = np.array(fp['pose'])
 
@@ -110,8 +113,8 @@ class Hum36m(Dataset):
 
     def _get_input(self, img):
         h, w = img.shape[0], img.shape[1]
-        s = self.output_res * 1.0 / max(w, h)  # defalut scale
-        t = np.array([self.output_res / 2., self.output_res / 2.])  # translate to image center
+        s = self.input_res * 1.0 / max(w, h)  # defalut scale
+        t = np.array([self.input_res / 2., self.input_res / 2.])  # translate to image center
         r = 0
         flip = False
 
@@ -122,9 +125,9 @@ class Hum36m(Dataset):
 
             ## translate
             t[0] = t[0] + self.trans_scale * (np.random.random() * 2 - 1) \
-                   * (self.output_res / 2.0 + s * w / 2.0)
+                   * (self.input_res / 2.0 + s * w / 2.0)
             t[1] = t[1] + self.trans_scale * (np.random.random() * 2 - 1) \
-                   * (self.output_res / 2.0 + s * h / 2.0)
+                   * (self.input_res / 2.0 + s * h / 2.0)
 
             if self.rot_prob > np.random.random():  # whether or not to rotate
                 r = (np.random.random() * 2 - 1) * self.rot_degree
@@ -137,7 +140,7 @@ class Hum36m(Dataset):
         # use affine transform to scale, rotate and crop image
         trans_mat = get_similarity_transform(s, t, r, flip, w, h)
         inp = cv2.warpAffine(img, trans_mat,
-                             (self.output_res, self.output_res),
+                             (self.input_res, self.input_res),
                              flags=cv2.INTER_LINEAR)
 
         # cv2.imshow('img', img)
@@ -217,7 +220,7 @@ class Hum36m(Dataset):
 
         ## bbox transform
         bbox = affine_transform_bbox(bbox, affine_mat)  # auto flip
-        bbox = np.clip(bbox, 0, self.output_res - 1)  # save the bbox in the image
+        bbox = np.clip(bbox, 0, self.input_res - 1)  # save the bbox in the image
 
         return bbox
 
@@ -272,13 +275,12 @@ class Hum36m(Dataset):
         for k in range(num_objs):
             ann = anns[k]
 
-
             bbox = self._get_bbox(ann['bbox'], trans_mat)
             h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
 
             if (h > 0 and w > 0):  # if outside the image, discard
                 ### 1. handle bbox
-                ct = np.array([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2])  # center of bbox
+                ct = np.array([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]) / self.down_ratio # down ratio
                 ct_int = ct.astype(np.int32)
 
                 box_wh[k] = 1. * w, 1. * h  # width and height of bbox
@@ -286,7 +288,8 @@ class Hum36m(Dataset):
                 box_cd[k] = ct - ct_int  # decimal of center of bbox
                 box_mask[k] = 1  # box ind mask
 
-                radius = gaussian_radius((math.ceil(h), math.ceil(w)))
+                radius = gaussian_radius((math.ceil(h / self.down_ratio),
+                                          math.ceil(w / self.down_ratio)))
                 radius = max(0, int(radius))
                 draw_gaussian(box_hm, ct_int, radius)  # draw heat map
 
@@ -297,8 +300,8 @@ class Hum36m(Dataset):
                 vis_kps = 0
                 for j in range(self.num_joints):
                     if kps[j, 2] > 0:  # key points is visible
-                        if kps[j, 0] >= 0 and kps[j, 0] < self.output_res and \
-                                kps[j, 1] >= 0 and kps[j, 1] < self.output_res:  # key points in output feature map
+                        if kps[j, 0] >= 0 and kps[j, 0] < self.input_res and \
+                                kps[j, 1] >= 0 and kps[j, 1] < self.input_res:  # key points in output feature map
                             vis_kps += 1
                             kp2d[k, j] = kps[j]
                 if vis_kps > 0:
@@ -314,6 +317,7 @@ class Hum36m(Dataset):
                 pose[k] = ann['pose']
                 shape[k] = ann['shape']
                 theta_mask[k] = 1
+
 
                 ### groud truth
                 gt.append({
@@ -394,12 +398,12 @@ class Hum36m(Dataset):
 if __name__ == '__main__':
     data = Hum36m('D:/paper/human_body_reconstruction/datasets/human_reconstruction/hum36m-toy',
                split='train',
-               image_scale_range=(0.05, 1.1),
-               trans_scale=0.7,
+               image_scale_range=(1.0, 1.01),
+               trans_scale=0,
                flip_prob=-1,
                rot_prob=-1,
                rot_degree=10)
-    data_loader = DataLoader(data, batch_size=1, shuffle=True)
+    data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
     for batch in data_loader:
 
@@ -412,10 +416,17 @@ if __name__ == '__main__':
         debugger.add_blend_img(img, gt_box_hm, 'gt_box_hm')
 
         # gt bbox, key points
-        gt_id = 'gt'
+        gt_id = 'gt_bbox_kp2d'
         debugger.add_img(img, img_id=gt_id)
         for obj in batch['gt']:
-            debugger.add_coco_bbox(obj['bbox'][0], img_id=gt_id)
-            debugger.add_coco_hp(obj['kp2d'][0], img_id=gt_id)
+            debugger.add_bbox(obj['bbox'][0], img_id=gt_id)
+            debugger.add_kp2d(obj['kp2d'][0], img_id=gt_id)
+
+        # gt smpl
+        gt_id = 'smpl'
+        debugger.add_img(img, img_id=gt_id)
+        for obj in batch['gt']:
+            debugger.add_smpl(obj['pose'][0], obj['shape'][0], img_id=gt_id)
+
 
         debugger.show_all_imgs(pause=True)

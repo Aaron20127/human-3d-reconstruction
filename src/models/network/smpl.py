@@ -12,19 +12,20 @@ import sys
 import os
 import numpy as np
 import torch.nn as nn
+import cv2
 
 abspath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, abspath + '/../')
+sys.path.insert(0, abspath + '/../../')
 
 from model_util import batch_global_rigid_transformation, batch_rodrigues, batch_lrotmin, reflect_pose
-
+from utils.render import rotation_x, weak_perspective, weak_perspective_render_obj
 
 class SMPL(nn.Module):
     def __init__(self, model_path,
-                       weight_batch_size=64*128*128,
-                       joint_type='cocoplus',
-                       obj_saveable=False):
-         super(SMPL, self).__init__()
+                       weight_batch_size=32*1,
+                       joint_type='cocoplus'):
+        super(SMPL, self).__init__()
 
         if joint_type not in ['cocoplus', 'lsp']:
             msg = 'unknow joint type: {}, it must be either "cocoplus" or "lsp"'.format(joint_type)
@@ -32,14 +33,11 @@ class SMPL(nn.Module):
 
         self.model_path = model_path
         self.joint_type = joint_type
-        with open(model_path, 'rb') as reader:
+        with open(model_path, 'rb') as f:
             # model = json.load(reader)
-            model = pickle.load(reader, encoding='iso-8859-1')
+            model = pickle.load(f, encoding='iso-8859-1')
 
-        if obj_saveable:
-            self.faces = model['f']
-        else:
-            self.faces = None
+        self.faces = model['f']
 
         np_v_template = np.array(model['v_template'], dtype=np.float)
         self.register_buffer('v_template', torch.from_numpy(np_v_template).float())
@@ -77,7 +75,19 @@ class SMPL(nn.Module):
 
         self.register_buffer('e3', torch.eye(3).float())
 
+
+        # rotate x axis
+        sin = np.sin(np.pi)
+        cos = np.cos(np.pi)
+        np_Rx = np.array([
+            [1.0, 0.0, 0.0],
+            [0.0, cos, sin],
+            [0.0, -sin, cos],
+        ])
+        self.register_buffer('Rx', torch.from_numpy(np_Rx).float())
+
         self.cur_device = None
+
 
     def save_obj(self, verts, obj_mesh_name):
         if not self.faces:
@@ -91,7 +101,7 @@ class SMPL(nn.Module):
             for f in self.faces:  # Faces are 1-based, not 0-based in obj files
                 fp.write('f %d %d %d\n' % (f[0] + 1, f[1] + 1, f[2] + 1))
 
-    def forward(self, beta, theta, get_skin=False):
+    def forward(self, beta, theta):
         if not self.cur_device:
             device = beta.device
             self.cur_device = torch.device(device.type, device.index)
@@ -124,54 +134,51 @@ class SMPL(nn.Module):
 
         joints = torch.stack([joint_x, joint_y, joint_z], dim=2)
 
-        if get_skin:
-            return verts, joints, Rs
-        else:
-            return joints
+        # # rotate x
+        # rx_verts = torch.matmul(verts, self.Rx.T)
+        # rx_joints = torch.matmul(joints, self.Rx.T)
+
+        return verts, joints, Rs, self.faces
+
 
 
 if __name__ == '__main__':
     device = torch.device('cuda', 0)
-    smpl = SMPL(args.smpl_model, obj_saveable=True).to(device)
-    pose = np.array([
-        1.22162998e+00, 1.17162502e+00, 1.16706634e+00,
-        -1.20581151e-03, 8.60930011e-02, 4.45963144e-02,
-        -1.52801601e-02, -1.16911056e-02, -6.02894090e-03,
-        1.62427306e-01, 4.26302850e-02, -1.55304456e-02,
-        2.58729942e-02, -2.15941742e-01, -6.59851432e-02,
-        7.79098943e-02, 1.96353287e-01, 6.44420758e-02,
-        -5.43042570e-02, -3.45508829e-02, 1.13200583e-02,
-        -5.60734887e-04, 3.21716577e-01, -2.18840033e-01,
-        -7.61821344e-02, -3.64610642e-01, 2.97633410e-01,
-        9.65453908e-02, -5.54007106e-03, 2.83410680e-02,
-        -9.57194716e-02, 9.02515948e-02, 3.31488043e-01,
-        -1.18847653e-01, 2.96623230e-01, -4.76809204e-01,
-        -1.53382001e-02, 1.72342166e-01, -1.44332021e-01,
-        -8.10869411e-02, 4.68325168e-02, 1.42248288e-01,
-        -4.60898802e-02, -4.05981280e-02, 5.28727695e-02,
-        3.20133418e-02, -5.23784310e-02, 2.41559884e-03,
-        -3.08033824e-01, 2.31431410e-01, 1.62540793e-01,
-        6.28208935e-01, -1.94355965e-01, 7.23800480e-01,
-        -6.49612308e-01, -4.07179184e-02, -1.46422181e-02,
-        4.51475441e-01, 1.59122205e+00, 2.70355493e-01,
-        2.04248756e-01, -6.33800551e-02, -5.50178960e-02,
-        -1.00920045e+00, 2.39532292e-01, 3.62904727e-01,
-        -3.38783532e-01, 9.40650925e-02, -8.44506770e-02,
-        3.55101633e-03, -2.68924050e-02, 4.93676625e-02], dtype=np.float)
+    smpl = SMPL("D:/paper/human_body_reconstruction/code/master/data/neutral_smpl_with_cocoplus_reg.pkl",).to(device)
 
-    beta = np.array([-0.25349993, 0.25009069, 0.21440795, 0.78280628, 0.08625954,
-                     0.28128183, 0.06626327, -0.26495767, 0.09009246, 0.06537955])
 
+    ## get pose shape
+    pose = (np.random.rand(24,3) - 0.5) * 0.4
+    beta = (np.random.rand(10) - 0.5) * 0.6
     vbeta = torch.tensor(np.array([beta])).float().to(device)
     vpose = torch.tensor(np.array([pose])).float().to(device)
 
-    verts, j, r = smpl(vbeta, vpose, get_skin=True)
+    ## get vertices and joints
+    verts, joints, r, faces = smpl(vbeta, vpose)
 
-    smpl.save_obj(verts[0].cpu().numpy(), './mesh.obj')
+    ## render
+    camera = torch.tensor([1, 0, 0]).to(device)  # 弱透视投影参数s,cx,cy
+    verts = weak_perspective(verts[0], camera).detach().cpu().numpy() # 对x,y弱透视投影，投影，平移，放缩
+    # verts = rotation_x(verts.T, np.pi)
+    J = weak_perspective(joints[0], camera).detach().cpu().numpy()
+    # J = rotation_x(J.T, np.pi)
 
-    rpose = reflect_pose(pose)
-    vpose = torch.tensor(np.array([rpose])).float().to(device)
+    obj = {
+        'verts': verts,  # 模型顶点
+        'faces': faces,  # 面片序号
+        'J': J,  # 3D关节点
+    }
 
-    verts, j, r = smpl(vbeta, vpose, get_skin=True)
-    smpl.save_obj(verts[0].cpu().numpy(), './rmesh.obj')
+    # 弱透视投影
+    color, depth = weak_perspective_render_obj(obj, width=512, height=512, show_smpl_joints=True)
+
+    # show
+    cv2.imshow('img', color)
+    cv2.waitKey(0)
+
+    # rpose = reflect_pose(pose)
+    # vpose = torch.tensor(np.array([rpose])).float().to(device)
+    #
+    # verts, j, r = smpl(vbeta, vpose, get_skin=True)
+    # smpl.save_obj(verts[0].cpu().numpy(), './rmesh.obj')
 

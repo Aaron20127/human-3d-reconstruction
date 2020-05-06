@@ -1,6 +1,17 @@
 import numpy as np
 import cv2
+import torch
+import os
+import sys
+import math
 
+abspath = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, abspath + '/../')
+
+from models.network.smpl import SMPL
+from .smpl_np import SMPL_np
+from .render import rotation_x, weak_perspective, weak_perspective_render_obj
+from .util import Clock, Rx_mat, Ry_mat, Rz_mat, rotationMatrixToEulerAngles
 
 class Debugger(object):
   def __init__(self, theme='white', down_ratio=4):
@@ -14,6 +25,7 @@ class Debugger(object):
       self.colors = self.colors.reshape(-1)[::-1].reshape(len(colors), 1, 1, 3)
       self.colors = np.clip(self.colors, 0., 0.6 * 255).astype(np.uint8)
 
+    self.smpl = SMPL("D:/paper/human_body_reconstruction/code/master/data/neutral_smpl_with_cocoplus_reg.pkl").cuda()
 
     self.names = ['p']
     self.num_joints = 19
@@ -90,7 +102,7 @@ class Debugger(object):
     color_map = cv2.resize(color_map, (output_res[0], output_res[1]))
     return color_map
 
-  def add_coco_bbox(self, bbox, cat=0, conf=1, show_txt=True, img_id='default'):
+  def add_bbox(self, bbox, cat=0, conf=1, show_txt=True, img_id='default'):
     bbox = np.array(bbox, dtype=np.int32)
     # cat = (int(cat) + 1) % 80
     cat = int(cat)
@@ -110,16 +122,7 @@ class Debugger(object):
       cv2.putText(self.imgs[img_id], txt, (bbox[0], bbox[1] - 2), 
                   font, 0.5, (0, 0, 0), thickness=1, lineType=cv2.LINE_AA)
 
-  def add_coco_hp(self, points, img_id='default'): 
-    # points = np.array(points, dtype=np.int32)
-    # for j in range(self.num_joints):
-    #   cv2.circle(self.imgs[img_id],
-    #              (points[j, 0], points[j, 1]), 3, self.colors_hp[j], -1)
-    # for j, e in enumerate(self.edges):
-    #   if points[e].min() > 0:
-    #     cv2.line(self.imgs[img_id], (points[e[0], 0], points[e[0], 1]),
-    #                   (points[e[1], 0], points[e[1], 1]), self.ec[j], 2,
-    #                   lineType=cv2.LINE_AA)
+  def add_kp2d(self, points, img_id='default'):
     points = np.array(points, dtype=np.int32)
     for j in range(self.num_joints):
         if points[j, 2] > 0:
@@ -132,6 +135,65 @@ class Debugger(object):
                      lineType=cv2.LINE_AA)
 
 
+  def add_smpl(self, pose, shape, camera=[0.8, 0, 0], img_id='default'):
+    clk = Clock()
+
+    camera = torch.tensor(camera, dtype=torch.float32).cuda()
+    pose = torch.tensor(pose, dtype=torch.float32).reshape(24,3).cuda()
+    shape = torch.tensor(shape, dtype=torch.float32).reshape(1,10).cuda()
+
+    ## rotate from x axis, just for view. note pyrender y axis from bottom to top
+    rot_v = pose[0].detach().clone().cpu().numpy()
+    R_mat, _ = cv2.Rodrigues(rot_v)
+    R_mat = Rx_mat(np.pi) * R_mat
+    rot_v, _ = cv2.Rodrigues(R_mat)
+    pose[0] = torch.tensor(rot_v.flatten())
+
+    # pose[0][0] = pose[0][0] + math.pi
+    verts, joints, r, faces = self.smpl(shape, pose)
+
+    ## render
+    verts = weak_perspective(verts[0], camera).detach().cpu().numpy()  # 对x,y弱透视投影，投影，平移，放缩
+    J = weak_perspective(joints[0], camera).detach().cpu().numpy()
+
+    obj = {
+        'verts': verts,  # 模型顶点
+        'faces': faces,  # 面片序号
+        'J': J,  # 3D关节点
+    }
+
+    # 弱透视投影
+    color, depth = weak_perspective_render_obj(obj,
+                  width=512, height=512, show_smpl_joints=True, use_viewer=False)
+
+    print('smpl time: {}'.format(clk.elapsed()))
+    # add image
+    self.add_img(color, img_id)
+
+
+
+  def add_smpl_np(self, pose, shape, camera=[1,0,0], img_id='default'):
+    clk = Clock()
+
+    smpl_np = SMPL_np("D:/paper/human_body_reconstruction/code/master/data/neutral_smpl_with_cocoplus_reg.pkl",
+                      joint_type='cocoplus')
+    smpl_np.set_params(beta=shape.detach().cpu().numpy().flatten(), pose=pose.detach().cpu().numpy())
+
+    obj = smpl_np.get_obj()
+
+    # 弱透视投影
+    color, depth = weak_perspective_render_obj(obj,
+                  width=512, height=512, show_smpl_joints=True)
+
+
+    print('smpl_np time: {}'.format(clk.elapsed()))
+    # cv2.imshow('smpl_np',color)
+    # cv2.waitKey(0)
+
+    # add image
+    self.add_img(color, img_id)
+
+
   def show_all_imgs(self, pause=False, time=0):
       for i, v in self.imgs.items():
          cv2.imshow('{}'.format(i), v)
@@ -142,7 +204,8 @@ class Debugger(object):
 
   def save_img(self, imgId='default', path='./cache/debug/'):
     cv2.imwrite(path + '{}.png'.format(imgId), self.imgs[imgId])
-    
+
+
   def save_all_imgs(self, path='./cache/debug/', prefix='', genID=False):
     for i, v in self.imgs.items():
       cv2.imwrite(path + '/{}{}.png'.format(prefix, i), v)
