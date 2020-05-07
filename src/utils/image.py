@@ -3,6 +3,17 @@ import cv2
 import random
 import copy
 
+# data color augment
+_data_rng = np.random.RandomState(123)
+
+_eig_val = np.array([0.2141788, 0.01817699, 0.00341571],
+                    dtype=np.float32)
+_eig_vec = np.array([
+    [-0.58752847, -0.69563484, 0.41340352],
+    [-0.5832747, 0.00994535, -0.81221408],
+    [-0.56089297, 0.71832671, 0.41158938]
+], dtype=np.float32)
+
 def flip(img):
     return img[:, :, ::-1].copy()
 
@@ -299,15 +310,15 @@ def contrast_(data_rng, image, gs, gs_mean, var):
     blend_(alpha, image, gs_mean)
 
 
-def color_aug(data_rng, image, eig_val, eig_vec):
+def color_aug(image):
     functions = [brightness_, contrast_, saturation_]
     random.shuffle(functions)
 
     gs = grayscale(image)
     gs_mean = gs.mean()
     for f in functions:
-        f(data_rng, image, gs, gs_mean, 0.4)
-    lighting_(data_rng, image, 0.1, eig_val, eig_vec)
+        f(_data_rng, image, gs, gs_mean, 0.4)
+    lighting_(_data_rng, image, 0.1, _eig_val, _eig_vec)
 
 
 def addCocoAnns(anns, img, draw_skeleton=True, draw_key_points=True, draw_bbox=True):

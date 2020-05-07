@@ -67,15 +67,6 @@ class Hum36m(Dataset):
         self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
                          [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
 
-        # data color augment
-        self._data_rng = np.random.RandomState(123)
-        self._eig_val = np.array([0.2141788, 0.01817699, 0.00341571],
-                                 dtype=np.float32)
-        self._eig_vec = np.array([
-            [-0.58752847, -0.69563484, 0.41340352],
-            [-0.5832747, 0.00994535, -0.81221408],
-            [-0.56089297, 0.71832671, 0.41158938]
-        ], dtype=np.float32)
 
         # load data set
         self._load_data_set()
@@ -150,7 +141,7 @@ class Hum36m(Dataset):
         # normalize, color augment and standardize image
         inp = (inp.astype(np.float32) / 255.)
         if self.color_aug:  # color augment
-            color_aug(self._data_rng, inp, self._eig_val, self._eig_vec)
+            color_aug(inp)
 
         if self.normalize:
             inp = inp * 2.0 - 1.0  # normalize
