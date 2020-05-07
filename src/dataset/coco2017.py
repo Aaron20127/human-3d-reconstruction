@@ -94,9 +94,10 @@ class COCO2017(Dataset):
             idxs = self.coco.getAnnIds(imgIds=[img_id], catIds=1, iscrowd=0)
             anns = self.coco.loadAnns(ids=idxs)
             for ann in anns:
-                if ann['num_keypoints'] > self.min_vis_kps:
+                if ann['num_keypoints'] >= self.min_vis_kps:
                     self.images.append(img_id)
                     break
+
             if  self.max_data_len > 0 and \
                 self.max_data_len <= len(self.images):
                 break
@@ -215,6 +216,7 @@ class COCO2017(Dataset):
 
         return bbox
 
+
     def _get_kp_2d(self, kps, flipped, affine_mat):
         # convert key points serial number
         kps = self._convert_kp2d_to_smpl(kps)
@@ -229,6 +231,7 @@ class COCO2017(Dataset):
 
         return kps
 
+
     def _get_kp_3d(self, kps, flipped):
         # convert key points serial number
         kps = self._convert_kp3d_to_smpl(kps)
@@ -239,6 +242,7 @@ class COCO2017(Dataset):
         #         kps[e[0]], kps[e[1]] = kps[e[1]].copy(), kps[e[0]].copy()  # key points name mirror
 
         return kps
+
 
     def _get_label(self, trans_mat, flip, anns):
         box_hm = np.zeros((self.output_res, self.output_res), dtype=np.float32)
@@ -298,6 +302,7 @@ class COCO2017(Dataset):
 
         return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, gt
 
+
     def __getitem__(self, index):
         """
         return: {
@@ -352,12 +357,12 @@ class COCO2017(Dataset):
 if __name__ == '__main__':
     data = COCO2017('D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2017',
                split='train',
-               image_scale_range=(1, 1.01),
-               trans_scale=0,
+               image_scale_range=(0.6, 1.2),
+               trans_scale=0.5,
                flip_prob=-1,
                rot_prob=-1,
                rot_degree=10,
-               max_data_len=50)
+               max_data_len=-1)
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
     for batch in data_loader:
