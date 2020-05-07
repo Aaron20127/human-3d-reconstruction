@@ -40,7 +40,8 @@ class Hum36m(Dataset):
                 split = 'train', # train, val, test
                 min_vis_kps = 6,
                 normalize = True,
-                box_stretch = 10):
+                box_stretch = 10,
+                max_data_len = -1):
 
         self.data_path = data_path
         self.image_scale_range = image_scale_range
@@ -57,6 +58,7 @@ class Hum36m(Dataset):
         self.normalize = normalize
         self.box_stretch = box_stretch
         self.down_ratio = input_res / output_res
+        self.max_data_len = max_data_len
 
         # defaut parameters
         # key points
@@ -86,6 +88,11 @@ class Hum36m(Dataset):
 
             for img_name in np.array(fp['imagename']):
                 self.images.append(img_name.decode())
+
+                if self.max_data_len > 0 and \
+                   self.max_data_len <= len(self.images):
+                    break
+
             self.img_dir = os.path.join(self.data_path, 'image')
 
         print('loaded {} samples (t={:.2f}s)'.format(len(self.images), clk.elapsed()))
@@ -401,7 +408,8 @@ if __name__ == '__main__':
                trans_scale=0,
                flip_prob=1,
                rot_prob=-1,
-               rot_degree=10)
+               rot_degree=10,
+               max_data_len=10)
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
     for batch in data_loader:

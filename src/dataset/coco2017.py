@@ -97,7 +97,8 @@ class COCO2017(Dataset):
                 if ann['num_keypoints'] > self.min_vis_kps:
                     self.images.append(img_id)
                     break
-            if self.max_data_len <= len(self.images):
+            if  self.max_data_len > 0 and \
+                self.max_data_len <= len(self.images):
                 break
 
         print('loaded {} samples (t={:.2f}s)'.format(len(self.images), clk.elapsed()))
