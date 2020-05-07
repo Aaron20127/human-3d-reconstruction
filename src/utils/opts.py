@@ -11,6 +11,7 @@ import numpy as np
 
 parser = argparse.ArgumentParser()
 agt = parser.add_argument
+root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
 
 #
 # # basic experiment setting
@@ -91,33 +92,44 @@ agt = parser.add_argument
 
 
 
-## system
-agt('--gpus', default='0', help='-1 for CPU, use comma for multiple gpus')
+################# args #################
+# system
+agt('--gpus', default='0,1', help='-1 for CPU, use comma for multiple gpus')
 agt('--not_cuda_benchmark', action='store_true', help='disable when the input size is not fixed.')
 agt('--seed', type=int, default=317, help='random seed')
 
+# network
+agt('--use_dcn', action='store_true', help='whether or not to use the DeformConv convolution')
 
+# log
+agt('--exp_id', default='demo', help='experiments name.')
+agt('--note', default='none', help='some notes for the experiment.')
 
+# train
+agt('--pre_trained_model', default='', help='Pretraining model')
+agt('--lr', type=float, default=1.25e-4, help='learning rate for batch size 32.')
+agt('--lr_step', type=str, default='90,120', help='drop learning rate by 10.')
+agt('--batch_size_coco', type=int, default=1, help='.')
+agt('--batch_size_lsp', type=int, default=1, help='.')
+agt('--batch_size_hum36m', type=int, default=1, help='.')
 
-
-
-
-
-
-
-
-
-
-# other parameters
 opt = parser.parse_args()
 
-# network
-heads = {'box_hm':1, 'box_wh':2, 'box_dc':2, 'pose':72, 'shape':10, 'camera':6}
 
-# dataset path
+
+################ network ################
+opt.heads = {'box_hm':1, 'box_wh':2, 'box_dc':2, 'pose':72, 'shape':10, 'camera':6}
+opt.smpl_path = os.path.join(root_dir, 'data', 'neutral_smpl_with_cocoplus_reg.pkl')
+
+
+
+################ dataset ################
 # opt.train_set =  ['coco2014', 'coco2017', 'lsp', 'lsp_ext', 'hum3.6m']
-opt.train_set =  ['coco2017', 'lsp', 'hum3.6m']
+opt.coco_data_set=['coco2017']
+opt.lsp_data_set=['lsp']
+opt.hum36m_data_set=['hum36m']
 
+opt.train_set =  ['coco2017', 'lsp', 'hum36m']
 opt.train_adv_set = ['mosh']
 opt.eval_set = ['up3d']
 
@@ -135,12 +147,10 @@ opt.data_set_path = {
 }
 
 
-# opt.root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
-# opt.exp_dir = os.path.join(opt.root_dir, 'exp')
-# # opt.save_dir = os.path.join(opt.exp_dir, opt.exp_id, time.strftime('%Y-%m-%d_%H-%M-%S'))
-# dir_name = opt.title.replace(" ", "_") + '_' + time.strftime('%Y-%m-%d_%H-%M-%S')
-# opt.save_dir = os.path.join(opt.exp_dir, dir_name)
-# opt.debug_dir = os.path.join(opt.save_dir, 'debug')
-# print('The output will be saved to ', opt.save_dir)
-#
-# haha = 'ls'
+############### log and save ################
+root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
+exp_dir = os.path.join(root_dir, 'exp')
+dir_name = opt.exp_id.replace(" ", "_")
+opt.save_dir = os.path.join(exp_dir, dir_name)
+opt.debug_dir = os.path.join(opt.save_dir, 'debug')
+

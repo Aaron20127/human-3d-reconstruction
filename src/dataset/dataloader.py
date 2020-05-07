@@ -7,20 +7,20 @@ sys.path.insert(0, abspath + '/../')
 
 from torch.utils.data import DataLoader, ConcatDataset
 
-import  utils.opts
+from  utils.opts import opt
 
 from .coco2017 import COCO2017
-# from coco2014_dataset import COCO2014
+# from .coco2014 import COCO2014
 from .lsp import Lsp
-# from lsp_ext_dataset import LspExt
+# from .lsp_ext import LspExt
 from .hum36m import Hum36m
 
 
 
 def coco_data_loader():
     datasets = []
-    for name in opts.train_set:
-        path = opts.data_set_path[name]
+    for name in opt.coco_data_set:
+        path = opt.data_set_path[name]
         if name == 'coco2014':
             dataset = COCO2014(path)
         elif name == 'coco2017':
@@ -35,7 +35,7 @@ def coco_data_loader():
                 max_data_len=-1
             )
         else:
-            msg = 'invalid dataset'
+            msg = 'invalid dataset {}.'.format(name)
             sys.exit(msg)
 
         datasets.append(dataset)
@@ -44,18 +44,18 @@ def coco_data_loader():
 
     return DataLoader(
         dataset=new_datasets,
-        batch_size=opts.batch_size_coco,
+        batch_size=opt.batch_size_coco,
         shuffle=True,
         drop_last=True,
         pin_memory=True,
-        num_workers=opts.num_worker
+        num_workers=opt.num_worker
     )
 
 
 def lsp_data_loader():
     datasets = []
-    for name in opts.lsp_data_set:
-        path = opts.data_set_path[name]
+    for name in opt.lsp_data_set:
+        path = opt.data_set_path[name]
         if name == 'lsp':
             dataset = Lsp(
                 data_path=path,
@@ -71,7 +71,7 @@ def lsp_data_loader():
         elif name == 'lsp_ext':
             dataset = LspExt(path)
         else:
-            msg = 'invalid dataset.'
+            msg = 'invalid dataset {}.'.format(name)
             sys.exit(msg)
 
         datasets.append(dataset)
@@ -80,18 +80,18 @@ def lsp_data_loader():
 
     return DataLoader(
         dataset=new_datasets,
-        batch_size=opts.batch_size_lsp,
+        batch_size=opt.batch_size_lsp,
         shuffle=True,
         drop_last=True,
         pin_memory=True,
-        num_workers=opts.num_worker
+        num_workers=opt.num_worker
     )
 
 
 def hum36m_data_loader():
     datasets = []
-    for name in opts.hum36m_data_set:
-        path = opts.data_set_path[name]
+    for name in opt.hum36m_data_set:
+        path = opt.data_set_path[name]
         if name == 'hum36m':
             dataset = Hum36m(
                 data_path=path,
@@ -105,7 +105,7 @@ def hum36m_data_loader():
                 max_data_len=50
             )
         else:
-            msg = 'invalid dataset.'
+            msg = 'invalid dataset {}.'.format(name)
             sys.exit(msg)
 
         datasets.append(dataset)
@@ -114,11 +114,11 @@ def hum36m_data_loader():
 
     return DataLoader(
         dataset=new_datasets,
-        batch_size=opts.batch_size_hum36m,
+        batch_size=opt.batch_size_hum36m,
         shuffle=True,
         drop_last=True,
         pin_memory=True,
-        num_workers=opts.num_worker
+        num_workers=opt.num_worker
     )
 
 

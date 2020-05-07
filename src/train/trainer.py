@@ -28,38 +28,39 @@ class HMRTrainer(object):
         self.build_model(opt)
         self.create_data_loader(opt)
 
+
     def build_model(self, opt):
-        print('Starting building model.')
+        print('start building model ...')
 
         ### 1.object detection model
-        print('Building object detection model.')
         model = HmrNetBase()
         optimizer = torch.optim.Adam(model.parameters(), opt.lr)
-        if os.path.exists(opt.load_model):
-            model, optimizer, start_epoch = \
+        if os.path.exists(opt.pre_trained_model):
+            model, optimizer, self.start_epoch = \
               self.load_model(
-                  model, opt.load_model,
+                  model, opt.pre_trained_model,
                   optimizer, opt.resume,
                   opt.lr, opt.lr_step
               )
 
         self.model = model
         self.optimizer = optimizer
-        self.start_epoch = start_epoch
         self.model_with_loss = \
-            nn.DataParallel(ModelWithLoss(model, HmrLoss)).cuda()
+            nn.DataParallel(ModelWithLoss(model, HmrLoss)).to(opt.device)
 
         show_net_para(model)
-        print('Finished build model.')
+        print('finished build model.')
 
 
     def create_data_loader(self, opt):
-        print('Create data loader.')
+        print('start creating data loader ...')
 
         self.train_loader = multi_data_loader(
             [coco_data_loader(),
              lsp_data_loader(),
              hum36m_data_loader()])
+
+        print('finished create data loader.')
 
 
     def run_train(self, epoch):
@@ -170,7 +171,7 @@ class HMRTrainer(object):
 
 
     def train(self):
-        print('Starting training ...')
+        print('start training ...')
 
         opt = self.opt
         start_epoch = self.start_epoch

@@ -75,17 +75,6 @@ class SMPL(nn.Module):
 
         self.register_buffer('e3', torch.eye(3).float())
 
-
-        # rotate x axis
-        sin = np.sin(np.pi)
-        cos = np.cos(np.pi)
-        np_Rx = np.array([
-            [1.0, 0.0, 0.0],
-            [0.0, cos, sin],
-            [0.0, -sin, cos],
-        ])
-        self.register_buffer('Rx', torch.from_numpy(np_Rx).float())
-
         self.cur_device = None
 
 

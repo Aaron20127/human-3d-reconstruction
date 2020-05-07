@@ -30,8 +30,10 @@ class Logger(object):
                     if not name.startswith('_'))
         file_name = os.path.join(opt.save_dir, 'opt.txt')
         with open(file_name, 'wt') as opt_file:
-            opt_file.write('Title:\n')
-            opt_file.write('    {}\n'.format(opt.title))
+            opt_file.write('{}\n\n'.format(time.strftime('%Y-%m-%d_%H-%M-%S')))
+
+            opt_file.write('Note:\n')
+            opt_file.write('    {}\n'.format(opt.note))
 
             opt_file.write('\nPytorch:\n')
             opt_file.write('    torch version: {}\n'.format(torch.__version__))

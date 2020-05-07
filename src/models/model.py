@@ -148,11 +148,11 @@ class HmrNetBase(nn.Module):
 
     def _create_sub_modules(self):
         self.encoder = DlaSeg(opt.heads,
-                              not_use_dcn=opt.not_use_dcn)
-        print('finished create the encoder module ...')
+                              not_use_dcn=not opt.use_dcn)
+        print('finished create encoder module.')
 
-        self.smpl = SMPL(opt.smpl_model_path)
-        print('finished create the smpl module ...')
+        self.smpl = SMPL(opt.smpl_path)
+        print('finished create smpl module.')
 
 
     def forward(self, input):
