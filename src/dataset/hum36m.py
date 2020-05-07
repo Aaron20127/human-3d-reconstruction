@@ -183,7 +183,8 @@ class Hum36m(Dataset):
         kps[self.not_exist_kps] = 0
         return kps
 
-    def _generate_bbox(self, kp, img_size):  # TODO use object detection to get bbox
+    def _generate_bbox(self, kp, flip, affine_mat):  # TODO use object detection to get bbox
+        kp = self._get_kp_2d(kp, flip, affine_mat)
 
         v_kp = kp[kp[:, 2] > 0]
         x_min = v_kp[:, 0].min()
@@ -193,8 +194,8 @@ class Hum36m(Dataset):
 
         x_l = x_min - self.box_stretch if x_min - self.box_stretch > 0 else 0
         y_l = y_min - self.box_stretch if y_min - self.box_stretch > 0 else 0  # head special handle
-        x_r = x_max + self.box_stretch if x_max + self.box_stretch < img_size[1] - 1 else img_size[1] - 1
-        y_r = y_max + self.box_stretch if y_max + self.box_stretch < img_size[0] - 1 else img_size[0] - 1
+        x_r = x_max + self.box_stretch if x_max + self.box_stretch < self.input_res - 1 else self.input_res - 1
+        y_r = y_max + self.box_stretch if y_max + self.box_stretch < self.input_res - 1 else self.input_res - 1
 
         coco_bbox = [x_l,
                      y_l,
@@ -217,8 +218,8 @@ class Hum36m(Dataset):
                          bbox[1] + bbox[3]], dtype=np.float32)
 
         ## bbox transform
-        bbox = affine_transform_bbox(bbox, affine_mat)  # auto flip
-        bbox = np.clip(bbox, 0, self.input_res - 1)  # save the bbox in the image
+        # bbox = affine_transform_bbox(bbox, affine_mat)  # auto flip
+        # bbox = np.clip(bbox, 0, self.input_res - 1)  # save the bbox in the image
 
         return bbox
 
@@ -370,7 +371,7 @@ class Hum36m(Dataset):
 
         ## 3. handle output of network, namely label
         kp2d = self.kp2ds[index]
-        coco_bbox = self._generate_bbox(kp2d, img.shape)
+        coco_bbox = self._generate_bbox(kp2d, flip, trans_mat)
         anns = [{
             'bbox': coco_bbox,
             'kp2d': kp2d,
@@ -407,9 +408,10 @@ if __name__ == '__main__':
                image_scale_range=(1.0, 1.01),
                trans_scale=0,
                flip_prob=1,
-               rot_prob=-1,
-               rot_degree=10,
-               max_data_len=10)
+               rot_prob=0.5,
+               rot_degree=45,
+               box_stretch=20,
+               max_data_len=50)
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
     for batch in data_loader:
