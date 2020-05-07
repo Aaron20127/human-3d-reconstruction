@@ -233,8 +233,6 @@ class SMPL_np():
     }
 
 if __name__ == '__main__':
-  time_1 = time.time()
-
   smpl = SMPL_np("D:/paper/human_body_reconstruction/code/master/data/neutral_smpl_with_cocoplus_reg.pkl")
   np.random.seed(9608)
 
@@ -243,8 +241,6 @@ if __name__ == '__main__':
 
   smpl.set_params(beta=beta, pose=pose)
 
-  obj = smpl.get_obj()
-  time_2 = time.time()
 
 
   color, depth = weak_perspective_render_obj(obj, width=512, height=512, show_smpl_joints=False)

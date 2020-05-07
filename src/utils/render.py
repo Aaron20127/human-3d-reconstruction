@@ -4,6 +4,57 @@ import trimesh
 import pyrender
 
 
+def perspective_render_obj(obj, cam=[512,512], width=512,height=512, show_smpl_joints=False):
+    scene = pyrender.Scene()
+
+    # add camera
+    camera_pose = np.array([
+        [1.0,  0.0,  0.0,   0.0],
+        [0.0,  1.0,  0.0,   -0.3],
+        [0.0,  0.0,  1.0,   2.0],
+        [0.0,  0.0,  0.0,   1.0],
+    ])
+    camera=pyrender.camera.IntrinsicsCamera(
+            fx=cam[0], fy=cam[1],
+            cx=width/2, cy=height/2)
+    scene.add(camera, pose=camera_pose)
+
+    # add verts and faces
+    vertex_colors = np.ones([obj['verts'].shape[0], 4]) * [0.3, 0.3, 0.3, 0.8]
+    tri_mesh = trimesh.Trimesh(obj['verts'], obj['faces'],
+                               vertex_colors=vertex_colors)
+    mesh_obj = pyrender.Mesh.from_trimesh(tri_mesh)
+
+    scene.add(mesh_obj)
+
+    # add joints
+    if show_smpl_joints:
+        ms = trimesh.creation.uv_sphere(radius=0.015)
+        ms.visual.vertex_colors = [1.0, 0.0, 0.0]
+
+        pts = obj['J']
+        # pts = pts[22,:]
+
+        tfs = np.tile(np.eye(4), (len(pts), 1, 1))
+        tfs[:, :3, 3] = pts
+
+        mesh_J = pyrender.Mesh.from_trimesh(ms, poses=tfs)
+        scene.add(mesh_J)
+
+    # pyrender.Viewer(scene, use_raymond_lighting=True)
+
+    # add light
+    light = pyrender.PointLight(color=[1.0, 1.0, 1.0], intensity=4*camera_pose[2,3])
+    scene.add(light, pose=camera_pose)
+
+
+    # render
+    r = pyrender.OffscreenRenderer(viewport_width=width,viewport_height = height,point_size = 1.0)
+    color, depth = r.render(scene)
+
+    return color, depth
+
+
 def weak_perspective_render_obj(obj, width=512, height=512, show_smpl_joints=False, use_viewer=False):
     """
     Argument:

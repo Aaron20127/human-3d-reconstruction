@@ -10,8 +10,8 @@ sys.path.insert(0, abspath + '/../')
 
 from models.network.smpl import SMPL
 from .smpl_np import SMPL_np
-from .render import rotation_x, weak_perspective, weak_perspective_render_obj
-from .util import Clock, Rx_mat
+from .render import weak_perspective, weak_perspective_render_obj, perspective_render_obj
+from .util import Clock, Rx_mat, reflect_pose
 
 class Debugger(object):
   def __init__(self, theme='white', down_ratio=4):
@@ -136,7 +136,7 @@ class Debugger(object):
 
 
   def add_smpl(self, pose, shape, kp3d=None, camera=[1, 0, 0], img_id='default'):
-    clk = Clock()
+    # clk = Clock()
 
     camera = torch.tensor(camera, dtype=torch.float32).cuda()
     pose = pose.reshape(24,3).cuda()
@@ -174,32 +174,51 @@ class Debugger(object):
     color, depth = weak_perspective_render_obj(obj,
                   width=512, height=512, show_smpl_joints=True, use_viewer=False)
 
-    print('smpl time: {}'.format(clk.elapsed()))
+    # print('smpl time: {}'.format(clk.elapsed()))
     # add image
     self.add_img(color, img_id)
 
 
 
-  def add_smpl_np(self, pose, shape, camera=[1,0,0], img_id='default'):
-    clk = Clock()
+  def add_smpl_np(self, pose, shape, kp3d=None, camera=[1,0,0], img_id='default'):
 
-    smpl_np = SMPL_np("D:/paper/human_body_reconstruction/code/master/data/neutral_smpl_with_cocoplus_reg.pkl",
-                      joint_type='cocoplus')
+    # smpl_np = SMPL_np("D:/paper/human_body_reconstruction/code/master/data/neutral_smpl_with_cocoplus_reg.pkl",joint_type='cocoplus')
+    smpl_np = SMPL_np("D:/paper/human_body_reconstruction/code/tools/smpl_smplify/SMPL_np/model/smpl_model_male.pkl")
+
+    pose[0:3]=1e-14
     smpl_np.set_params(beta=shape.detach().cpu().numpy().flatten(), pose=pose.detach().cpu().numpy())
 
     obj = smpl_np.get_obj()
+    # obj['verts'] = weak_perspective(obj['verts'], camera)
+    # obj['J'] = weak_perspective(obj['J'], camera)
 
-    # 弱透视投影
-    color, depth = weak_perspective_render_obj(obj,
+    color_origin, depth = perspective_render_obj(obj,
                   width=512, height=512, show_smpl_joints=True)
 
 
-    print('smpl_np time: {}'.format(clk.elapsed()))
-    # cv2.imshow('smpl_np',color)
-    # cv2.waitKey(0)
+    ## reflect pose
+    # smpl_np_1 = SMPL_np("D:/paper/human_body_reconstruction/code/master/data/neutral_smpl_with_cocoplus_reg.pkl",joint_type='cocoplus')
+    smpl_np_1 = SMPL_np("D:/paper/human_body_reconstruction/code/tools/smpl_smplify/SMPL_np/model/smpl_model_male.pkl")
+    pose[0:3]=1e-14
+    smpl_np_1.set_params(beta=shape.detach().cpu().numpy().flatten(), pose=reflect_pose(pose.detach().cpu().numpy()))
+
+    obj_1 = smpl_np_1.get_obj()
+    # obj['verts'] = weak_perspective(obj['verts'], camera)
+    # obj['J'] = weak_perspective(obj['J'], camera)
+
+    color_reflect_pose, depth = perspective_render_obj(obj_1,
+                  width=512, height=512, show_smpl_joints=True)
+
+
+    smpl_np.save_to_obj('D:/paper/human_body_reconstruction/code/master/src/utils/color_oringin_pose_male.obj')
+    smpl_np_1.save_to_obj('D:/paper/human_body_reconstruction/code/master/src/utils/color_reflect_pose_male.obj')
+
+    cv2.imshow('color_origin', color_origin)
+    cv2.imshow('color_reflect_pose', color_reflect_pose)
+    cv2.waitKey(0)
 
     # add image
-    self.add_img(color, img_id)
+    self.add_img(color_origin, img_id)
 
 
   def show_all_imgs(self, pause=False, time=0):

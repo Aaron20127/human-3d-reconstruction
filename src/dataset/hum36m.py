@@ -408,7 +408,7 @@ if __name__ == '__main__':
                split='train',
                image_scale_range=(1.0, 1.01),
                trans_scale=0,
-               flip_prob=-1,
+               flip_prob=1,
                rot_prob=-1,
                rot_degree=10)
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
@@ -434,7 +434,7 @@ if __name__ == '__main__':
         gt_id = 'smpl'
         debugger.add_img(img, img_id=gt_id)
         for obj in batch['gt']:
-            debugger.add_smpl(obj['pose'][0], obj['shape'][0], obj['kp3d'][0], img_id=gt_id)
+            debugger.add_smpl(obj['pose'][0], obj['shape'][0], img_id=gt_id)
 
 
         debugger.show_all_imgs(pause=True)
