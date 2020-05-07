@@ -4,7 +4,10 @@ import sys
 import torch
 import torch.utils.data
 
-from utils.opts import opts
+abspath = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, abspath + '/../')
+
+from utils.opts import opt
 from utils.logger import Logger
 from utils.emailSender import send_email
 from train.trainer import HMRTrainer
@@ -13,7 +16,7 @@ from train.trainer import HMRTrainer
 def main(opt):
     ## 1. basic
     torch.manual_seed(opt.seed)
-    torch.backends.cudnn.benchmark = not opt.not_cuda_benchmark and not opt.test
+    torch.backends.cudnn.benchmark = True
     os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus_str
     opt.device = torch.device('cuda' if opt.gpus[0] >= 0 else 'cpu')
     opt.logger = Logger(opt)
@@ -30,5 +33,4 @@ def main(opt):
     send_email(opt)
 
 if __name__ == '__main__':
-    opt = opts().parse()
     main(opt)

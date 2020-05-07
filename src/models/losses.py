@@ -7,7 +7,7 @@
 
 import torch
 import torch.nn as nn
-from .model_util import _transpose_and_gather_feat
+from  model_util  import _transpose_and_gather_feat
 import torch.nn.functional as F
 
 

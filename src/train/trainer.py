@@ -9,19 +9,19 @@ import sys
 abspath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, abspath + '/../')
 
-from datasets.data_loader import coco_data_loader, lsp_data_loader, hum36m_data_loader，multi_data_loader
-from models.model_util import HmrNetBase, ModelWithLoss, HmrLoss
+from dataset.dataloader import coco_data_loader, lsp_data_loader, hum36m_data_loader, multi_data_loader
+from models.model import HmrNetBase, ModelWithLoss, HmrLoss
 from utils.debugger import Debugger
 
-from .train_util import AverageMeter, Clock, str_time, show_net_para
+from utils.util import AverageMeter, Clock, str_time, show_net_para
 
 
 class HMRTrainer(object):
     def __init__(self, opt):
         self.opt = opt
         self.loss_states = ['loss', 'hm_loss', 'wh_loss',
-                          'pose_loss', 'shape_loss',
-                          'kp_2d_loss', 'kp_3d_loss']
+                            'pose_loss', 'shape_loss',
+                            'kp_2d_loss', 'kp_3d_loss']
         self.start_epoch = 0
         self.min_val_loss = 1e10  # for save best val model
 
@@ -284,8 +284,8 @@ class HMRTrainer(object):
                 for param_group in optimizer.param_groups:
                     param_group['lr'] = start_lr
                 print('Resumed optimizer with start lr', start_lr)
-          else:
-              print('No optimizer parameters in checkpoint.')
+            else:
+                print('No optimizer parameters in checkpoint.')
         if optimizer is not None:
             return model, optimizer, start_epoch
         else:

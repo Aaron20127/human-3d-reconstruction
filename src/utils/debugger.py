@@ -141,6 +141,7 @@ class Debugger(object):
     camera = torch.tensor(camera, dtype=torch.float32).cuda()
     pose = pose.reshape(24,3).cuda()
     shape = shape.reshape(1,10).cuda()
+    # pose[0]=0
 
     ## rotate from x axis, just for view. note pyrender y axis from bottom to top
     # rot_v = pose[0].detach().clone().cpu().numpy()

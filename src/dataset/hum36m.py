@@ -114,12 +114,14 @@ class Hum36m(Dataset):
         s = self.input_res * 1.0 / max(w, h)  # defalut scale
         t = np.array([self.input_res / 2., self.input_res / 2.])  # translate to image center
         r = 0
+        rand_scale = 1
         flip = False
 
         if self.split == 'train':
             ## scale
-            s = s * np.random.choice(np.arange(
+            rand_scale = np.random.choice(np.arange(
                 self.image_scale_range[0], self.image_scale_range[1], 0.1))
+            s = s * rand_scale
 
             ## translate
             t[0] = t[0] + self.trans_scale * (np.random.random() * 2 - 1) \
@@ -157,7 +159,7 @@ class Hum36m(Dataset):
 
         inp = inp.transpose(2, 0, 1)  # change channel (3, 512, 512)
 
-        return inp, trans_mat, flip
+        return inp, trans_mat, flip, rand_scale
 
     def _convert_kp2d_to_smpl(self, pts):
         """
@@ -183,8 +185,9 @@ class Hum36m(Dataset):
         kps[self.not_exist_kps] = 0
         return kps
 
-    def _generate_bbox(self, kp, flip, affine_mat):  # TODO use object detection to get bbox
+    def _generate_bbox(self, kp, flip, affine_mat, rand_scale):  # TODO use object detection to get bbox
         kp = self._get_kp_2d(kp, flip, affine_mat)
+        box_stretch = rand_scale * self.box_stretch
 
         v_kp = kp[kp[:, 2] > 0]
         x_min = v_kp[:, 0].min()
@@ -192,10 +195,10 @@ class Hum36m(Dataset):
         y_min = v_kp[:, 1].min()
         y_max = v_kp[:, 1].max()
 
-        x_l = x_min - self.box_stretch if x_min - self.box_stretch > 0 else 0
-        y_l = y_min - self.box_stretch if y_min - self.box_stretch > 0 else 0  # head special handle
-        x_r = x_max + self.box_stretch if x_max + self.box_stretch < self.input_res - 1 else self.input_res - 1
-        y_r = y_max + self.box_stretch if y_max + self.box_stretch < self.input_res - 1 else self.input_res - 1
+        x_l = x_min - box_stretch if x_min - box_stretch > 0 else 0
+        y_l = y_min - box_stretch if y_min - box_stretch > 0 else 0  # head special handle
+        x_r = x_max + box_stretch if x_max + box_stretch < self.input_res - 1 else self.input_res - 1
+        y_r = y_max + box_stretch if y_max + box_stretch < self.input_res - 1 else self.input_res - 1
 
         coco_bbox = [x_l,
                      y_l,
@@ -367,11 +370,11 @@ class Hum36m(Dataset):
         img = self._get_image(index)
 
         ## 2. handle input of network to 512x512, namely crop and normalize image
-        inp, trans_mat, flip = self._get_input(img)
+        inp, trans_mat, flip, rand_scale = self._get_input(img)
 
         ## 3. handle output of network, namely label
         kp2d = self.kp2ds[index]
-        coco_bbox = self._generate_bbox(kp2d, flip, trans_mat)
+        coco_bbox = self._generate_bbox(kp2d, flip, trans_mat, rand_scale)
         anns = [{
             'bbox': coco_bbox,
             'kp2d': kp2d,
@@ -405,13 +408,13 @@ class Hum36m(Dataset):
 if __name__ == '__main__':
     data = Hum36m('D:/paper/human_body_reconstruction/datasets/human_reconstruction/hum36m-toy',
                split='train',
-               image_scale_range=(1.0, 1.01),
+               image_scale_range=(0.3, 1.31),
                trans_scale=0,
-               flip_prob=1,
-               rot_prob=0.5,
+               flip_prob=-1,
+               rot_prob=-1,
                rot_degree=45,
                box_stretch=20,
-               max_data_len=50)
+               max_data_len=-1)
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
     for batch in data_loader:

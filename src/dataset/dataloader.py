@@ -7,23 +7,33 @@ sys.path.insert(0, abspath + '/../')
 
 from torch.utils.data import DataLoader, ConcatDataset
 
-from coco2017_dataset import COCO2017
-from coco2014_dataset import COCO2014
-from lsp_dataset import Lsp
-from lsp_ext_dataset import LspExt
-from hum36m_dataset import Hum36m
+import  utils.opts
 
-from  utils.opts import opts
+from .coco2017 import COCO2017
+# from coco2014_dataset import COCO2014
+from .lsp import Lsp
+# from lsp_ext_dataset import LspExt
+from .hum36m import Hum36m
 
 
-def lsp_data_loader():
+
+def coco_data_loader():
     datasets = []
-    for data_set_name in opts.coco_data_set:
-        data_set_path = opts.data_set_path[data_set_name]
-        if data_set_name == 'coco2014':
-            dataset = COCO2014(data_set_path)
-        elif data_set_name == 'coco2017':
-            dataset = COCO2017(data_set_path)
+    for name in opts.train_set:
+        path = opts.data_set_path[name]
+        if name == 'coco2014':
+            dataset = COCO2014(path)
+        elif name == 'coco2017':
+            dataset = COCO2017(
+                data_path=path,
+                split='train',
+                image_scale_range=(0.6, 1.2),
+                trans_scale=0.5,
+                flip_prob=-1,
+                rot_prob=-1,
+                rot_degree=10,
+                max_data_len=-1
+            )
         else:
             msg = 'invalid dataset'
             sys.exit(msg)
@@ -44,12 +54,22 @@ def lsp_data_loader():
 
 def lsp_data_loader():
     datasets = []
-    for data_set_name in opts.lsp_data_set:
-        data_set_path = opts.data_set_path[data_set_name]
-        if data_set_name == 'lsp':
-            dataset = Lsp(data_set_path)
-        elif data_set_name == 'lsp_ext':
-            dataset = LspExt(data_set_path)
+    for name in opts.lsp_data_set:
+        path = opts.data_set_path[name]
+        if name == 'lsp':
+            dataset = Lsp(
+                data_path=path,
+                split='train',
+                image_scale_range=(1, 1.01),
+                trans_scale=0,
+                flip_prob=-1,
+                rot_prob=0.5,
+                rot_degree=45,
+                box_stretch=15,
+                max_data_len=50
+            )
+        elif name == 'lsp_ext':
+            dataset = LspExt(path)
         else:
             msg = 'invalid dataset.'
             sys.exit(msg)
@@ -70,10 +90,20 @@ def lsp_data_loader():
 
 def hum36m_data_loader():
     datasets = []
-    for data_set_name in opts.hum36m_data_set:
-        data_set_path = opts.data_set_path[data_set_name]
-        if data_set_name == 'hum36m':
-            dataset = Hum36m(data_set_path)
+    for name in opts.hum36m_data_set:
+        path = opts.data_set_path[name]
+        if name == 'hum36m':
+            dataset = Hum36m(
+                data_path=path,
+                split='train',
+                image_scale_range=(1.0, 1.01),
+                trans_scale=0,
+                flip_prob=1,
+                rot_prob=0.5,
+                rot_degree=45,
+                box_stretch=20,
+                max_data_len=50
+            )
         else:
             msg = 'invalid dataset.'
             sys.exit(msg)

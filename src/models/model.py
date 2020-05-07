@@ -4,13 +4,13 @@ abspath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, abspath + '/../')
 
 import torch
-from torch.nn import nn
+from torch import nn
 
-from losses import FocalLoss, RegL1Loss, RegL2Loss
+from losses import FocalLoss, RegL1Loss
 from model_util import batch_orth_proj
 from utils.opts import opt
-from network.dla from DlaSeg
-from network.smpl from SMPL
+from network.dla import DlaSeg
+from network.smpl import SMPL
 
 
 class HmrLoss(nn.Module):
