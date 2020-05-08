@@ -14,7 +14,7 @@ import math
 
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 
-from utils.util import Clock
+from utils.util import Clock, decode_label_bbox, decode_label_kp2d
 from utils import opts
 from utils.debugger import Debugger
 
@@ -23,8 +23,6 @@ from utils.image  import get_affine_transform, affine_transform_bbox, affine_tra
 from utils.image   import gaussian_radius, draw_umich_gaussian
 from utils.image   import draw_dense_reg
 from utils.image  import addCocoAnns
-
-import torchvision.transforms as transforms
 
 
 class Lsp(Dataset):
@@ -372,8 +370,8 @@ if __name__ == '__main__':
     data = Lsp('D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp',
                   split='train',
                   image_scale_range=(0.2, 1.21),
-                  trans_scale=0,
-                  flip_prob=-0.5,
+                  trans_scale=0.2,
+                  flip_prob=0.5,
                   rot_prob=0.5,
                   rot_degree=90,
                   box_stretch=20,
@@ -390,11 +388,24 @@ if __name__ == '__main__':
         gt_box_hm = debugger.gen_colormap(batch['box_hm'][0].detach().cpu().numpy())
         debugger.add_blend_img(img, gt_box_hm, 'gt_box_hm')
 
+
+        # decode bbox, key points
+        decode_id = 'decode'
+        debugger.add_img(img, img_id=decode_id)
+        bbox = decode_label_bbox(batch['box_mask'][0], batch['box_ind'][0], batch['box_cd'][0], batch['box_wh'][0])
+        kp2d = decode_label_kp2d(batch['kp2d_mask'][0], batch['kp2d'][0])
+        for box in bbox:
+            debugger.add_bbox(box, img_id=decode_id)
+        for kp in kp2d:
+            debugger.add_kp2d(kp, img_id=decode_id)
+
+
         # gt bbox, key points
         gt_id = 'gt'
         debugger.add_img(img, img_id=gt_id)
         for obj in batch['gt']:
             debugger.add_bbox(obj['bbox'][0], img_id=gt_id)
             debugger.add_kp2d(obj['kp2d'][0], img_id=gt_id)
+
 
         debugger.show_all_imgs(pause=True)

@@ -144,6 +144,7 @@ def reflect_pose(poses):
 
 
 ###################### loss ##########################
+
 def sigmoid(x):
   y = torch.clamp(x.sigmoid_(), min=1e-4, max=1-1e-4)
   return y
@@ -282,3 +283,32 @@ def batch_orth_proj(X, camera):
     X_trans = X[:, :, :2] + camera[:, :, 1:]
     shape = X_trans.shape
     return (camera[:, :, 0] * X_trans.view(shape[0], -1)).view(shape)
+
+
+############################# decode ##############################
+def decode_label_bbox(mask, ind, cd, wh, down_ratio=4.0, output_res=128):
+    mask = np.array(mask)
+    ind = np.array(ind)
+    cd = np.array(cd)
+    wh = np.array(wh)
+
+    inds = ind[mask==1]
+    cds =  cd[mask==1]
+    whs =  wh[mask==1]
+
+    center = (np.stack((inds % output_res, inds // output_res),1) + cds) * down_ratio
+    l_t = center - whs / 2.0
+    r_b = center + whs / 2.0
+
+    bbox = np.hstack((l_t, r_b))
+
+    return bbox
+
+
+def decode_label_kp2d(mask, kp2d):
+    mask = np.array(mask)
+    kp2d = np.array(kp2d)
+
+    kp2ds = kp2d[mask == 1]
+
+    return kp2ds
