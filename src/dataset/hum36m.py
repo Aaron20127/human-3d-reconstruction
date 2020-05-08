@@ -263,7 +263,7 @@ class Hum36m(Dataset):
 
 
     def _get_label(self, trans_mat, flip, anns):
-        box_hm = np.zeros((self.output_res, self.output_res), dtype=np.float32)
+        box_hm = np.zeros((1,self.output_res, self.output_res), dtype=np.float32)
 
         box_ind = np.zeros((self.max_objs), dtype=np.int64)
         box_mask = np.zeros((self.max_objs), dtype=np.uint8)
@@ -305,7 +305,7 @@ class Hum36m(Dataset):
                 radius = gaussian_radius((math.ceil(h / self.down_ratio),
                                           math.ceil(w / self.down_ratio)))
                 radius = max(0, int(radius))
-                draw_gaussian(box_hm, ct_int, radius)  # draw heat map
+                draw_gaussian(box_hm[0], ct_int, radius)  # draw heat map
 
 
                 ### 2.handle 2d key points
@@ -426,7 +426,7 @@ if __name__ == '__main__':
         img = np.clip(((img + 1) / 2 * 255.), 0, 255).astype(np.uint8)
 
         # gt heat map
-        gt_box_hm = debugger.gen_colormap(batch['box_hm'].detach().cpu().numpy())
+        gt_box_hm = debugger.gen_colormap(batch['box_hm'][0].detach().cpu().numpy())
         debugger.add_blend_img(img, gt_box_hm, 'gt_box_hm')
 
         # gt bbox, key points

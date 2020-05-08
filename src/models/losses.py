@@ -4,11 +4,17 @@
 # Copyright (c) 2018, University of Michigan
 # Licensed under the BSD 3-Clause License
 # -----------------------------------------------------------------------------
-
+import os
+import sys
 import torch
 import torch.nn as nn
-from  model_util  import _transpose_and_gather_feat
 import torch.nn.functional as F
+
+abspath = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, abspath + '/../')
+
+from utils.util import transpose_and_gather_feat
+
 
 
 def _slow_neg_loss(pred, gt):
@@ -236,3 +242,8 @@ def compute_rot_loss(output, target_bin, target_res, mask):
           valid_output2[:, 7], torch.cos(valid_target_res2[:, 1]))
         loss_res += loss_sin2 + loss_cos2
     return loss_bin1 + loss_bin2 + loss_res
+
+
+
+
+

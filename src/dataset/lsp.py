@@ -59,7 +59,7 @@ class Lsp(Dataset):
         self.min_vis_kps = min_vis_kps
         self.normalize = normalize
         self.box_stretch = box_stretch
-        self.down_ratio = output_res / input_res
+        self.down_ratio = input_res / output_res
         self.max_data_len = max_data_len
 
         # defaut parameters
@@ -267,7 +267,7 @@ class Lsp(Dataset):
 
 
     def _get_label(self, trans_mat, flip, anns):
-        box_hm = np.zeros((self.output_res, self.output_res), dtype=np.float32)
+        box_hm = np.zeros((1, self.output_res, self.output_res), dtype=np.float32)
 
         box_ind = np.zeros((self.max_objs), dtype=np.int64)
         box_mask = np.zeros((self.max_objs), dtype=np.uint8)
@@ -303,7 +303,7 @@ class Lsp(Dataset):
                 radius = gaussian_radius((math.ceil(h / self.down_ratio),
                                           math.ceil(w / self.down_ratio)))
                 radius = max(0, int(radius))
-                draw_gaussian(box_hm, ct_int, radius)  # draw heat map
+                draw_gaussian(box_hm[0], ct_int, radius)  # draw heat map
 
                 ### 2.handle 2d key points
                 kps = self._get_kp_2d(ann['kp2d'], flip, trans_mat)
@@ -336,30 +336,7 @@ class Lsp(Dataset):
         return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, gt
 
     def __getitem__(self, index):
-        """
-        return: {
-                    'hm':           '(n, 1, 128, 128)',  # bbox center heat map
 
-                    'wh_ind':       '(n, max_obj)', # bbox width, height
-                    'wh_mask':      '(n, max_obj)',
-                    'wh':           '(n, max_obj, 2)',
-
-                    'theta_ind':    '(n, max_obj)'
-                    'theta_mask':   '(n, max_obj)'
-                    'pose':         '(n, max_obj, 72)',
-                    'shape':        '(n, max_obj, 10)',
-
-                    'kp_2d_ind':    '(n, max_obj)'
-                    'kp_3d_mask':   '(n, max_obj)'
-                    'kp_3d':        '(n, 19, 3)',
-
-                    'kp_2d_ind':    '(n, max_obj)'
-                    'kp_3d_mask':   '(n, max_obj)'
-                    'kp_2d':        '(n, 19, 3)', # 第三列是否可见可以作为索引，加上coco数据集的眼睛、耳朵和鼻子
-
-                    'dataset':      'coco2017'
-                }
-        """
         ## 1.get img and anns
         img = self._get_image(index)
 
@@ -410,7 +387,7 @@ if __name__ == '__main__':
         img = np.clip(((img + 1) / 2 * 255.), 0, 255).astype(np.uint8)
 
         # gt heat map
-        gt_box_hm = debugger.gen_colormap(batch['box_hm'].detach().cpu().numpy())
+        gt_box_hm = debugger.gen_colormap(batch['box_hm'][0].detach().cpu().numpy())
         debugger.add_blend_img(img, gt_box_hm, 'gt_box_hm')
 
         # gt bbox, key points

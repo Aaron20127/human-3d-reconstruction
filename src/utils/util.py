@@ -144,7 +144,7 @@ def reflect_pose(poses):
 
 
 ###################### loss ##########################
-def _sigmoid(x):
+def sigmoid(x):
   y = torch.clamp(x.sigmoid_(), min=1e-4, max=1-1e-4)
   return y
 
@@ -159,7 +159,7 @@ def _gather_feat(feat, ind, mask=None):
         feat = feat.view(-1, dim)
     return feat
 
-def _transpose_and_gather_feat(feat, ind):
+def transpose_and_gather_feat(feat, ind):
     feat = feat.permute(0, 2, 3, 1).contiguous()
     feat = feat.view(feat.size(0), -1, feat.size(3))
     feat = _gather_feat(feat, ind)
@@ -190,7 +190,7 @@ def flip_lr_off(x, flip_idx):
   return torch.from_numpy(tmp.reshape(shape)).to(x.device)
 
 
-""" smpl """
+############################ smpl ###############################
 def quat2mat(quat):
     """Convert quaternion coefficients to rotation matrix.
     Args:

@@ -18,7 +18,7 @@ abspath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, abspath + '/../')
 sys.path.insert(0, abspath + '/../../')
 
-from model_util import batch_global_rigid_transformation, batch_rodrigues, batch_lrotmin, reflect_pose
+from utils.util import batch_global_rigid_transformation, batch_rodrigues, batch_lrotmin, reflect_pose
 from utils.render import rotation_x, weak_perspective, weak_perspective_render_obj
 
 class SMPL(nn.Module):

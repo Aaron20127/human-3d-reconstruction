@@ -7,7 +7,7 @@ import torch
 from torch import nn
 
 from losses import FocalLoss, RegL1Loss
-from model_util import batch_orth_proj
+from utils.util import batch_orth_proj, sigmoid
 from utils.opts import opt
 from network.dla import DlaSeg
 from network.smpl import SMPL
@@ -65,8 +65,8 @@ class HmrLoss(nn.Module):
 
         ## 1.loss of object bbox
         # heat map loss of objects center
-        output['hm'] = _sigmoid(output['hm']) # do sigmoid
-        hm_loss = self.crit_hm(output['hm'], batch['hm'])
+        output['box_hm'] = sigmoid(output['box_hm']) # do sigmoid
+        hm_loss = self.crit_hm(output['box_hm'], batch['box_hm'])
 
         # bbox heigt and lenghth
         wh_loss = self.crit_wh(output['wh'], batch['wh_mask'],
