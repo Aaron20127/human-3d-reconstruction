@@ -173,6 +173,7 @@ class COCO2017(Dataset):
 
         return inp, trans_mat, flip
 
+
     def _convert_kp2d_to_smpl(self, pts):
         """
          covert coco key pints to smpl cocoplus key points.

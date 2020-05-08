@@ -96,7 +96,7 @@ root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
 # system
 agt('--gpus', default='0,1', help='-1 for CPU, use comma for multiple gpus')
 agt('--not_cuda_benchmark', action='store_true', help='disable when the input size is not fixed.')
-agt('--seed', type=int, default=317, help='random seed')
+agt('--seed', default=317, type=int, help='random seed')
 
 # network
 agt('--use_dcn', action='store_true', help='whether or not to use the DeformConv convolution')
@@ -106,12 +106,17 @@ agt('--exp_id', default='demo', help='experiments name.')
 agt('--note', default='none', help='some notes for the experiment.')
 
 # train
+agt('--val', action='store_true', help='train or eval.')
 agt('--pre_trained_model', default='', help='Pretraining model')
-agt('--lr', type=float, default=1.25e-4, help='learning rate for batch size 32.')
-agt('--lr_step', type=str, default='90,120', help='drop learning rate by 10.')
-agt('--batch_size_coco', type=int, default=1, help='.')
-agt('--batch_size_lsp', type=int, default=1, help='.')
-agt('--batch_size_hum36m', type=int, default=1, help='.')
+agt('--num_iters', default=-1, type=int, help='default: #samples / batch_size.')
+agt('--num_epochs', default=50, type=int, help='.')
+agt('--lr', default=1.25e-4, type=float,  help='learning rate for batch size 32.')
+agt('--lr_step', default='90,120', type=str, help='drop learning rate by 10.')
+agt('--batch_size_coco', default=2, type=int,  help='.')
+agt('--batch_size_lsp',  default=1, type=int, help='.')
+agt('--batch_size_hum36m', default=1, type=int,  help='.')
+agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single-thread.')
+
 
 opt = parser.parse_args()
 
@@ -141,7 +146,7 @@ opt.data_set_path = {
     'lsp_ext': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_extend',
     # 'ai-ch':'E:/HMR/data/ai_challenger_keypoint_train_20170902',
     # 'mpi-inf-3dhp':'E:/HMR/data/mpi_inf_3dhp',
-    'hum3.6m': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/hum36m-toy',
+    'hum36m': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/hum36m-toy',
     'mosh': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/mosh/neutrMosh',
     'up3d': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/up-3d'
 }

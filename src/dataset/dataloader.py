@@ -5,6 +5,7 @@ import sys
 abspath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, abspath + '/../')
 
+import torch
 from torch.utils.data import DataLoader, ConcatDataset
 
 from  utils.opts import opt
@@ -48,7 +49,7 @@ def coco_data_loader():
         shuffle=True,
         drop_last=True,
         pin_memory=True,
-        num_workers=opt.num_worker
+        num_workers=opt.num_workers
     )
 
 
@@ -84,7 +85,7 @@ def lsp_data_loader():
         shuffle=True,
         drop_last=True,
         pin_memory=True,
-        num_workers=opt.num_worker
+        num_workers=opt.num_workers
     )
 
 
@@ -118,7 +119,7 @@ def hum36m_data_loader():
         shuffle=True,
         drop_last=True,
         pin_memory=True,
-        num_workers=opt.num_worker
+        num_workers=opt.num_workers
     )
 
 
@@ -158,5 +159,40 @@ class multi_data_loader(object):
 
             data_list.append(data)
 
-        return data_list
+        batch = self.merge_batch(data_list)
+        return batch
+
+
+    def merge_batch(self, batch):
+        try:
+            keys = self.batch_keys
+        except:
+            self.store_batch_keys(batch)
+            keys = self.batch_keys
+
+        label = {}
+        gt = {}
+        for k in keys:
+            st = []
+            for b in batch:
+                if k in b: st.append(b[k])
+
+            if type(st[0]) == torch.Tensor:
+                label[k] = torch.cat(st, 0)
+            else:
+                gt[k] = st
+
+        return {
+            'label': label,
+            'gt': gt
+        }
+
+    def store_batch_keys(self, batch):
+        batch_keys = []
+        for b in batch:
+            for k in b.keys():
+                if k not in batch_keys:
+                    batch_keys.append(k)
+
+        self.batch_keys = batch_keys
 

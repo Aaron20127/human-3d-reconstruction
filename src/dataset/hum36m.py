@@ -273,9 +273,10 @@ class Hum36m(Dataset):
         kp2d_mask = np.zeros((self.max_objs), dtype=np.uint8)
         kp2d = np.zeros((self.max_objs, self.num_joints, 3), dtype=np.float32)
 
-        kp3d_mask = np.zeros((self.max_objs), dtype=np.uint8)
-        kp3d = np.zeros((self.max_objs, self.num_joints, 3), dtype=np.float32)
+        # kp3d_mask = np.zeros((self.max_objs), dtype=np.uint8)
+        # kp3d = np.zeros((self.max_objs, self.num_joints, 3), dtype=np.float32)
 
+        has_theta = np.array([1], dtype=np.uint8)
         theta_mask = np.zeros((self.max_objs), dtype=np.uint8)
         shape = np.zeros((self.max_objs, 10), dtype=np.float32)
         pose = np.zeros((self.max_objs, 72), dtype=np.float32)
@@ -322,8 +323,8 @@ class Hum36m(Dataset):
 
 
                 ### 3. handle 3d key points
-                kp3d[k] = self._get_kp_3d(ann['kp3d'], flip)
-                kp3d_mask[k] = 1
+                # kp3d[k] = self._get_kp_3d(ann['kp3d'], flip)
+                # kp3d_mask[k] = 1
 
 
                 ### 4. handle pose and shape
@@ -336,13 +337,13 @@ class Hum36m(Dataset):
                 gt.append({
                     'bbox': bbox,
                     'kp2d': kp2d[k],
-                    'kp3d': kp3d[k],
+                    # 'kp3d': kp3d[k],
                     'pose': pose[k],
                     'shape': shape[k]
                 })
 
         return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, \
-               kp3d, kp3d_mask, theta_mask, pose, shape, gt
+               theta_mask, pose, shape, has_theta, gt
 
     def __getitem__(self, index):
         """
@@ -378,13 +379,13 @@ class Hum36m(Dataset):
         anns = [{
             'bbox': coco_bbox,
             'kp2d': kp2d,
-            'kp3d':  self.kp3ds[index],
+            # 'kp3d':  self.kp3ds[index],
             'shape': self.shape[index],
             'pose':  self.pose[index]
         }]
 
         box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, \
-        kp3d, kp3d_mask, theta_mask, pose, shape, gt = \
+        theta_mask, pose, shape, has_theta, gt = \
             self._get_label(trans_mat, flip, anns)
 
         return {
@@ -396,11 +397,12 @@ class Hum36m(Dataset):
             'box_mask': box_mask,
             'kp2d': kp2d,
             'kp2d_mask': kp2d_mask,
-            'kp3d': kp3d,
-            'kp3d_mask': kp3d_mask,
+            # 'kp3d': kp3d,
+            # 'kp3d_mask': kp3d_mask,
             'pose': pose,
             'shape': shape,
             'theta_mask': theta_mask,
+            'has_theta': has_theta,
             'gt': gt,
             'dataset': 'hum36m'
         }

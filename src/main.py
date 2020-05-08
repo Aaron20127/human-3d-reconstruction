@@ -24,7 +24,7 @@ def main(opt):
     ## 2. create model
     trainer = HMRTrainer(opt)
 
-    if opt.test:
+    if opt.val:
         trainer.val()
     else:
         trainer.train()

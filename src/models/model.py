@@ -16,14 +16,14 @@ from network.smpl import SMPL
 class HmrLoss(nn.Module):
     def __init__(self):
         super(HmrLoss, self).__init__()
-        self.crit_hm = focal_loss()
-        self.crit_wh = reg_loss()
-        self.crit_pose = pose_l2_loss()
-        self.crit_shape = shape_l2_loss()
-        self.crit_kp_2d = kp_2d_l1_loss()
-        self.crit_kp_3d = kp_3d_l2_loss()
+        self.crit_hm = FocalLoss()
+        # self.crit_wh = reg_loss()
+        # self.crit_pose = pose_l2_loss()
+        # self.crit_shape = shape_l2_loss()
+        # self.crit_kp_2d = kp_2d_l1_loss()
+        # self.crit_kp_3d = kp_3d_l2_loss()
 
-    def forward(self, output, batches):
+    def forward(self, output, batch):
         """
             batch
             {
@@ -63,8 +63,6 @@ class HmrLoss(nn.Module):
             }
         """
 
-        batch = self.merge_batches(batches)
-
         ## 1.loss of object bbox
         # heat map loss of objects center
         output['hm'] = _sigmoid(output['hm']) # do sigmoid
@@ -99,43 +97,17 @@ class HmrLoss(nn.Module):
         return loss, loss_stats
 
 
-    def merge_batch(self, batches):
-        try:
-            keys = self.batch_keys
-        except:
-            self.store_batch_keys(batches)
-            keys = self.batch_keys
-
-        ret = {}
-        for k in keys:
-            st = []
-            for b in batches:
-                if k in b: st.append(b[k])
-            ret[k] = torch.cat(st,0)
-
-        return ret
-
-
-    def store_batch_keys(self, batches):
-        batch_keys = []
-        for b in batches:
-            for k in b.keys():
-                if k not in batch_keys:
-                    batch_keys.append(k)
-
-        self.batch_keys = batch_keys
-
-
 class ModelWithLoss(nn.Module):
     def __init__(self, model, loss):
         super(ModelWithLoss, self).__init__()
         self.model = model
         self.loss = loss
 
+
     def forward(self, batch):
         outputs = self.model(batch['input'])
-        loss, loss_stats = self.loss(outputs, batch)
-        return outputs, loss, loss_stats
+        loss, loss_states = self.loss(outputs, batch)
+        return outputs, loss, loss_states
 
 
 class HmrNetBase(nn.Module):
@@ -160,17 +132,17 @@ class HmrNetBase(nn.Module):
         ret = self.encoder(input)
 
         ## smpl
-        b, w, h, _ = ret['cam'].size()
-        cam  = ret['cam'].view(-1,3) # (batch*128*128, 3)
-        pose = ret['pose'].view(-1,75)
-        shape = ret['shape'].view(-1,10)
-
-        j3d = self.smpl(beta=shape, theta=pose)
-        j2d = batch_orth_proj(j3d, cam)
-
-        j3d = j3d.view(b ,w, h, j3d.shape[-2], j3d.shape[-1])
-        j2d = j3d.view(b ,w, h, j2d.shape[-2], j2d.shape[-1])
-
-        ret.update({'kp_2d': j2d, 'kp_3d':j3d})
+        # b, w, h, _ = ret['camera'].size()
+        # camera = ret['camera'].view(-1,6) # (batch*128*128, 3)
+        # pose = ret['pose'].permute(0,2,3,1).view(-1, 72)
+        # shape = ret['shape'].permute(0,2,3,1).view(-1, 10)
+        #
+        # j3d = self.smpl(beta=shape, theta=pose)
+        # j2d = batch_orth_proj(j3d, camera)
+        #
+        # j3d = j3d.view(b ,w, h, j3d.shape[-2], j3d.shape[-1])
+        # j2d = j3d.view(b ,w, h, j2d.shape[-2], j2d.shape[-1])
+        #
+        # ret.update({'kp_2d': j2d, 'kp_3d':j3d})
 
         return ret

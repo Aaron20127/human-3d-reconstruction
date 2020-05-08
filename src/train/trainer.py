@@ -19,9 +19,9 @@ from utils.util import AverageMeter, Clock, str_time, show_net_para
 class HMRTrainer(object):
     def __init__(self, opt):
         self.opt = opt
-        self.loss_states = ['loss', 'hm_loss', 'wh_loss',
+        self.loss_stats = ['loss', 'hm_loss', 'wh_loss',
                             'pose_loss', 'shape_loss',
-                            'kp_2d_loss', 'kp_3d_loss']
+                            'kp2d_loss']
         self.start_epoch = 0
         self.min_val_loss = 1e10  # for save best val model
 
@@ -46,7 +46,7 @@ class HMRTrainer(object):
         self.model = model
         self.optimizer = optimizer
         self.model_with_loss = \
-            nn.DataParallel(ModelWithLoss(model, HmrLoss)).to(opt.device)
+            nn.DataParallel(ModelWithLoss(model, HmrLoss())).to(opt.device)
 
         show_net_para(model)
         print('finished build model.')
@@ -55,8 +55,8 @@ class HMRTrainer(object):
     def create_data_loader(self, opt):
         print('start creating data loader ...')
 
-        self.train_loader = multi_data_loader(
-            [coco_data_loader(),
+        self.train_loader = multi_data_loader([
+             # coco_data_loader(),
              lsp_data_loader(),
              hum36m_data_loader()])
 
@@ -122,17 +122,15 @@ class HMRTrainer(object):
         clock = Clock()
         clock_ETA = Clock()
         for iter_id in range(num_iters):
-            batches = next(data_loader)
+            batch = next(data_loader)
             if iter_id >= num_iters:
                 break
             data_time.update(clock.elapsed())
 
             # forward
-            for batch in batches:
-                for k in range(len(batch)):
-                    if i != 'gt':
-                        batch[k] = batch[k].to(device=opt.device, non_blocking=True)
-            output, loss, loss_stats = model_with_loss(batches)
+            for k in batch['label']:
+                batch['label'][k] = batch['label'][k].to(device=opt.device, non_blocking=True)
+            output, loss, loss_stats = model_with_loss(batch['label'])
             loss = loss.mean()
             if phase == 'train':
                 self.optimizer.zero_grad()

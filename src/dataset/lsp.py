@@ -277,6 +277,8 @@ class Lsp(Dataset):
         kp2d_mask = np.zeros((self.max_objs), dtype=np.uint8)
         kp2d = np.zeros((self.max_objs, self.num_joints, 3), dtype=np.float32)
 
+        has_theta = np.array([0], dtype=np.uint8)
+
         gt = []
 
         # draw heap map function
@@ -331,7 +333,7 @@ class Lsp(Dataset):
                     'kp2d': kp2d[k]
                 })
 
-        return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, gt
+        return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, gt
 
     def __getitem__(self, index):
         """
@@ -372,7 +374,7 @@ class Lsp(Dataset):
             'kp2d': kp2d
         }]
 
-        box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, gt = \
+        box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, gt = \
             self._get_label(trans_mat, flip, anns)
 
         return {
@@ -384,6 +386,7 @@ class Lsp(Dataset):
             'box_mask': box_mask,
             'kp2d': kp2d,
             'kp2d_mask': kp2d_mask,
+            'has_theta': has_theta,
             'gt': gt,
             'dataset': 'lsp'
         }

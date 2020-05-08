@@ -458,7 +458,7 @@ class DLASeg(nn.Module):
                     nn.Conv2d(head_conv, classes,
                               kernel_size=final_kernel, stride=1,
                               padding=final_kernel // 2, bias=True))
-                if 'hm' in head:
+                if 'box_hm' in head:
                     fc[-1].bias.data.fill_(-2.19)
                 else:
                     fill_fc_weights(fc)
@@ -466,7 +466,7 @@ class DLASeg(nn.Module):
                 fc = nn.Conv2d(channels[self.first_level], classes,
                                kernel_size=final_kernel, stride=1,
                                padding=final_kernel // 2, bias=True)
-                if 'hm' in head:
+                if 'box_hm' in head:
                     fc.bias.data.fill_(-2.19)
                 else:
                     fill_fc_weights(fc)
@@ -485,7 +485,7 @@ class DLASeg(nn.Module):
         z = {}
         for head in self.heads:
             z[head] = self.__getattr__(head)(y[-1])
-        return [z]
+        return z
 
 
 def DlaSeg(heads, num_layers=34, head_conv=256, down_ratio=4, not_use_dcn=False):
