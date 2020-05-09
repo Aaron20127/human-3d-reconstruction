@@ -18,7 +18,7 @@ def main(opt):
     torch.manual_seed(opt.seed)
     torch.backends.cudnn.benchmark = not opt.not_cuda_benchmark
     os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus
-    opt.device = torch.device('cuda' if '-1' not in opt.gpus[0] else 'cpu')
+    opt.device = torch.device('cuda' if '-1' not in opt.gpus else 'cpu')
     opt.logger = Logger(opt)
 
     ## 2. create model

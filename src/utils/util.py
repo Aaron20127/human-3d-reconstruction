@@ -75,24 +75,52 @@ def show_net_para(net):
 """ rotation """
 def Rx_mat(theta):
     """绕x轴旋转
+        batch x theta
     """
-    cos = math.cos(theta)
-    sin = math.sin(theta)
-    return np.array([[1, 0, 0], [0, cos, -sin], [0, sin, cos]])
+    cos = torch.cos(theta)
+    sin = torch.sin(theta)
+
+    M = torch.zeros((theta.size(0), 3, 3), requires_grad=False).to(theta.device)
+    M[:, 0, 0]=1
+    M[:, 1, 1]=cos
+    M[:, 1, 2]=-sin
+    M[:, 2, 1]=sin
+    M[:, 2, 2]=cos
+
+    return M
+
 
 def Ry_mat(theta):
     """绕y轴旋转
     """
-    cos = math.cos(theta)
-    sin = math.sin(theta)
-    return np.array([[cos, 0, sin], [0, 1, 0], [-sin, 0, cos]])
+    cos = torch.cos(theta)
+    sin = torch.sin(theta)
+
+    M = torch.zeros((theta.size(0), 3, 3), requires_grad=False).to(theta.device)
+    M[:, 1, 1]=1
+    M[:, 0, 0]=cos
+    M[:, 0, 2]=sin
+    M[:, 2, 0]=-sin
+    M[:, 2, 2]=cos
+
+    return M
+
 
 def Rz_mat(theta):
     """绕z轴旋转
     """
-    cos = math.cos(theta)
-    sin = math.sin(theta)
-    return np.array([[cos, -sin, 0], [sin, cos, 0], [0, 0, 1]])
+    cos = torch.cos(theta)
+    sin = torch.sin(theta)
+
+    M = torch.zeros((theta.size(0), 3, 3), requires_grad=False).to(theta.device)
+
+    M[:, 2, 2]=1
+    M[:, 0, 0]=cos
+    M[:, 0, 1]=-sin
+    M[:, 1, 0]=sin
+    M[:, 1, 1]=cos
+
+    return M
 
 
 '''
@@ -229,12 +257,12 @@ def batch_rodrigues(theta):
     return quat2mat(quat)
 
 
-def batch_global_rigid_transformation(Rs, Js, parent, rotate_base=False):
+def batch_global_rigid_transformation(Rs, Js, parent, device, rotate_base=False):
     N = Rs.shape[0]
     if rotate_base:
         np_rot_x = np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]], dtype=np.float)
         np_rot_x = np.reshape(np.tile(np_rot_x, [N, 1]), [N, 3, 3])
-        rot_x = Variable(torch.from_numpy(np_rot_x).float()).cuda()
+        rot_x = Variable(torch.from_numpy(np_rot_x).float()).to(device)
         root_rotation = torch.matmul(Rs[:, 0, :, :], rot_x)
     else:
         root_rotation = Rs[:, 0, :, :]
@@ -242,7 +270,7 @@ def batch_global_rigid_transformation(Rs, Js, parent, rotate_base=False):
 
     def make_A(R, t):
         R_homo = F.pad(R, [0, 0, 0, 1, 0, 0])
-        t_homo = torch.cat([t, Variable(torch.ones(N, 1, 1)).cuda()], dim=1)
+        t_homo = torch.cat([t, Variable(torch.ones(N, 1, 1)).to(device)], dim=1)
         return torch.cat([R_homo, t_homo], 2)
 
     A0 = make_A(root_rotation, Js[:, 0])
@@ -257,7 +285,7 @@ def batch_global_rigid_transformation(Rs, Js, parent, rotate_base=False):
     results = torch.stack(results, dim=1)
 
     new_J = results[:, :, :3, 3]
-    Js_w0 = torch.cat([Js, Variable(torch.zeros(N, 24, 1, 1)).cuda()], dim=2)
+    Js_w0 = torch.cat([Js, Variable(torch.zeros(N, 24, 1, 1)).to(device)], dim=2)
     init_bone = torch.matmul(results, Js_w0)
     init_bone = F.pad(init_bone, [3, 0, 0, 0, 0, 0, 0, 0])
     A = results - init_bone
@@ -312,3 +340,8 @@ def decode_label_kp2d(mask, kp2d):
     kp2ds = kp2d[mask == 1]
 
     return kp2ds
+
+
+if __name__ == '__main__':
+    p = torch.tensor([1., 0., 0.]).view(3, 1)
+    p1 = torch.matmul(Rz_mat(torch.tensor(np.pi / 2)), p)

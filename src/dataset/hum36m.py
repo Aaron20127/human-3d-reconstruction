@@ -346,27 +346,7 @@ class Hum36m(Dataset):
                theta_mask, pose, shape, has_theta, gt
 
     def __getitem__(self, index):
-        """
-        return: {
-                    'hm':           '(n, 1, 128, 128)',  # bbox center heat map
 
-                    'wh_ind':       '(n, max_obj)', # bbox width, height
-                    'wh_mask':      '(n, max_obj)',
-                    'wh':           '(n, max_obj, 2)',
-
-                    'theta_mask':   '(n, max_obj)'
-                    'pose':         '(n, max_obj, 72)',
-                    'shape':        '(n, max_obj, 10)',
-
-                    'kp_3d_mask':   '(n, max_obj)'
-                    'kp_3d':        '(n, 19, 3)',
-
-                    'kp_3d_mask':   '(n, max_obj)'
-                    'kp_2d':        '(n, 19, 3)', # 第三列是否可见可以作为索引，加上coco数据集的眼睛、耳朵和鼻子
-
-                    'dataset':      'coco2017'
-                }
-        """
         ## 1.get img and anns
         img = self._get_image(index)
 
@@ -387,6 +367,7 @@ class Hum36m(Dataset):
         box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, \
         theta_mask, pose, shape, has_theta, gt = \
             self._get_label(trans_mat, flip, anns)
+
 
         return {
             'input': inp,

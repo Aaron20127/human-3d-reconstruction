@@ -94,7 +94,7 @@ root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
 
 ################# args #################
 # system
-agt('--gpus', default='0,1', help='-1 for CPU, use comma for multiple gpus')
+agt('--gpus', default='-1', help='-1 for CPU, use comma for multiple gpus')
 agt('--not_cuda_benchmark', action='store_true', help='disable when the input size is not fixed.')
 agt('--seed', default=317, type=int, help='random seed')
 
@@ -113,8 +113,8 @@ agt('--num_epochs', default=50, type=int, help='.')
 agt('--lr', default=1.25e-4, type=float,  help='learning rate for batch size 32.')
 agt('--lr_step', default='90,120', type=str, help='drop learning rate by 10.')
 agt('--batch_size_coco', default=2, type=int,  help='.')
-agt('--batch_size_lsp',  default=1, type=int, help='.')
-agt('--batch_size_hum36m', default=1, type=int,  help='.')
+agt('--batch_size_lsp',  default=2, type=int, help='.')
+agt('--batch_size_hum36m', default=2, type=int,  help='.')
 agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single-thread.')
 
 
