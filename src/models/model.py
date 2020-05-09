@@ -21,7 +21,7 @@ class HmrLoss(nn.Module):
 
 
     def forward(self, output, batch):
-        hm_loss, wh_loss, cd_loss, pose_loss, shape_loss, kp2d_loss = 0, 0, 0, 0, 0, 0
+        hm_loss, wh_loss, cd_loss, pose_loss, shape_loss, kp2d_loss = 0., 0., 0., 0., 0., 0.
 
         ## 1.loss of object bbox
         # heat map loss of objects center
@@ -39,12 +39,16 @@ class HmrLoss(nn.Module):
 
 
         ## 2. loss of pose and shape
-        pose_loss = pose_l2_loss(output['pose'], batch['theta_mask'],
-                                   batch['box_ind'], batch['has_theta'], batch['pose'])
+        if opt.batch_size_hum36m > 0:
+            pose_loss = pose_l2_loss(output['pose'], batch['theta_mask'],
+                                       batch['box_ind'], batch['has_theta'], batch['pose'])
 
 
-        shape_loss = shape_l2_loss(output['shape'], batch['theta_mask'],
-                                     batch['box_ind'], batch['has_theta'], batch['shape'])
+            shape_loss = shape_l2_loss(output['shape'], batch['theta_mask'],
+                                         batch['box_ind'], batch['has_theta'], batch['shape'])
+        else:
+            pose_loss = torch.tensor(0.).to(opt.device)
+            shape_loss = torch.tensor(0.).to(opt.device)
 
 
         ## 3. loss of key points

@@ -30,9 +30,9 @@ def coco_data_loader():
                 split='train',
                 image_scale_range=(0.6, 1.2),
                 trans_scale=0.5,
-                flip_prob=-1,
-                rot_prob=-1,
-                rot_degree=10,
+                flip_prob=0.5,
+                rot_prob=0.5,
+                rot_degree=30,
                 max_data_len=-1
             )
         else:
