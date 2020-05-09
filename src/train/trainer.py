@@ -19,9 +19,8 @@ from utils.util import AverageMeter, Clock, str_time, show_net_para
 class HMRTrainer(object):
     def __init__(self, opt):
         self.opt = opt
-        self.loss_stats = ['loss', 'hm_loss', 'wh_loss',
-                            'pose_loss', 'shape_loss',
-                            'kp2d_loss']
+        self.loss_stats = ['loss', 'hm', 'wh', 'cd',
+                            'pose', 'shape', 'kp2d']
         self.start_epoch = 0
         self.min_val_loss = 1e10  # for save best val model
 

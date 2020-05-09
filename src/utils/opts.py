@@ -123,7 +123,7 @@ opt = parser.parse_args()
 
 
 ################ network ################
-opt.heads = {'box_hm':1, 'box_wh':2, 'box_dc':2, 'pose':72, 'shape':10, 'camera':6}
+opt.heads = {'box_hm':1, 'box_wh':2, 'box_cd':2, 'pose':72, 'shape':10, 'camera':3}
 opt.smpl_path = os.path.join(root_dir, 'data', 'neutral_smpl_with_cocoplus_reg.pkl')
 
 
