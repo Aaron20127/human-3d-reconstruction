@@ -34,7 +34,7 @@ class HmrLoss(nn.Module):
 
 
         # bbox center decimal loss
-        wh_loss = L1loss(output['box_cd'], batch['box_mask'],
+        cd_loss = L1loss(output['box_cd'], batch['box_mask'],
                                  batch['box_ind'], batch['box_cd'])
 
 
@@ -56,18 +56,19 @@ class HmrLoss(nn.Module):
         ## total loss
         loss = opt.hm_weight * hm_loss + \
                opt.wh_weight * wh_loss + \
-               opt.dc_weight * cd_loss + \
+               opt.cd_weight * cd_loss + \
                opt.pose_weight * pose_loss + \
                opt.shape_weight * shape_loss + \
                opt.kp2d_weight * kp2d_loss
 
         loss_stats = {'loss': loss,
                       'hm': hm_loss,
-                      'wh': hp_loss,
+                      'wh': wh_loss,
                       'cd': cd_loss,
                       'pose': pose_loss,
                       'shape': shape_loss,
                       'kp2d': kp2d_loss}
+
         return loss, loss_stats
 
 

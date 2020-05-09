@@ -54,10 +54,19 @@ class HMRTrainer(object):
     def create_data_loader(self, opt):
         print('start creating data loader ...')
 
-        self.train_loader = multi_data_loader([
-             # coco_data_loader(),
-             lsp_data_loader(),
-             hum36m_data_loader()])
+        loaders = []
+
+        if opt.batch_size_coco > 0:
+            loaders.append(coco_data_loader())
+        if opt.batch_size_lsp > 0:
+            loaders.append(lsp_data_loader())
+        if opt.batch_size_hum36m > 0:
+            loaders.append(hum36m_data_loader())
+
+        if not loaders:
+            assert 0, 'no data loaders.'
+
+        self.train_loader = multi_data_loader(loaders)
 
         print('finished create data loader.')
 
@@ -145,7 +154,7 @@ class HMRTrainer(object):
 
             for l in avg_loss_stats:
                 avg_loss_stats[l].update(
-                     loss_stats[l].mean().item(), batch['input'].size(0))
+                     loss_stats[l].mean().item(), batch['label']['input'].size(0))
                 msg += '|{} {:.4f} '.format(l, avg_loss_stats[l].avg)
 
             if not opt.hide_data_time:

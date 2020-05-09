@@ -48,7 +48,6 @@ def FocalLoss(pred, gt):
 def L1loss(output, mask, ind, target):
     pred = transpose_and_gather_feat(output, ind)
     mask = mask.unsqueeze(2).expand_as(pred).float()
-    # loss = F.l1_loss(pred * mask, target * mask, reduction='elementwise_mean')
     loss = F.l1_loss(pred * mask, target * mask, reduction='sum')
     loss = loss / (mask.sum() + 1e-8)
     return loss
@@ -58,7 +57,6 @@ def L1loss(output, mask, ind, target):
 def L2loss(output, mask, ind, target):
     pred = transpose_and_gather_feat(output, ind)
     mask = mask.unsqueeze(2).expand_as(pred).float()
-    # loss = F.l1_loss(pred * mask, target * mask, reduction='elementwise_mean')
     loss = F.mse_loss(pred * mask, target * mask, reduction='sum')
     loss = loss / (mask.sum() + 1e-8)
     return loss
@@ -89,6 +87,6 @@ def kp2d_l1_loss(output, mask, target):
     target = target[target[:, 2] == 1]
 
     loss = F.mse_loss(target[:, 0:2], output, reduce='sum')
-    loss = loss / (output.size(0) + 1e-8)
+    loss = loss / (output.size(0) * output.size(1) + 1e-8)
 
     return loss
