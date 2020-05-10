@@ -34,10 +34,10 @@ class HMRTrainer(object):
         ### 1.object detection model
         model = HmrNetBase()
         optimizer = torch.optim.Adam(model.parameters(), opt.lr)
-        if os.path.exists(opt.pre_trained_model):
+        if os.path.exists(opt.load_model):
             model, optimizer, self.start_epoch = \
               self.load_model(
-                  model, opt.pre_trained_model, opt.device,
+                  model, opt.load_model, opt.device,
                   optimizer, opt.resume,
                   opt.lr, opt.lr_step
               )
@@ -198,9 +198,9 @@ class HMRTrainer(object):
                epoch % opt.save_intervals == 0:
                 self.save_model(os.path.join(opt.save_dir, 'model_epoch_{}.pth'.format(epoch)),
                           epoch, self.model, self.optimizer)
-            else:
-                self.save_model(os.path.join(opt.save_dir,'model_last.pth'),
-                          epoch, self.model, self.optimizer)
+
+            self.save_model(os.path.join(opt.save_dir,'model_last.pth'),
+                      epoch, self.model, self.optimizer)
 
 
     def val(self):

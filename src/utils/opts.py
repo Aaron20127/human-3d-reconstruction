@@ -125,7 +125,7 @@ agt('--kp2d_weight',  default=1, help='loss weight for bounding box center decim
 
 # train
 agt('--val', action='store_true', help='train or eval.')
-agt('--pre_trained_model', default='', help='Pretraining model')
+agt('--load_model', default='', help='pretraining model')
 agt('--resume', action='store_true', help='resume optimizer.')
 agt('--val_intervals', default=-1, type=int,  help='number of epochs to run validation.')
 agt('--save_intervals', default=-1, type=int,  help='number of epochs to save model.')
@@ -177,12 +177,12 @@ opt.data_set_path = {
 
 
 ################### preprocess ##################
-"""log"""
-root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
-exp_dir = os.path.join(root_dir, 'exp')
-dir_name = opt.exp_id.replace(" ", "_")
-opt.save_dir = os.path.join(exp_dir, dir_name)
-opt.debug_dir = os.path.join(opt.save_dir, 'debug')
-
-"""train"""
-opt.lr_step = [int(i) for i in opt.lr_step.split(',')]
+# """log"""
+# root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
+# exp_dir = os.path.join(root_dir, 'exp')
+# dir_name = opt.exp_id.replace(" ", "_")
+# opt.save_dir = os.path.join(exp_dir, dir_name)
+# opt.debug_dir = os.path.join(opt.save_dir, 'debug')
+#
+# """train"""
+# opt.lr_step = [int(i) for i in opt.lr_step.split(',')]

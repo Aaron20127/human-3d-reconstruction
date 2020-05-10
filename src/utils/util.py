@@ -4,12 +4,29 @@ import random
 import copy
 import torch.nn as nn
 
+import os
 import time
 import math
 import torch
 import numpy as np
 from torch.autograd import Variable
 import torch.nn.functional as F
+
+
+def pre_process(opt):
+    """log"""
+    root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
+    exp_dir = os.path.join(root_dir, 'exp')
+    dir_name = opt.exp_id.replace(" ", "_")
+    opt.save_dir = os.path.join(exp_dir, dir_name)
+    opt.debug_dir = os.path.join(opt.save_dir, 'debug')
+
+    """train"""
+    opt.lr_step = [int(i) for i in opt.lr_step.split(',')]
+
+    """model"""
+    if opt.resume and opt.load_model == '':
+        opt.load_model = os.path.join(opt.save_dir, 'model_last.pth')
 
 
 class AverageMeter(object):
