@@ -61,13 +61,13 @@ def lsp_data_loader():
             dataset = Lsp(
                 data_path=path,
                 split='train',
-                image_scale_range=(1, 1.01),
-                trans_scale=0,
-                flip_prob=-1,
+                image_scale_range=(0.4, 1.01),
+                trans_scale=0.5,
+                flip_prob=0.5,
                 rot_prob=0.5,
                 rot_degree=45,
                 box_stretch=15,
-                max_data_len=50
+                max_data_len=-1
             )
         elif name == 'lsp_ext':
             dataset = LspExt(path)

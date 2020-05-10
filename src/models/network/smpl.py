@@ -23,7 +23,7 @@ from utils.render import rotation_x, weak_perspective, weak_perspective_render_o
 
 class SMPL(nn.Module):
     def __init__(self, model_path,
-                       weight_batch_size=32*1,
+                       weight_batch_size=128*1,
                        joint_type='cocoplus'):
         super(SMPL, self).__init__()
 
@@ -96,6 +96,8 @@ class SMPL(nn.Module):
             self.cur_device = torch.device(device.type, device.index)
 
         num_batch = beta.shape[0]
+        # print('smpl num_batch {}'.format(num_batch))
+
 
         v_shaped = torch.matmul(beta, self.shapedirs).view(-1, self.size[0], self.size[1]) + self.v_template
         Jx = torch.matmul(v_shaped[:, :, 0], self.J_regressor.T)

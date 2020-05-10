@@ -94,7 +94,7 @@ root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
 
 ################# args #################
 # system
-agt('--gpus', default='-1', help='-1 for CPU, use comma for multiple gpus')
+agt('--gpus', default='0', help='-1 for CPU, use comma for multiple gpus')
 agt('--not_cuda_benchmark', action='store_true', help='disable when the input size is not fixed.')
 agt('--seed', default=317, type=int, help='random seed')
 
@@ -122,12 +122,12 @@ agt('--pre_trained_model', default='', help='Pretraining model')
 agt('--val_intervals', default=-1, type=int,  help='number of epochs to run validation.')
 agt('--num_iters', default=-1, type=int, help='default: #samples / batch_size.')
 agt('--num_epochs', default=1, type=int, help='.')
-agt('--lr', default=1e-4, type=float,  help='learning rate for batch size 32.')
+agt('--lr', default=1.25e-4, type=float,  help='learning rate for batch size 32.')
 agt('--lr_step', default='90,120', type=str, help='drop learning rate by 10.')
 
 # dataset
 agt('--batch_size_coco', default=2, type=int,  help='0: donot use this data set.')
-agt('--batch_size_lsp',  default=0, type=int, help='0: donot use this data set.')
+agt('--batch_size_lsp',  default=2, type=int, help='0: donot use this data set.')
 agt('--batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
 agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single-thread.')
 
@@ -155,8 +155,8 @@ opt.eval_set = ['up3d']
 
 opt.data_set_path = {
     'coco2014': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2014',
-    'coco2017': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2017',
-    'lsp': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp',
+    'coco2017': '/opt/ZHENGXU/DATASET/COCO2017',
+    'lsp': '/opt/LIWEI/datasets/lsp/',
     'lsp_ext': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_extend',
     # 'ai-ch':'E:/HMR/data/ai_challenger_keypoint_train_20170902',
     # 'mpi-inf-3dhp':'E:/HMR/data/mpi_inf_3dhp',
