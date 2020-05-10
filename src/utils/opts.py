@@ -116,19 +116,19 @@ agt('--seed', default=317, type=int, help='random seed')
 agt('--use_dcn', action='store_true', help='whether or not to use the DeformConv convolution')
 
 # loss
-agt('--hm_weight', type=float, default=1, help='loss weight for keypoint heatmaps.')
-agt('--wh_weight', type=float, default=1, help='loss weight for bounding box width and height.')
-agt('--cd_weight', type=float, default=1, help='loss weight for bounding box center decimal.')
-agt('--pose_weight', type=float, default=1, help='loss weight for keypoint heatmaps.')
-agt('--shape_weight', type=float, default=1, help='loss weight for bounding box width and height.')
-agt('--kp2d_weight', type=float, default=1, help='loss weight for bounding box center decimal.')
+agt('--hm_weight', default=1, type=float, help='loss weight for keypoint heatmaps.')
+agt('--wh_weight', default=1, type=float, help='loss weight for bounding box width and height.')
+agt('--cd_weight', default=1, type=float, help='loss weight for bounding box center decimal.')
+agt('--pose_weight',  default=1, type=float, help='loss weight for keypoint heatmaps.')
+agt('--shape_weight', default=1, type=float, help='loss weight for bounding box width and height.')
+agt('--kp2d_weight',  default=1, help='loss weight for bounding box center decimal.')
 
 # train
 agt('--val', action='store_true', help='train or eval.')
 agt('--pre_trained_model', default='', help='Pretraining model')
-agt('--resume', action='store_true', help='resume an experiment.')
+agt('--resume', action='store_true', help='resume optimizer.')
 agt('--val_intervals', default=-1, type=int,  help='number of epochs to run validation.')
-agt('--save_intervals', default=2, type=int,  help='number of epochs to save model.')
+agt('--save_intervals', default=-1, type=int,  help='number of epochs to save model.')
 agt('--num_iters', default=-1, type=int, help='default: #samples / batch_size.')
 agt('--num_epochs', default=1, type=int, help='.')
 
@@ -137,7 +137,7 @@ agt('--lr_step', default='90,120', type=str, help='drop learning rate by 10.')
 
 # dataset
 agt('--batch_size_coco', default=0, type=int,  help='0: donot use this data set.')
-agt('--batch_size_lsp',  default=2, type=int, help='0: donot use this data set.')
+agt('--batch_size_lsp',  default=1, type=int, help='0: donot use this data set.')
 agt('--batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
 agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single-thread.')
 

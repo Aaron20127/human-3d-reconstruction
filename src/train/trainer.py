@@ -37,7 +37,7 @@ class HMRTrainer(object):
         if os.path.exists(opt.pre_trained_model):
             model, optimizer, self.start_epoch = \
               self.load_model(
-                  model, opt.pre_trained_model,
+                  model, opt.pre_trained_model, opt.device,
                   optimizer, opt.resume,
                   opt.lr, opt.lr_step
               )
@@ -248,7 +248,7 @@ class HMRTrainer(object):
 
 
 
-    def load_model(self, model, model_path, optimizer=None, resume=False,
+    def load_model(self, model, model_path, device, optimizer=None, resume=False,
                  lr=None, lr_step=None):
         start_epoch = 0
         checkpoint = torch.load(model_path, map_location=lambda storage, loc: storage)
@@ -296,6 +296,11 @@ class HMRTrainer(object):
                 for param_group in optimizer.param_groups:
                     param_group['lr'] = start_lr
                 print('Resumed optimizer with start lr', start_lr)
+
+                for state in optimizer.state.values():
+                    for k, v in state.items():
+                        if isinstance(v, torch.Tensor):
+                            state[k] = v.to(device)
             else:
                 print('No optimizer parameters in checkpoint.')
         if optimizer is not None:
