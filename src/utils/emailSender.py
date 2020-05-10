@@ -73,7 +73,7 @@ def send_email(opt):
     sender = emailSender(opt.mail_host, opt.mail_user, opt.mail_pwd,
                          opt.mail_sender, opt.mail_receiver)
 
-    title = opt.title
+    title = opt.exp_id
     text = 'train over.'
     file_paths = [opt.save_dir + '/opt.txt',
                   opt.save_dir + '/logs/train.txt',

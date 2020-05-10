@@ -93,6 +93,20 @@ root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
 
 
 ################# args #################
+# email
+agt('--mail_host', default="smtp.163.com", help='SMTP server.')
+agt('--mail_user', default='test_aaron@163.com', help='email name.')
+agt('--mail_pwd', default='RNHKUQZIGAXXRIYZ', help='SMTP server password.')
+agt('--mail_sender', default='test_aaron@163.com', help='mail sender.')
+agt('--mail_receiver', default='lwalgorithm@163.com', help='mail receiver.')
+
+# log
+agt('--exp_id', default='demo', help='experiments name.')
+agt('--note', default='none', help='some notes for the experiment.')
+agt('--print_iter', default=1, type=int, help='disable progress bar and print to screen.')
+agt('--debug', default=0, type=int, help='level of visualization.')
+agt('--hide_data_time', action='store_true', help='hide print of time of model and dataload.')
+
 # system
 agt('--gpus', default='0', help='-1 for CPU, use comma for multiple gpus')
 agt('--not_cuda_benchmark', action='store_true', help='disable when the input size is not fixed.')
@@ -109,16 +123,10 @@ agt('--pose_weight', type=float, default=1, help='loss weight for keypoint heatm
 agt('--shape_weight', type=float, default=1, help='loss weight for bounding box width and height.')
 agt('--kp2d_weight', type=float, default=1, help='loss weight for bounding box center decimal.')
 
-# log
-agt('--exp_id', default='demo', help='experiments name.')
-agt('--note', default='none', help='some notes for the experiment.')
-agt('--print_iter', default=1, type=int, help='disable progress bar and print to screen.')
-agt('--debug', default=0, type=int, help='level of visualization.')
-agt('--hide_data_time', action='store_true', help='hide print of time of model and dataload.')
-
 # train
 agt('--val', action='store_true', help='train or eval.')
 agt('--pre_trained_model', default='', help='Pretraining model')
+agt('--resume', action='store_true', help='resume an experiment.')
 agt('--val_intervals', default=-1, type=int,  help='number of epochs to run validation.')
 agt('--num_iters', default=-1, type=int, help='default: #samples / batch_size.')
 agt('--num_epochs', default=1, type=int, help='.')
@@ -126,7 +134,7 @@ agt('--lr', default=1.25e-4, type=float,  help='learning rate for batch size 32.
 agt('--lr_step', default='90,120', type=str, help='drop learning rate by 10.')
 
 # dataset
-agt('--batch_size_coco', default=2, type=int,  help='0: donot use this data set.')
+agt('--batch_size_coco', default=0, type=int,  help='0: donot use this data set.')
 agt('--batch_size_lsp',  default=2, type=int, help='0: donot use this data set.')
 agt('--batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
 agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single-thread.')
@@ -155,8 +163,8 @@ opt.eval_set = ['up3d']
 
 opt.data_set_path = {
     'coco2014': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2014',
-    'coco2017': '/opt/ZHENGXU/DATASET/COCO2017',
-    'lsp': '/opt/LIWEI/datasets/lsp/',
+    'coco2017': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2017',
+    'lsp': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp/',
     'lsp_ext': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_extend',
     # 'ai-ch':'E:/HMR/data/ai_challenger_keypoint_train_20170902',
     # 'mpi-inf-3dhp':'E:/HMR/data/mpi_inf_3dhp',
@@ -166,10 +174,13 @@ opt.data_set_path = {
 }
 
 
-############### log and save ################
+################### preprocess ##################
+"""log"""
 root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
 exp_dir = os.path.join(root_dir, 'exp')
 dir_name = opt.exp_id.replace(" ", "_")
 opt.save_dir = os.path.join(exp_dir, dir_name)
 opt.debug_dir = os.path.join(opt.save_dir, 'debug')
 
+"""train"""
+opt.lr_step = [int(i) for i in opt.lr_step.split(',')]
