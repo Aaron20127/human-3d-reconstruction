@@ -128,8 +128,10 @@ agt('--val', action='store_true', help='train or eval.')
 agt('--pre_trained_model', default='', help='Pretraining model')
 agt('--resume', action='store_true', help='resume an experiment.')
 agt('--val_intervals', default=-1, type=int,  help='number of epochs to run validation.')
+agt('--save_intervals', default=2, type=int,  help='number of epochs to save model.')
 agt('--num_iters', default=-1, type=int, help='default: #samples / batch_size.')
 agt('--num_epochs', default=1, type=int, help='.')
+
 agt('--lr', default=1.25e-4, type=float,  help='learning rate for batch size 32.')
 agt('--lr_step', default='90,120', type=str, help='drop learning rate by 10.')
 

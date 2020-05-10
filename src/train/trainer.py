@@ -194,8 +194,13 @@ class HMRTrainer(object):
                 for param_group in self.optimizer.param_groups:
                     param_group['lr'] = lr
 
-            self.save_model(os.path.join(opt.save_dir,'model_last.pth'),
-                      epoch, self.model, self.optimizer)
+            if opt.save_intervals > 0 and \
+               epoch % opt.save_intervals == 0:
+                self.save_model(os.path.join(opt.save_dir, 'model_epoch_{}.pth'.format(epoch)),
+                          epoch, self.model, self.optimizer)
+            else:
+                self.save_model(os.path.join(opt.save_dir,'model_last.pth'),
+                          epoch, self.model, self.optimizer)
 
 
     def val(self):
