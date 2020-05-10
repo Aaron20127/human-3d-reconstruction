@@ -96,7 +96,7 @@ class opts(object):
 
 
     # dataset
-    agt('--data_dir', default='/opt/ZHENGXU/DATASET/COCO2017/',
+    agt('--data_dir', default='D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2017',
                       help='not use the random crop data augmentation from CornerNet.')
     agt('--not_rand_crop', action='store_true', help='not use the random crop data augmentation from CornerNet.')
     agt('--shift', type=float, default=0.1, help='when not using random crop apply shift augmentation.')
