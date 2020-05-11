@@ -50,8 +50,8 @@ def decode(output, thresh=0.2, down_ratio=4.0):
 
     b, c, h, w = hm.size()
 
-    heat = sigmoid(hm)
-    score = _nms(heat) # get score map
+    # heat = sigmoid(hm)
+    score = _nms(hm) # get score map
 
     mask = (score > thresh).view(b, h, w)
     ret = []

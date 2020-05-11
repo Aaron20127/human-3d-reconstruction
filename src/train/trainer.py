@@ -74,7 +74,7 @@ class HMRTrainer(object):
 
     def run_train(self, epoch):
         """ train """
-        ret, _ = self.run_epoch('train', epoch, self.train_loader)
+        ret = self.run_epoch('train', epoch, self.train_loader)
 
         ## save train.txt
         logger = self.opt.logger
@@ -89,7 +89,7 @@ class HMRTrainer(object):
     def run_val(self, epoch):
         """ val """
         with torch.no_grad():
-          ret, _ = self.run_epoch('val', epoch, self.val_loader)
+          ret = self.run_epoch('val', epoch, self.val_loader)
 
         ## save val.txt
         logger = self.opt.logger

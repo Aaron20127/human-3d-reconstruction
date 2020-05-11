@@ -25,7 +25,10 @@ class HmrLoss(nn.Module):
 
         ## 1.loss of object bbox
         # heat map loss of objects center
+        box_hm_cp = output['box_hm'].detach().clone()
         hm_loss = FocalLoss(output['box_hm'], batch['box_hm'])
+
+        print('box_hm: {}'.format(torch.abs(box_hm_cp-output['box_hm']).sum()))
 
         # bbox heigt and lenghth
         wh_loss = L1loss(output['box_wh'], batch['box_mask'],

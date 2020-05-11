@@ -77,6 +77,7 @@ class Debugger(object):
 
   
   def gen_colormap(self, img, output_res=None):
+    img = img.copy()
     c, h, w = img.shape[0], img.shape[1], img.shape[2]
     if output_res is None:
       output_res = (h * self.down_ratio, w * self.down_ratio)
