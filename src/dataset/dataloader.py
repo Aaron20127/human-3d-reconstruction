@@ -97,10 +97,10 @@ def hum36m_data_loader():
             dataset = Hum36m(
                 data_path=path,
                 split='train',
-                image_scale_range=(0.4, 1.01),
+                image_scale_range=(0.4, 1.11),
                 trans_scale=0.5,
                 flip_prob=0.5,
-                rot_prob=0,
+                rot_prob=-1,
                 rot_degree=45,
                 box_stretch=20,
                 max_data_len=-1

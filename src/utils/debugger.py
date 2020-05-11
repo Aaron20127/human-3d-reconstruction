@@ -10,7 +10,7 @@ sys.path.insert(0, abspath + '/../')
 
 from models.network.smpl import SMPL
 from .smpl_np import SMPL_np
-from .render import weak_perspective, weak_perspective_first_translate, weak_perspective_render_obj, perspective_render_obj
+from .render import weak_perspective_first_translate, weak_perspective_render_obj, perspective_render_obj
 from .util import Clock, Rx_mat, reflect_pose, batch_orth_proj
 
 class Debugger(object):
@@ -173,9 +173,9 @@ class Debugger(object):
   def add_smpl(self, pose, shape, kp3d=None, camera=[1, 0, 0], img_id='default'):
     # clk = Clock()
 
-    camera = torch.tensor(camera, dtype=torch.float32).cuda()
-    pose = pose.reshape(24,3).cuda()
-    shape = shape.reshape(1,10).cuda()
+    camera = torch.tensor(camera, dtype=torch.float32).to(self.device)
+    pose = pose.reshape(24,3).to(self.device)
+    shape = shape.reshape(1,10).to(self.device)
     # pose[0]=0
 
     ## rotate from x axis, just for view. note pyrender y axis from bottom to top
@@ -188,20 +188,20 @@ class Debugger(object):
     # smpl
     verts, joints, r, faces = self.smpl(shape, pose)
 
-    rot_x = torch.tensor(Rx_mat(np.pi).T, dtype=torch.float32).cuda()
+    rot_x = Rx_mat(torch.tensor([np.pi])).to(self.device)[0].T
     ## render
-    verts = weak_perspective(torch.matmul(verts[0], rot_x),
-                             camera).detach().cpu().numpy()  # 对x,y弱透视投影，投影，平移，放缩
+    verts_p = weak_perspective_first_translate(torch.matmul(verts[0], rot_x),
+                                            camera).detach().cpu().numpy()  # 对x,y弱透视投影，投影，平移，放缩
 
     if kp3d is None:
-        J = weak_perspective(torch.matmul(joints[0], rot_x),
-                             camera).detach().cpu().numpy()
+        J = weak_perspective_first_translate(torch.matmul(joints[0], rot_x),
+                                            camera).detach().cpu().numpy()
     else:
-        J = weak_perspective(torch.matmul(kp3d.cuda(), rot_x),
-                             camera).detach().cpu().numpy()
+        J = weak_perspective_first_translate(torch.matmul(kp3d.to(self.device), rot_x),
+                                            camera).detach().cpu().numpy()
 
     obj = {
-        'verts': verts,  # 模型顶点
+        'verts': verts_p,  # 模型顶点
         'faces': faces,  # 面片序号
         'J': J,  # 3D关节点
     }

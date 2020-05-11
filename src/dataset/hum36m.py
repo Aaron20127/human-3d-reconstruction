@@ -14,7 +14,7 @@ import h5py
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 
 from utils.util import Clock, reflect_pose, decode_label_bbox, decode_label_kp2d
-from utils import opts
+from utils.opts import opt
 from utils.debugger import Debugger
 
 from utils.image import flip, color_aug
@@ -391,10 +391,10 @@ class Hum36m(Dataset):
 if __name__ == '__main__':
     data = Hum36m('D:/paper/human_body_reconstruction/datasets/human_reconstruction/hum36m-toy',
                split='train',
-               image_scale_range=(0.3, 1.31),
-               trans_scale=0.2,
+               image_scale_range=(0.4, 1.1),
+               trans_scale=0.5,
                flip_prob=0.5,
-               rot_prob=0.5,
+               rot_prob=-1,
                rot_degree=45,
                box_stretch=20,
                max_data_len=-1)
@@ -402,7 +402,7 @@ if __name__ == '__main__':
 
     for batch in data_loader:
 
-        debugger = Debugger()
+        debugger = Debugger(opt.smpl_path)
         img = batch['input'][0].detach().cpu().numpy().transpose(1, 2, 0)
         img = np.clip(((img + 1) / 2 * 255.), 0, 255).astype(np.uint8)
 
