@@ -241,11 +241,14 @@ class HMRTrainer(object):
             debugger.add_img(img, img_id=bbox_kp2d_id)
             debugger.add_img(img, img_id=smpl_id)
             for obj in pred:
-                for j in range(obj['bbox'].size(0)):
-                    debugger.add_bbox(obj['bbox'][j].detach().cpu().numpy(),
-                                      conf=obj['score'][j].detach().cpu().numpy(), img_id=bbox_kp2d_id)
-                    debugger.add_smpl_kp2d(obj['pose'][j], obj['shape'][j], obj['camera'][j],
-                                            img_id=smpl_id, bbox_img_id=bbox_kp2d_id)
+                if len(obj) > 0:
+                    for j in range(obj['bbox'].size(0)):
+                        debugger.add_bbox(obj['bbox'][j].detach().cpu().numpy(),
+                                          conf=obj['score'][j].detach().cpu().numpy(), img_id=bbox_kp2d_id)
+                        debugger.add_smpl_kp2d(obj['pose'][j], obj['shape'][j], obj['camera'][j],
+                                                img_id=smpl_id, bbox_img_id=bbox_kp2d_id)
+                        # debugger.add_smpl_kp2d(obj['pose'][j], obj['shape'][j], obj['camera'][j],
+                        #                         img_id=smpl_id, bbox_img_id=bbox_kp2d_id)
 
             debugger.show_all_imgs(pause=True)
             # # gt smpl

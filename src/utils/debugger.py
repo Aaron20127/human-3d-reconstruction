@@ -11,7 +11,7 @@ sys.path.insert(0, abspath + '/../')
 from models.network.smpl import SMPL
 from .smpl_np import SMPL_np
 from .render import weak_perspective, weak_perspective_first_translate, weak_perspective_render_obj, perspective_render_obj
-from .util import Clock, Rx_mat, reflect_pose
+from .util import Clock, Rx_mat, reflect_pose, batch_orth_proj
 
 class Debugger(object):
   def __init__(self, smpl_path, theme='white', down_ratio=4, device='cpu'):
@@ -144,26 +144,30 @@ class Debugger(object):
     # smpl
     verts, joints, r, faces = self.smpl(shape, pose)
 
-    # rot_x = torch.tensor(Rx_mat(np.pi).T, dtype=torch.float32).cuda()
-    ## render
-    verts = weak_perspective_first_translate(verts[0],camera).detach().cpu().numpy()
-    J = weak_perspective_first_translate(joints[0], camera).detach().cpu().numpy()
+    # rotation for show
+    camera_show = torch.tensor([0.1, 0, 0]).to(self.device)
+    # rot_x = Rx_mat(torch.tensor([np.pi])).to(self.device)
+    # verts_show = torch.matmul(verts, rot_x)
+    # joints_show = torch.matmul(joints, rot_x)
+
+    verts_show_p = weak_perspective_first_translate(verts, camera_show).detach().cpu().numpy()
+    joints_show_p = weak_perspective_first_translate(joints, camera_show).detach().cpu().numpy()
 
     obj = {
-        'verts': verts,  # 模型顶点
+        'verts': verts_show_p[0],  # 模型顶点
         'faces': faces,  # 面片序号
-        'J': J,  # 3D关节点
+        'J': joints_show_p[0],  # 3D关节点
     }
 
     color, depth = weak_perspective_render_obj(obj,
-                  width=512, height=512, show_smpl_joints=False, use_viewer=False)
+                  width=512, height=512, show_smpl_joints=True, use_viewer=False)
 
-    # add image
     self.add_img(color, img_id)
 
-    # print(J[:,:2])
+    ##
+    J = weak_perspective_first_translate(joints, camera).detach().cpu().numpy()
     J[..., 2] = 1
-    self.add_kp2d(J, bbox_img_id)
+    self.add_kp2d(J[0], bbox_img_id)
 
 
   def add_smpl(self, pose, shape, kp3d=None, camera=[1, 0, 0], img_id='default'):
@@ -260,6 +264,7 @@ class Debugger(object):
          import sys
          sys.exit(0)
 
+      self.imgs = {}
 
   def save_img(self, imgId='default', path='./cache/debug/'):
     cv2.imwrite(path + '{}.png'.format(imgId), self.imgs[imgId])

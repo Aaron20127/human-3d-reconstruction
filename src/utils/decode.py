@@ -81,6 +81,8 @@ def decode(output, thresh=0.2, down_ratio=4.0):
                 'pose': pose_,
                 'shape': shape_,
                 'camera': camera_})
+        else:
+            ret.append([])
 
     return ret
 

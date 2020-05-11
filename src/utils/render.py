@@ -110,28 +110,6 @@ def weak_perspective_render_obj(obj, width=512, height=512, show_smpl_joints=Fal
     return color, depth
 
 
-def rotation_x(verts, theta):
-    '''
-
-    Args:
-        verts: 空间3维顶点
-        theta: 绕x轴旋转角度
-
-    Returns:
-
-    '''
-    sin = np.sin(theta)
-    cos = np.cos(theta)
-
-    # add camera
-    R = np.array([
-        [1.0, 0.0, 0.0],
-        [0.0, cos, -sin],
-        [0.0, sin, cos],
-    ])
-
-    return np.dot(R, verts).T
-
 
 def weak_perspective(verts, camera):
     '''
@@ -145,6 +123,7 @@ def weak_perspective(verts, camera):
     verts[..., :2] = verts[..., :2] + camera[1:]
     return verts
 
+
 def weak_perspective_first_translate(verts, camera):
     '''
     对顶点做弱透视变换，只对x,y操作
@@ -153,6 +132,8 @@ def weak_perspective_first_translate(verts, camera):
         camera: [s,cx,cy]
     '''
     # camera = camera.view(1, 3)
-    verts[..., :2] = verts[..., :2] + camera[1:]
-    verts[..., :2] = verts[..., :2] * camera[0]
-    return verts
+    v = verts.detach().clone()
+
+    v[..., :2] = v[..., :2] + camera[1:]
+    v[..., :2] = v[..., :2] * camera[0]
+    return v
