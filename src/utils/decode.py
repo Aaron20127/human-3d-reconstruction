@@ -62,7 +62,7 @@ def decode(output, thresh=0.2, down_ratio=4.0):
         pose_ = pose[i, :, mask[i]].T
         shape_ = shape[i, :, mask[i]].T
         camera_ = camera[i, :, mask[i]].T
-        center_ = mask[i].nonzero()
+        center_ = mask[i].nonzero().type(torch.float32)
 
         c = (center_ + cd_) * down_ratio
         lt = c - wh_ / 2.0
