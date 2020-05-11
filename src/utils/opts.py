@@ -124,7 +124,7 @@ agt('--wh_weight', default=1, type=float, help='loss weight for bounding box wid
 agt('--cd_weight', default=1, type=float, help='loss weight for bounding box center decimal.')
 agt('--pose_weight',  default=1, type=float, help='loss weight for keypoint heatmaps.')
 agt('--shape_weight', default=1, type=float, help='loss weight for bounding box width and height.')
-agt('--kp2d_weight',  default=1, help='loss weight for bounding box center decimal.')
+agt('--kp2d_weight',  default=1, type=float, help='loss weight for bounding box center decimal.')
 
 # train
 agt('--val', action='store_true', help='train or eval.')
