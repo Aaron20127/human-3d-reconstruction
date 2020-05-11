@@ -13,7 +13,7 @@ import torch.nn.functional as F
 abspath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, abspath + '/../')
 
-from utils.util import transpose_and_gather_feat
+from utils.util import transpose_and_gather_feat, sigmoid
 
 
 def FocalLoss(pred, gt):
@@ -23,6 +23,8 @@ def FocalLoss(pred, gt):
       pred (batch x c x h x w)
       gt_regr (batch x c x h x w)
   '''
+  pred = sigmoid(pred)
+
   pos_inds = gt.eq(1).float() # the center of object is 1, others is 0
   neg_inds = gt.lt(1).float() # except for object center, everything else is 1
 

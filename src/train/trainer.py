@@ -13,7 +13,8 @@ from dataset.dataloader import coco_data_loader, lsp_data_loader, hum36m_data_lo
 from models.model import HmrNetBase, ModelWithLoss, HmrLoss
 from utils.debugger import Debugger
 
-from utils.util import AverageMeter, Clock, str_time, show_net_para
+from utils.util import AverageMeter, Clock, str_time, show_net_para, sigmoid
+from utils.decode import decode
 
 
 class HMRTrainer(object):
@@ -121,7 +122,6 @@ class HMRTrainer(object):
 
         ### 2. train
         opt = self.opt
-        results = {}
         data_time, batch_time = AverageMeter(), AverageMeter()
         avg_loss_stats = {l: AverageMeter() for l in self.loss_stats}
         num_iters = len(data_loader) if opt.num_iters < 0 else opt.num_iters
@@ -173,7 +173,7 @@ class HMRTrainer(object):
 
         ret = {k: v.avg for k, v in avg_loss_stats.items()}
         ret['time'] = clock_ETA.total() / 60. # spending time of each epoch.
-        return ret, results
+        return ret
 
 
     def train(self):
@@ -204,47 +204,56 @@ class HMRTrainer(object):
 
 
     def val(self):
-        _, preds = self.run_epoch('val', 0, self.val_loader)
-        self.val_loader.dataset.run_eval(preds, self.opt.save_dir)
+        self.run_epoch('val', 0, self.train_loader)
+        # self.val_loader.dataset.run_eval(preds, self.opt.save_dir)
 
 
     def debug(self, batch, output, iter_id):
         opt = self.opt
-        reg = output['reg'] if opt.reg_offset else None
-        dets = ctdet_decode(
-            output['hm'], output['wh'], reg=reg,
-            cat_spec_wh=opt.cat_spec_wh, K=opt.K)
-        dets = dets.detach().cpu().numpy().reshape(1, -1, dets.shape[2])
-        dets[:, :, :4] *= opt.down_ratio
-        dets_gt = batch['meta']['gt_det'].numpy().reshape(1, -1, dets.shape[2])
-        dets_gt[:, :, :4] *= opt.down_ratio
-        for i in range(1):
-            debugger = Debugger(
-                dataset=opt.dataset, ipynb=(opt.debug==3), theme=opt.debugger_theme)
-            img = batch['input'][i].detach().cpu().numpy().transpose(1, 2, 0)
-            img = np.clip(((
-                img * opt.std + opt.mean) * 255.), 0, 255).astype(np.uint8)
-            pred = debugger.gen_colormap(output['hm'][i].detach().cpu().numpy())
-            gt = debugger.gen_colormap(batch['hm'][i].detach().cpu().numpy())
-            debugger.add_blend_img(img, pred, 'pred_hm')
-            debugger.add_blend_img(img, gt, 'gt_hm')
-            debugger.add_img(img, img_id='out_pred')
-            for k in range(len(dets[i])):
-                if dets[i, k, 4] > opt.center_thresh:
-                    debugger.add_coco_bbox(dets[i, k, :4], dets[i, k, -1],
-                                       dets[i, k, 4], img_id='out_pred')
 
-            debugger.add_img(img, img_id='out_gt')
-            for k in range(len(dets_gt[i])):
-                if dets_gt[i, k, 4] > opt.center_thresh:
-                    debugger.add_coco_bbox(dets_gt[i, k, :4], dets_gt[i, k, -1],
-                                       dets_gt[i, k, 4], img_id='out_gt')
+        pred = decode(output, thresh=opt.score_thresh)
 
-            if opt.debug == 4:
-                debugger.save_all_imgs(opt.debug_dir, prefix='{}'.format(iter_id))
-            else:
-                debugger.show_all_imgs(pause=True)
+        debugger = Debugger()
 
+        for i, img in enumerate(batch['label']['input']):
+            img = batch['label']['input'][i].detach().cpu().numpy().transpose(1, 2, 0)
+            img = np.clip(((img + 1) / 2 * 255.), 0, 255).astype(np.uint8)
+
+            # gt heat map
+            gt_box_hm = debugger.gen_colormap(batch['label']['box_hm'][i].detach().cpu().numpy())
+            debugger.add_blend_img(img, gt_box_hm, 'gt_box_hm')
+
+            # gt bbox, key points
+            gt_id = 'gt_bbox_kp2d'
+            debugger.add_img(img, img_id=gt_id)
+            for b_gt in batch['gt']['gt']:
+                for obj in b_gt:
+                    debugger.add_bbox(obj['bbox'][0].detach().cpu().numpy(), img_id=gt_id)
+                    debugger.add_kp2d(obj['kp2d'][0].detach().cpu().numpy(), img_id=gt_id)
+
+            # pred heat map
+            pred_box_hm = debugger.gen_colormap(sigmoid(output['box_hm'][i]).detach().cpu().numpy())
+            debugger.add_blend_img(img, pred_box_hm, 'pred_box_hm')
+
+            # pred bbox, key points
+            bbox_kp2d_id = 'pred_bbox_kp2d'
+            smpl_id = 'pred_smpl'
+            debugger.add_img(img, img_id=bbox_kp2d_id)
+            debugger.add_img(img, img_id=smpl_id)
+            for obj in pred:
+                for j in range(obj['bbox'].size(0)):
+                    debugger.add_bbox(obj['bbox'][j].detach().cpu().numpy(), img_id=bbox_kp2d_id)
+                    debugger.add_smpl_kp2d(obj['pose'][j], obj['shape'][j], obj['camera'][j],
+                                            img_id=smpl_id, bbox_img_id=bbox_kp2d_id)
+
+            debugger.show_all_imgs(pause=True)
+            # # gt smpl
+            # gt_id = 'smpl'
+            # debugger.add_img(img, img_id=gt_id)
+            # for obj in batch['gt']:
+            #     debugger.add_smpl(obj['pose'][0], obj['shape'][0], img_id=gt_id)
+
+            #
 
 
 

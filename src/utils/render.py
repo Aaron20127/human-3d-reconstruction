@@ -144,3 +144,15 @@ def weak_perspective(verts, camera):
     verts[..., :2] = verts[..., :2] * camera[0]
     verts[..., :2] = verts[..., :2] + camera[1:]
     return verts
+
+def weak_perspective_first_translate(verts, camera):
+    '''
+    对顶点做弱透视变换，只对x,y操作
+    Args:
+        verts:
+        camera: [s,cx,cy]
+    '''
+    # camera = camera.view(1, 3)
+    verts[..., :2] = verts[..., :2] + camera[1:]
+    verts[..., :2] = verts[..., :2] * camera[0]
+    return verts

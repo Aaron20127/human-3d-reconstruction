@@ -7,7 +7,7 @@ import torch
 from torch import nn
 
 from losses import FocalLoss, L1loss, L2loss, pose_l2_loss, shape_l2_loss, kp2d_l1_loss
-from utils.util import batch_orth_proj, sigmoid, Rx_mat, Ry_mat, Rz_mat, transpose_and_gather_feat
+from utils.util import batch_orth_proj, Rx_mat, Ry_mat, Rz_mat, transpose_and_gather_feat
 from utils.opts import opt
 from network.dla import DlaSeg
 from network.smpl import SMPL
@@ -25,7 +25,6 @@ class HmrLoss(nn.Module):
 
         ## 1.loss of object bbox
         # heat map loss of objects center
-        output['box_hm'] = sigmoid(output['box_hm']) # do sigmoid
         hm_loss = FocalLoss(output['box_hm'], batch['box_hm'])
 
         # bbox heigt and lenghth
@@ -102,7 +101,7 @@ class HmrLoss(nn.Module):
         #                  torch.matmul(Ry_mat(camera[:, 4]), Rx_mat(camera[:, 3])))
         # kp3d = torch.matmul(kp3d, R.permute(0,2,1))
 
-        kp2d = batch_orth_proj(kp3d, camera)
+        kp2d = batch_orth_proj(kp3d, camera) # TODO fisrt tranlation or first scale ?
 
         return kp2d
 

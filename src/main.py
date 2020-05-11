@@ -32,7 +32,7 @@ def main(opt):
         trainer.train()
 
     #### 3. send email
-    send_email(opt)
+    # send_email(opt)
 
 if __name__ == '__main__':
     main(opt)

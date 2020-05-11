@@ -10,12 +10,13 @@ sys.path.insert(0, abspath + '/../')
 
 from models.network.smpl import SMPL
 from .smpl_np import SMPL_np
-from .render import weak_perspective, weak_perspective_render_obj, perspective_render_obj
+from .render import weak_perspective, weak_perspective_first_translate, weak_perspective_render_obj, perspective_render_obj
 from .util import Clock, Rx_mat, reflect_pose
 
 class Debugger(object):
-  def __init__(self, theme='white', down_ratio=4):
+  def __init__(self, theme='white', down_ratio=4, device='cpu'):
 
+    self.device = device
     self.imgs = {}
     self.theme = theme
     colors = [(color_list[_]).astype(np.uint8) \
@@ -25,7 +26,7 @@ class Debugger(object):
       self.colors = self.colors.reshape(-1)[::-1].reshape(len(colors), 1, 1, 3)
       self.colors = np.clip(self.colors, 0., 0.6 * 255).astype(np.uint8)
 
-    self.smpl = SMPL("D:/paper/human_body_reconstruction/code/master/data/neutral_smpl_with_cocoplus_reg.pkl").cuda()
+    self.smpl = SMPL("D:/paper/human_body_reconstruction/code/master/data/neutral_smpl_with_cocoplus_reg.pkl").to(device)
 
     self.names = ['p']
     self.num_joints = 19
@@ -76,7 +77,6 @@ class Debugger(object):
 
   
   def gen_colormap(self, img, output_res=None):
-    img = img.copy()
     c, h, w = img.shape[0], img.shape[1], img.shape[2]
     if output_res is None:
       output_res = (h * self.down_ratio, w * self.down_ratio)
@@ -133,6 +133,36 @@ class Debugger(object):
             cv2.line(self.imgs[img_id], (points[e[0], 0], points[e[0], 1]),
                      (points[e[1], 0], points[e[1], 1]), self.ec[j], 2,
                      lineType=cv2.LINE_AA)
+
+
+  def add_smpl_kp2d(self, pose, shape, camera, img_id='default', bbox_img_id=None):
+    camera = camera.to(self.device)
+    pose = pose.view(24,3).to(self.device)
+    shape = shape.view(1,10).to(self.device)
+
+    # smpl
+    verts, joints, r, faces = self.smpl(shape, pose)
+
+    # rot_x = torch.tensor(Rx_mat(np.pi).T, dtype=torch.float32).cuda()
+    ## render
+    verts = weak_perspective_first_translate(verts[0],camera).detach().cpu().numpy()
+    J = weak_perspective_first_translate(joints[0], camera).detach().cpu().numpy()
+
+    obj = {
+        'verts': verts,  # 模型顶点
+        'faces': faces,  # 面片序号
+        'J': J,  # 3D关节点
+    }
+
+    color, depth = weak_perspective_render_obj(obj,
+                  width=512, height=512, show_smpl_joints=False, use_viewer=False)
+
+    # add image
+    self.add_img(color, img_id)
+
+    # print(J[:,:2])
+    J[..., 2] = 1
+    self.add_kp2d(J, bbox_img_id)
 
 
   def add_smpl(self, pose, shape, kp3d=None, camera=[1, 0, 0], img_id='default'):

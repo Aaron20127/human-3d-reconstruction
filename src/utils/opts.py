@@ -115,6 +115,9 @@ agt('--seed', default=317, type=int, help='random seed')
 # network
 agt('--use_dcn', action='store_true', help='whether or not to use the DeformConv convolution')
 
+# decode
+agt('--score_thresh', default=0.53, type=int, help='be considered to be the lower limit of the score of an object')
+
 # loss
 agt('--hm_weight', default=1, type=float, help='loss weight for keypoint heatmaps.')
 agt('--wh_weight', default=1, type=float, help='loss weight for bounding box width and height.')
@@ -136,8 +139,8 @@ agt('--lr', default=1.25e-4, type=float,  help='learning rate for batch size 32.
 agt('--lr_step', default='90,120', type=str, help='drop learning rate by 10.')
 
 # dataset
-agt('--batch_size_coco', default=0, type=int,  help='0: donot use this data set.')
-agt('--batch_size_lsp',  default=1, type=int, help='0: donot use this data set.')
+agt('--batch_size_coco', default=1, type=int,  help='0: donot use this data set.')
+agt('--batch_size_lsp',  default=0, type=int, help='0: donot use this data set.')
 agt('--batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
 agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single-thread.')
 

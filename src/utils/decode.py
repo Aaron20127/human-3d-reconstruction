@@ -1,7 +1,7 @@
 
 import torch
 import torch.nn as nn
-from .model_util import _gather_feat, _transpose_and_gather_feat
+from .util import gather_feat, transpose_and_gather_feat, sigmoid
 
 def _nms(heat, kernel=3):
     ''' find the heat map center.'''
@@ -12,7 +12,8 @@ def _nms(heat, kernel=3):
     keep = (hmax == heat).float()
     return heat * keep
 
-def _topk_channel(scores, K=40):
+
+def _topk_channel(scores, K=32):
       batch, cat, height, width = scores.size()
       
       topk_scores, topk_inds = torch.topk(scores.view(batch, cat, -1), K)
@@ -23,7 +24,8 @@ def _topk_channel(scores, K=40):
 
       return topk_scores, topk_inds, topk_ys, topk_xs
 
-def _topk(scores, K=40):
+
+def _topk(scores, K=32):
     batch, cat, height, width = scores.size()
     # get first k value of points from every class
     topk_scores, topk_inds = torch.topk(scores.view(batch, cat, -1), K)
@@ -41,38 +43,69 @@ def _topk(scores, K=40):
     return topk_score, topk_inds, topk_clses, topk_ys, topk_xs
 
 
-def ctdet_decode(heat, wh, reg=None, cat_spec_wh=False, K=100):
-    batch, cat, height, width = heat.size()
+def decode(output, thresh=0.2, down_ratio=4.0):
+    hm, wh, cd, pose, shape, camera = \
+        output['box_hm'], output['box_wh'], output['box_cd'], \
+        output['pose'], output['shape'], output['camera']
 
-    # heat = torch.sigmoid(heat)
-    # perform nms on heatmaps
-    heat = _nms(heat)
-      
-    scores, inds, clses, ys, xs = _topk(heat, K=K)
-    if reg is not None:
-      reg = _transpose_and_gather_feat(reg, inds) # get offset from index
-      reg = reg.view(batch, K, 2)
-      xs = xs.view(batch, K, 1) + reg[:, :, 0:1]
-      ys = ys.view(batch, K, 1) + reg[:, :, 1:2]
-    else:
-      xs = xs.view(batch, K, 1) + 0.5
-      ys = ys.view(batch, K, 1) + 0.5
-    wh = _transpose_and_gather_feat(wh, inds) # get width and height from index
-    if cat_spec_wh:
-      wh = wh.view(batch, K, cat, 2)
-      clses_ind = clses.view(batch, K, 1, 1).expand(batch, K, 1, 2).long()
-      wh = wh.gather(2, clses_ind).view(batch, K, 2)
-    else:
-      wh = wh.view(batch, K, 2)
-    clses  = clses.view(batch, K, 1).float()
-    scores = scores.view(batch, K, 1)
-    bboxes = torch.cat([xs - wh[..., 0:1] / 2, 
-                        ys - wh[..., 1:2] / 2,
-                        xs + wh[..., 0:1] / 2, 
-                        ys + wh[..., 1:2] / 2], dim=2)
-    detections = torch.cat([bboxes, scores, clses], dim=2)
-      
-    return detections
+    b, c, h, w = hm.size()
+
+    heat = sigmoid(hm)
+    score = _nms(heat) # get score map
+
+    mask = (score > thresh).view(b, h, w)
+    ret = []
+
+    for i in range(b):
+        wh_ = wh[i, :, mask[i]].T
+        cd_ = cd[i, :, mask[i]].T
+        pose_ = pose[i, :, mask[i]].T
+        shape_ = shape[i, :, mask[i]].T
+        camera_ = camera[i, :, mask[i]].T
+        center_ = mask[i].nonzero()
+
+        c = (center_ + cd_) * down_ratio
+        lt = c - wh_ / 2.0
+        rb = c + wh_ / 2.0
+
+        bbox_ = torch.cat((lt, rb), 1)
+
+        ret.append({
+            'bbox': bbox_,
+            'pose': pose_,
+            'shape': shape_,
+            'camera': camera_})
+
+    return ret
+
+    # scores, inds, clses, ys, xs = _topk(heat, K=K)
+    # if reg is not None:
+    #       reg = transpose_and_gather_feat(reg, inds) # get offset from index
+    #       reg = reg.view(batch, K, 2)
+    #       xs = xs.view(batch, K, 1) + reg[:, :, 0:1]
+    #       ys = ys.view(batch, K, 1) + reg[:, :, 1:2]
+    # else:
+    #       xs = xs.view(batch, K, 1) + 0.5
+    #       ys = ys.view(batch, K, 1) + 0.5
+    #
+    # wh = _transpose_and_gather_feat(wh, inds) # get width and height from index
+    #
+    # if cat_spec_wh:
+    #       wh = wh.view(batch, K, cat, 2)
+    #       clses_ind = clses.view(batch, K, 1, 1).expand(batch, K, 1, 2).long()
+    #       wh = wh.gather(2, clses_ind).view(batch, K, 2)
+    # else:
+    #     wh = wh.view(batch, K, 2)
+    #
+    # clses  = clses.view(batch, K, 1).float()
+    # scores = scores.view(batch, K, 1)
+    # bboxes = torch.cat([xs - wh[..., 0:1] / 2,
+    #                     ys - wh[..., 1:2] / 2,
+    #                     xs + wh[..., 0:1] / 2,
+    #                     ys + wh[..., 1:2] / 2], dim=2)
+    # detections = torch.cat([bboxes, scores, clses], dim=2)
+
+
 
 def multi_pose_decode(
     heat, wh, kps, reg=None, hm_hp=None, hp_offset=None, K=100):
