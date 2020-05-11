@@ -213,7 +213,7 @@ class HMRTrainer(object):
 
         pred = decode(output, thresh=opt.score_thresh)
 
-        debugger = Debugger()
+        debugger = Debugger(opt.smpl_path)
 
         for i, img in enumerate(batch['label']['input']):
             img = batch['label']['input'][i].detach().cpu().numpy().transpose(1, 2, 0)

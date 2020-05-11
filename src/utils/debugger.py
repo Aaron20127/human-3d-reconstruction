@@ -14,7 +14,7 @@ from .render import weak_perspective, weak_perspective_first_translate, weak_per
 from .util import Clock, Rx_mat, reflect_pose
 
 class Debugger(object):
-  def __init__(self, theme='white', down_ratio=4, device='cpu'):
+  def __init__(self, smpl_path, theme='white', down_ratio=4, device='cpu'):
 
     self.device = device
     self.imgs = {}
@@ -26,7 +26,7 @@ class Debugger(object):
       self.colors = self.colors.reshape(-1)[::-1].reshape(len(colors), 1, 1, 3)
       self.colors = np.clip(self.colors, 0., 0.6 * 255).astype(np.uint8)
 
-    self.smpl = SMPL("D:/paper/human_body_reconstruction/code/master/data/neutral_smpl_with_cocoplus_reg.pkl").to(device)
+    self.smpl = SMPL(smpl_path).to(device)
 
     self.names = ['p']
     self.num_joints = 19
