@@ -232,7 +232,7 @@ class HMRTrainer(object):
                     debugger.add_kp2d(obj['kp2d'][0].detach().cpu().numpy(), img_id=gt_id)
 
             # pred heat map
-            pred_box_hm = debugger.gen_colormap(sigmoid(output['box_hm'][i]).detach().cpu().numpy())
+            pred_box_hm = debugger.gen_colormap(output['box_hm'][i].detach().cpu().numpy())
             debugger.add_blend_img(img, pred_box_hm, 'pred_box_hm')
 
             # pred bbox, key points
@@ -242,7 +242,8 @@ class HMRTrainer(object):
             debugger.add_img(img, img_id=smpl_id)
             for obj in pred:
                 for j in range(obj['bbox'].size(0)):
-                    debugger.add_bbox(obj['bbox'][j].detach().cpu().numpy(), img_id=bbox_kp2d_id)
+                    debugger.add_bbox(obj['bbox'][j].detach().cpu().numpy(),
+                                      conf=obj['score'][j].detach().cpu().numpy(), img_id=bbox_kp2d_id)
                     debugger.add_smpl_kp2d(obj['pose'][j], obj['shape'][j], obj['camera'][j],
                                             img_id=smpl_id, bbox_img_id=bbox_kp2d_id)
 
@@ -252,8 +253,6 @@ class HMRTrainer(object):
             # debugger.add_img(img, img_id=gt_id)
             # for obj in batch['gt']:
             #     debugger.add_smpl(obj['pose'][0], obj['shape'][0], img_id=gt_id)
-
-            #
 
 
 

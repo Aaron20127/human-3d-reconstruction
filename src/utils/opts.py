@@ -116,7 +116,7 @@ agt('--seed', default=317, type=int, help='random seed')
 agt('--use_dcn', action='store_true', help='whether or not to use the DeformConv convolution')
 
 # decode
-agt('--score_thresh', default=0.53, type=int, help='be considered to be the lower limit of the score of an object')
+agt('--score_thresh', default=0.3, type=int, help='be considered to be the lower limit of the score of an object')
 
 # loss
 agt('--hm_weight', default=1, type=float, help='loss weight for keypoint heatmaps.')

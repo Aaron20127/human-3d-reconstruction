@@ -7,7 +7,7 @@ import torch
 from torch import nn
 
 from losses import FocalLoss, L1loss, L2loss, pose_l2_loss, shape_l2_loss, kp2d_l1_loss
-from utils.util import batch_orth_proj, Rx_mat, Ry_mat, Rz_mat, transpose_and_gather_feat
+from utils.util import batch_orth_proj, Rx_mat, Ry_mat, Rz_mat, transpose_and_gather_feat, sigmoid
 from utils.opts import opt
 from network.dla import DlaSeg
 from network.smpl import SMPL
@@ -25,14 +25,14 @@ class HmrLoss(nn.Module):
 
         ## 1.loss of object bbox
         # heat map loss of objects center
-        box_hm_cp = output['box_hm'].detach().clone()
+        output['box_hm'] = sigmoid(output['box_hm'])
         hm_loss = FocalLoss(output['box_hm'], batch['box_hm'])
 
-        print('box_hm: {}'.format(torch.abs(box_hm_cp-output['box_hm']).sum()))
 
         # bbox heigt and lenghth
         wh_loss = L1loss(output['box_wh'], batch['box_mask'],
                                  batch['box_ind'], batch['box_wh'])
+
 
 
         # bbox center decimal loss
@@ -51,6 +51,7 @@ class HmrLoss(nn.Module):
         else:
             pose_loss = torch.tensor(0.).to(opt.device)
             shape_loss = torch.tensor(0.).to(opt.device)
+
 
 
         ## 3. loss of key points

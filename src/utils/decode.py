@@ -63,48 +63,26 @@ def decode(output, thresh=0.2, down_ratio=4.0):
         shape_ = shape[i, :, mask[i]].T
         camera_ = camera[i, :, mask[i]].T
         center_ = mask[i].nonzero().type(torch.float32)
+        score_ = score[i, mask]
 
-        c = (center_ + cd_) * down_ratio
-        lt = c - wh_ / 2.0
-        rb = c + wh_ / 2.0
+        if len(center_) > 0:
+            c = center_.clone()
+            c[:, 0] = center_[:, 1]
+            c[:, 1] = center_[:, 0]
 
-        bbox_ = torch.cat((lt, rb), 1)
+            lt = (c + cd_) * down_ratio - wh_ / 2.0
+            rb = (c + cd_) * down_ratio + wh_ / 2.0
 
-        ret.append({
-            'bbox': bbox_,
-            'pose': pose_,
-            'shape': shape_,
-            'camera': camera_})
+            bbox_ = torch.cat((lt, rb), 1)
+
+            ret.append({
+                'score': score_,
+                'bbox': bbox_,
+                'pose': pose_,
+                'shape': shape_,
+                'camera': camera_})
 
     return ret
-
-    # scores, inds, clses, ys, xs = _topk(heat, K=K)
-    # if reg is not None:
-    #       reg = transpose_and_gather_feat(reg, inds) # get offset from index
-    #       reg = reg.view(batch, K, 2)
-    #       xs = xs.view(batch, K, 1) + reg[:, :, 0:1]
-    #       ys = ys.view(batch, K, 1) + reg[:, :, 1:2]
-    # else:
-    #       xs = xs.view(batch, K, 1) + 0.5
-    #       ys = ys.view(batch, K, 1) + 0.5
-    #
-    # wh = _transpose_and_gather_feat(wh, inds) # get width and height from index
-    #
-    # if cat_spec_wh:
-    #       wh = wh.view(batch, K, cat, 2)
-    #       clses_ind = clses.view(batch, K, 1, 1).expand(batch, K, 1, 2).long()
-    #       wh = wh.gather(2, clses_ind).view(batch, K, 2)
-    # else:
-    #     wh = wh.view(batch, K, 2)
-    #
-    # clses  = clses.view(batch, K, 1).float()
-    # scores = scores.view(batch, K, 1)
-    # bboxes = torch.cat([xs - wh[..., 0:1] / 2,
-    #                     ys - wh[..., 1:2] / 2,
-    #                     xs + wh[..., 0:1] / 2,
-    #                     ys + wh[..., 1:2] / 2], dim=2)
-    # detections = torch.cat([bboxes, scores, clses], dim=2)
-
 
 
 def multi_pose_decode(

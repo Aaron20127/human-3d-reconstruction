@@ -15,7 +15,7 @@ import math
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 
 from utils.util import Clock, decode_label_bbox, decode_label_kp2d
-from utils import opts
+from utils.opts import opt
 from utils.debugger import Debugger
 
 from utils.image import flip, color_aug
@@ -380,7 +380,7 @@ if __name__ == '__main__':
 
     for batch in data_loader:
 
-        debugger = Debugger()
+        debugger = Debugger(opt.smpl_path)
         img = batch['input'][0].detach().cpu().numpy().transpose(1, 2, 0)
         img = np.clip(((img + 1) / 2 * 255.), 0, 255).astype(np.uint8)
 
