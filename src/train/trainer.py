@@ -168,6 +168,13 @@ class HMRTrainer(object):
             if opt.debug > 0:
                 self.debug(batch, output, iter_id)
 
+
+            if opt.epoch_save_intervals > 0 and \
+               iter_id % opt.epoch_save_intervals == 0:
+                self.save_model(os.path.join(opt.save_dir, 'model_epoch_{}_{}.pth'.format(epoch, iter_id)),
+                          epoch, self.model, self.optimizer)
+
+
             del output, loss, loss_stats
             clock.elapsed()
 

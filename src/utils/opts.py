@@ -132,6 +132,7 @@ agt('--load_model', default='', help='pretraining model')
 agt('--resume', action='store_true', help='resume optimizer.')
 agt('--val_intervals', default=-1, type=int,  help='number of epochs to run validation.')
 agt('--save_intervals', default=-1, type=int,  help='number of epochs to save model.')
+agt('--epoch_save_intervals', default=-1, type=int,  help='number of iters of one epoch to save model.')
 agt('--num_iters', default=-1, type=int, help='default: #samples / batch_size.')
 agt('--num_epochs', default=1, type=int, help='.')
 
