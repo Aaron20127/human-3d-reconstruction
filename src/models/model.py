@@ -6,7 +6,7 @@ sys.path.insert(0, abspath + '/../')
 import torch
 from torch import nn
 
-from losses import FocalLoss, L1loss, L2loss, pose_l2_loss, shape_l2_loss, kp2d_l1_loss
+from losses import FocalLoss, L1loss, L2loss, pose_l2_loss, shape_l2_loss, kp2d_l1_loss, kp3d_l2_loss
 from utils.util import batch_orth_proj, Rx_mat, Ry_mat, Rz_mat, transpose_and_gather_feat, sigmoid
 from utils.opts import opt
 from network.dla import DlaSeg
@@ -21,7 +21,7 @@ class HmrLoss(nn.Module):
 
 
     def forward(self, output, batch):
-        hm_loss, wh_loss, cd_loss, pose_loss, shape_loss, kp2d_loss = 0., 0., 0., 0., 0., 0.
+        hm_loss, wh_loss, cd_loss, pose_loss, shape_loss, kp2d_loss, kp3d_loss = 0, 0., 0., 0., 0., 0., 0.
 
         ## 1.loss of object bbox
         # heat map loss of objects center
@@ -59,6 +59,12 @@ class HmrLoss(nn.Module):
                                    batch['box_ind'], batch['kp2d_mask'])
         kp2d_loss = kp2d_l1_loss(kp2d, batch['kp2d_mask'], batch['kp2d'])
 
+        if opt.batch_size_hum36m > 0:
+            kp3d = self._get_pred_kp3d(output['pose'], output['shape'], batch['has_kp3d'],
+                                       batch['box_ind'], batch['kp3d_mask'])
+            kp3d_loss = kp3d_l2_loss(kp3d, batch['kp3d_mask'], batch['kp3d'])
+        else:
+            kp3d_loss = torch.tensor(0.).to(opt.device)
 
         ## total loss
         loss = opt.hm_weight * hm_loss + \
@@ -66,7 +72,8 @@ class HmrLoss(nn.Module):
                opt.cd_weight * cd_loss + \
                opt.pose_weight * pose_loss + \
                opt.shape_weight * shape_loss + \
-               opt.kp2d_weight * kp2d_loss
+               opt.kp2d_weight * kp2d_loss + \
+               opt.kp3d_weight * kp3d_loss
 
         loss_stats = {'loss': loss,
                       'hm': hm_loss,
@@ -74,7 +81,8 @@ class HmrLoss(nn.Module):
                       'cd': cd_loss,
                       'pose': pose_loss,
                       'shape': shape_loss,
-                      'kp2d': kp2d_loss}
+                      'kp2d': kp2d_loss,
+                      'kp3d': kp3d_loss}
 
         return loss, loss_stats
 
@@ -108,6 +116,30 @@ class HmrLoss(nn.Module):
         kp2d = batch_orth_proj(kp3d, camera) # TODO fisrt tranlation or first scale ?
 
         return kp2d
+
+    def _get_pred_kp3d(self, pose, shape, has_kp3d, ind, mask):
+        # pose = pose[has_theta.flatten()==1, ...]
+        # shape = shape[has_theta.flatten()==1, ...]
+        # camera = camera[has_theta.flatten()==1, ...]
+        # ind = ind[has_theta.flatten() == 1, ...]
+        pose = pose[(has_kp3d==1).flatten(), ...]
+        shape = shape[(has_kp3d==1).flatten(), ...]
+        ind = ind[(has_kp3d==1).flatten(), ...]
+
+
+        pred = transpose_and_gather_feat(pose, ind)
+        mask_pre = mask.unsqueeze(2).expand_as(pred)
+        pose = pred[mask_pre == 1].view(-1, 72)
+
+        pred = transpose_and_gather_feat(shape, ind)
+        mask_pre = mask.unsqueeze(2).expand_as(pred)
+        shape = pred[mask_pre == 1].view(-1, 10)
+
+
+        ## smpl
+        _, kp3d, _, _ = self.smpl(beta=shape, theta=pose)
+
+        return kp3d
 
 
 class ModelWithLoss(nn.Module):

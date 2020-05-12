@@ -63,7 +63,7 @@ def decode(output, thresh=0.2, down_ratio=4.0):
         shape_ = shape[i, :, mask[i]].T
         camera_ = camera[i, :, mask[i]].T
         center_ = mask[i].nonzero().type(torch.float32)
-        score_ = score[i, mask]
+        score_ = score[i, :, mask[i]][0]
 
         if len(center_) > 0:
             c = center_.clone()

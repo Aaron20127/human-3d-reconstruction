@@ -87,7 +87,15 @@ def kp2d_l1_loss(output, mask, target):
     output = output[target[:, 2] == 1]
     target = target[target[:, 2] == 1]
 
-    loss = F.mse_loss(target[:, 0:2], output, reduce='sum')
+    loss = F.l1_loss(target[:, 0:2], output, reduce='sum')
     loss = loss / (output.size(0) * output.size(1) + 1e-8)
 
+    return loss
+
+
+
+def kp3d_l2_loss(output, mask, target):
+    target_ = target[mask == 1, ...]
+    loss = F.mse_loss(output, target_, reduction='sum')
+    loss = loss / (output.size(0) * output.size(1) + 1e-8)
     return loss

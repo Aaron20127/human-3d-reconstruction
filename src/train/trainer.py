@@ -21,7 +21,7 @@ class HMRTrainer(object):
     def __init__(self, opt):
         self.opt = opt
         self.loss_stats = ['loss', 'hm', 'wh', 'cd',
-                            'pose', 'shape', 'kp2d']
+                            'pose', 'shape', 'kp2d', 'kp3d']
         self.start_epoch = 0
         self.min_val_loss = 1e10  # for save best val model
 

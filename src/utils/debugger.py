@@ -140,18 +140,19 @@ class Debugger(object):
     camera = camera.to(self.device)
     pose = pose.view(24,3).to(self.device)
     shape = shape.view(1,10).to(self.device)
+    # camera[0] *=2
 
     # smpl
     verts, joints, r, faces = self.smpl(shape, pose)
 
     # rotation for show
-    camera_show = torch.tensor([0.1, 0, 0]).to(self.device)
+    # camera_show = torch.tensor([0.1, 0, 0]).to(self.device)
     # rot_x = Rx_mat(torch.tensor([np.pi])).to(self.device)
     # verts_show = torch.matmul(verts, rot_x)
     # joints_show = torch.matmul(joints, rot_x)
 
-    verts_show_p = weak_perspective_first_translate(verts, camera_show).detach().cpu().numpy()
-    joints_show_p = weak_perspective_first_translate(joints, camera_show).detach().cpu().numpy()
+    verts_show_p = weak_perspective_first_translate(verts, camera).detach().cpu().numpy()
+    joints_show_p = weak_perspective_first_translate(joints, camera).detach().cpu().numpy()
 
     obj = {
         'verts': verts_show_p[0],  # 模型顶点
@@ -176,7 +177,6 @@ class Debugger(object):
     camera = torch.tensor(camera, dtype=torch.float32).to(self.device)
     pose = pose.reshape(24,3).to(self.device)
     shape = shape.reshape(1,10).to(self.device)
-    # pose[0]=0
 
     ## rotate from x axis, just for view. note pyrender y axis from bottom to top
     # rot_v = pose[0].detach().clone().cpu().numpy()
