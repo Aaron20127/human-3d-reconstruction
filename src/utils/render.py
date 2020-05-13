@@ -19,6 +19,7 @@ def perspective_render_obj(obj, width=512,height=512, show_smpl_joints=False, us
             cx=width/2, cy=width/2)
     scene.add(camera, pose=camera_pose)
 
+
     # add verts and faces
     vertex_colors = np.ones([obj['verts'].shape[0], 4]) * [0.3, 0.3, 0.3, 0.8]
     tri_mesh = trimesh.Trimesh(obj['verts'], obj['faces'],
