@@ -19,7 +19,7 @@ sys.path.insert(0, abspath + '/../')
 sys.path.insert(0, abspath + '/../../')
 
 from utils.util import batch_global_rigid_transformation, batch_rodrigues, batch_lrotmin, reflect_pose
-from utils.render import  weak_perspective_render_obj
+from utils.render import  perspective_render_obj
 
 class SMPL(nn.Module):
     def __init__(self, model_path,

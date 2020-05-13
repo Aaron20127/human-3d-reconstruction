@@ -10,7 +10,7 @@ sys.path.insert(0, abspath + '/../')
 
 from models.network.smpl import SMPL
 from .smpl_np import SMPL_np
-from .render import weak_perspective_first_translate, weak_perspective_render_obj, perspective_render_obj
+from .render import weak_perspective_first_translate, perspective_render_obj
 from .util import Clock, Rx_mat, reflect_pose, batch_orth_proj
 
 class Debugger(object):
@@ -49,6 +49,20 @@ class Debugger(object):
                (0, 0, 255), (255, 0, 0), (0, 0, 255)]
 
     self.down_ratio=down_ratio
+
+
+  def blend_smpl(self, pyrender_color, img_id):
+      gray = cv2.cvtColor(pyrender_color, cv2.COLOR_BGR2GRAY)
+      mask =  (gray < 255).astype(np.uint8).reshape(gray.shape[0], gray.shape[1], 1)
+
+      color_mask = pyrender_color * mask
+      img_mask = self.imgs[img_id] * (1 - mask)
+
+      self.imgs[img_id] = color_mask + img_mask
+
+      # from PIL import Image
+      # Image.fromarray(img_mask).show()
+
 
 
   def add_img(self, img, img_id='default', revert_color=False):
@@ -146,13 +160,18 @@ class Debugger(object):
     verts, joints, r, faces = self.smpl(shape, pose)
 
     # rotation for show
-    # camera_show = torch.tensor([0.1, 0, 0]).to(self.device)
+    camera_show = torch.tensor([1, 0, 0]).to(self.device)
     # rot_x = Rx_mat(torch.tensor([np.pi])).to(self.device)
     # verts_show = torch.matmul(verts, rot_x)
     # joints_show = torch.matmul(joints, rot_x)
 
-    verts_show_p = weak_perspective_first_translate(verts, camera).detach().cpu().numpy()
-    joints_show_p = weak_perspective_first_translate(joints, camera).detach().cpu().numpy()
+    verts_show_p = weak_perspective_first_translate(verts, camera_show).detach().cpu().numpy()
+    joints_show_p = weak_perspective_first_translate(joints, camera_show).detach().cpu().numpy()
+
+    # verts_show_p[:, :, 0] = -verts_show_p[:, :, 0]
+    # verts_show_p[:, :, 1] = -verts_show_p[:, :, 1]
+    # joints_show_p[:, :, 0] = -joints_show_p[:, :, 0]
+    # joints_show_p[:, :, 1] = -joints_show_p[:, :, 1]
 
     obj = {
         'verts': verts_show_p[0],  # 模型顶点
@@ -160,10 +179,11 @@ class Debugger(object):
         'J': joints_show_p[0],  # 3D关节点
     }
 
-    color, depth = weak_perspective_render_obj(obj,
-                  width=512, height=512, show_smpl_joints=True, use_viewer=False)
+    color, depth = perspective_render_obj(obj,
+                  width=512, height=512, show_smpl_joints=False, use_viewer=False)
 
-    self.add_img(color, img_id)
+
+    self.blend_smpl(color, img_id)
 
     ##
     J = weak_perspective_first_translate(joints, camera).detach().cpu().numpy()
@@ -207,7 +227,7 @@ class Debugger(object):
     }
 
     # 弱透视投影
-    color, depth = weak_perspective_render_obj(obj,
+    color, depth = perspective_render_obj(obj,
                   width=512, height=512, show_smpl_joints=True, use_viewer=False)
 
     # print('smpl time: {}'.format(clk.elapsed()))

@@ -4,7 +4,7 @@ import os
 import cv2
 import time
 
-from .render import weak_perspective_render_obj
+from .render import perspective_render_obj
 
 class SMPL_np():
   def __init__(self, model_path, joint_type='smpl'):
