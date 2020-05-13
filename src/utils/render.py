@@ -4,7 +4,7 @@ import trimesh
 import pyrender
 
 
-def perspective_render_obj(obj, width=512,height=512, show_smpl_joints=False, use_viewer=False):
+def perspective_render_obj(camera, obj, width=512, height=512, show_smpl_joints=False, use_viewer=False):
     scene = pyrender.Scene()
 
     # add camera
@@ -15,12 +15,18 @@ def perspective_render_obj(obj, width=512,height=512, show_smpl_joints=False, us
         [0.0,  0.0,  0.0,   1.0],
     ])
     camera=pyrender.camera.IntrinsicsCamera(
-            fx=width/2, fy=width/2,
-            cx=width/2, cy=width/2)
+            fx=camera['fx'], fy=camera['fy'],
+            cx=camera['cx'], cy=camera['cy'])
     scene.add(camera, pose=camera_pose)
 
-
     # add verts and faces
+    if invert_y_axis:
+        obj['verts'][:, 1] = -obj['verts'][:, 1]
+        obj['J'][:, 1] = -obj['J'][:, 1]
+    if weak_perspective:
+        obj['verts'][:, 2] = obj['verts'][:, 2].mean()
+        obj['J'][:, 2] = obj['J'][:, 1].mean()
+
     vertex_colors = np.ones([obj['verts'].shape[0], 4]) * [0.3, 0.3, 0.3, 0.8]
     tri_mesh = trimesh.Trimesh(obj['verts'], obj['faces'],
                                vertex_colors=vertex_colors)
