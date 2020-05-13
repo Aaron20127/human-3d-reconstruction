@@ -50,6 +50,16 @@ class Debugger(object):
 
     self.down_ratio=down_ratio
 
+    self.camera = self.default_camera()
+
+  def default_camera(self):
+      return {
+          'camera_trans': np.array([0,0,5]),
+          'fx': 800,
+          'fy': 800,
+          'cx': 256,
+          'cy': 256,
+      }
 
   def blend_smpl(self, pyrender_color, img_id):
       gray = cv2.cvtColor(pyrender_color, cv2.COLOR_BGR2GRAY)
@@ -191,10 +201,13 @@ class Debugger(object):
     self.add_kp2d(J[0], bbox_img_id)
 
 
-  def add_smpl(self, pose, shape, kp3d=None, camera=[1, 0, 0], img_id='default'):
+
+  def add_smpl(self, pose, shape, kp3d=None, camera=None, img_id='default'):
     # clk = Clock()
 
-    camera = torch.tensor(camera, dtype=torch.float32).to(self.device)
+    if camera is None:
+        camera = self.camera
+
     pose = pose.reshape(24,3).to(self.device)
     shape = shape.reshape(1,10).to(self.device)
 
@@ -206,32 +219,30 @@ class Debugger(object):
     # pose[0] = torch.tensor(rot_v.flatten())
 
     # smpl
-    verts, joints, r, faces = self.smpl(shape, pose)
+    verts, J, r, faces = self.smpl(shape, pose)
 
-    rot_x = Rx_mat(torch.tensor([np.pi])).to(self.device)[0].T
+    # rot_x = Rx_mat(torch.tensor([np.pi])).to(self.device)[0].T
     ## render
-    verts_p = weak_perspective_first_translate(torch.matmul(verts[0], rot_x),
-                                            camera).detach().cpu().numpy()  # 对x,y弱透视投影，投影，平移，放缩
-
-    if kp3d is None:
-        J = weak_perspective_first_translate(torch.matmul(joints[0], rot_x),
-                                            camera).detach().cpu().numpy()
-    else:
-        J = weak_perspective_first_translate(torch.matmul(kp3d.to(self.device), rot_x),
-                                            camera).detach().cpu().numpy()
+    # verts_p = weak_perspective_first_translate(torch.matmul(verts[0], rot_x),
+    #                                         camera).detach().cpu().numpy()  # 对x,y弱透视投影，投影，平移，放缩
+    #
+    # if kp3d is None:
+    #     J = weak_perspective_first_translate(torch.matmul(joints[0], rot_x),
+    #                                         camera).detach().cpu().numpy()
+    # else:
+    #     J = weak_perspective_first_translate(torch.matmul(kp3d.to(self.device), rot_x),
+    #                                         camera).detach().cpu().numpy()
 
     obj = {
-        'verts': verts_p,  # 模型顶点
+        'verts': verts[0],  # 模型顶点
         'faces': faces,  # 面片序号
-        'J': J,  # 3D关节点
+        'J': J[0],  # 3D关节点
     }
 
     # 弱透视投影
-    color, depth = perspective_render_obj(obj,
-                  width=512, height=512, show_smpl_joints=True, use_viewer=False)
+    color, depth = perspective_render_obj(camera, obj,
+                   width=512, height=512, show_smpl_joints=True, use_viewer=False)
 
-    # print('smpl time: {}'.format(clk.elapsed()))
-    # add image
     self.add_img(color, img_id)
 
 
