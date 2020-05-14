@@ -3,6 +3,7 @@ import cv2
 import random
 import copy
 import torch.nn as nn
+import math
 
 import os
 import time
@@ -11,6 +12,7 @@ import torch
 import numpy as np
 from torch.autograd import Variable
 import torch.nn.functional as F
+from .opts import opt
 
 
 def pre_process(opt):
@@ -362,3 +364,25 @@ def decode_label_kp2d(mask, kp2d):
 if __name__ == '__main__':
     p = torch.tensor([1., 0., 0.]).view(3, 1)
     p1 = torch.matmul(Rz_mat(torch.tensor(np.pi / 2)), p)
+
+
+def get_camera_from_batch(bbox, kp2d):
+    bbox = bbox.cpu().numpy()
+
+    w = bbox[2] - bbox[0]
+    h = bbox[3] - bbox[1]
+
+    # fx = (w+h) / 2.0 * opt.camera_pose_z
+    # fx = max(w,h) / 2. * opt.camera_pose_z
+    fx = math.sqrt(w*h) * opt.camera_pose_z
+    fy = fx
+    cx = (bbox[0] + bbox[2]) / 2.
+    cy = (bbox[1] + bbox[3]) / 2.
+
+    return {
+        'camera_trans': np.array([0, 0, opt.camera_pose_z]),
+        'fx': fx,
+        'fy': fy,
+        'cx': cx,
+        'cy': cy
+    }

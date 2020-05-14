@@ -12,6 +12,8 @@ from models.network.smpl import SMPL
 from .smpl_np import SMPL_np
 from .render import weak_perspective_first_translate, perspective_render_obj
 from .util import Clock, Rx_mat, reflect_pose, batch_orth_proj
+from .opts import opt
+
 
 class Debugger(object):
   def __init__(self, smpl_path, theme='white', down_ratio=4, device='cpu'):
@@ -54,14 +56,14 @@ class Debugger(object):
 
   def default_camera(self):
       return {
-          'camera_trans': np.array([0,0,5]),
-          'fx': 800,
-          'fy': 800,
+          'camera_trans': np.array([0, 0, opt.camera_pose_z]),
+          'fx': 1000,
+          'fy': 1000,
           'cx': 256,
           'cy': 256,
       }
 
-  def blend_smpl(self, pyrender_color, img_id):
+  def add_blend_smpl(self, pyrender_color, img_id):
       gray = cv2.cvtColor(pyrender_color, cv2.COLOR_BGR2GRAY)
       mask =  (gray < 255).astype(np.uint8).reshape(gray.shape[0], gray.shape[1], 1)
 
@@ -219,7 +221,12 @@ class Debugger(object):
     # pose[0] = torch.tensor(rot_v.flatten())
 
     # smpl
-    verts, J, r, faces = self.smpl(shape, pose)
+    verts, joints, r, faces = self.smpl(shape, pose)
+
+    if kp3d is not None:
+        J = kp3d
+    else:
+        J = joints[0]
 
     # rot_x = Rx_mat(torch.tensor([np.pi])).to(self.device)[0].T
     ## render
@@ -236,14 +243,14 @@ class Debugger(object):
     obj = {
         'verts': verts[0],  # 模型顶点
         'faces': faces,  # 面片序号
-        'J': J[0],  # 3D关节点
+        'J': J,  # 3D关节点
     }
 
     # 弱透视投影
     color, depth = perspective_render_obj(camera, obj,
                    width=512, height=512, show_smpl_joints=True, use_viewer=False)
 
-    self.add_img(color, img_id)
+    self.add_blend_smpl(color, img_id)
 
 
 

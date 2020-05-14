@@ -13,7 +13,7 @@ import h5py
 
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 
-from utils.util import Clock, reflect_pose, decode_label_bbox, decode_label_kp2d
+from utils.util import Clock, reflect_pose, decode_label_bbox, decode_label_kp2d, get_camera_from_batch
 from utils.opts import opt
 from utils.debugger import Debugger
 
@@ -390,6 +390,7 @@ class Hum36m(Dataset):
             'dataset': 'hum36m'
         }
 
+
 if __name__ == '__main__':
     data = Hum36m('D:/paper/human_body_reconstruction/datasets/human_reconstruction/hum36m-toy',
                split='train',
@@ -436,7 +437,8 @@ if __name__ == '__main__':
         gt_id = 'smpl'
         debugger.add_img(img, img_id=gt_id)
         for obj in batch['gt']:
-            debugger.add_smpl(obj['pose'][0], obj['shape'][0], img_id=gt_id)
+            camera = get_camera_from_batch(obj['bbox'][0], obj['kp2d'][0])
+            debugger.add_smpl(obj['pose'][0], obj['shape'][0], kp3d=obj['kp3d'][0], camera=camera, img_id=gt_id)
 
 
         debugger.show_all_imgs(pause=True)

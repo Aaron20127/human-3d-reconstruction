@@ -140,6 +140,8 @@ agt('--num_epochs', default=1, type=int, help='.')
 agt('--lr', default=1.25e-4, type=float,  help='learning rate for batch size 32.')
 agt('--lr_step', default='90,120', type=str, help='drop learning rate by 10.')
 
+agt('--camera_pose_z', default=8, type=int, help='parameter z of camera pose of translation')
+
 # dataset
 agt('--batch_size_coco', default=1, type=int,  help='0: donot use this data set.')
 agt('--batch_size_lsp',  default=0, type=int, help='0: donot use this data set.')
