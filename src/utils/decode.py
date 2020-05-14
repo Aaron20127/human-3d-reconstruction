@@ -46,7 +46,7 @@ def _topk(scores, K=32):
 def decode(output, thresh=0.2, down_ratio=4.0):
     hm, wh, cd, pose, shape, camera = \
         output['box_hm'], output['box_wh'], output['box_cd'], \
-        output['pose'], output['shape'], output['camera']
+        output['pose'], output['shape'], output['camera_off']
 
     b, c, h, w = hm.size()
 

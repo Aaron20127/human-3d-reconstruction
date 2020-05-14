@@ -49,7 +49,8 @@ def FocalLoss(pred, gt):
 def L1loss(output, mask, ind, target):
     pred = transpose_and_gather_feat(output, ind)
     mask = mask.unsqueeze(2).expand_as(pred).float()
-    loss = F.l1_loss(pred * mask, target * mask, reduction='sum')
+    # loss = F.l1_loss(pred * mask, target * mask, reduction='sum')
+    loss = torch.abs(pred * mask - target * mask).sum()
     loss = loss / (mask.sum() + 1e-8)
     return loss
 
@@ -58,7 +59,8 @@ def L1loss(output, mask, ind, target):
 def L2loss(output, mask, ind, target):
     pred = transpose_and_gather_feat(output, ind)
     mask = mask.unsqueeze(2).expand_as(pred).float()
-    loss = F.mse_loss(pred * mask, target * mask, reduction='sum')
+    # loss = F.mse_loss(pred * mask, target * mask, reduction='sum')
+    loss = torch.sum((pred * mask - target * mask) ** 2)
     loss = loss / (mask.sum() + 1e-8)
     return loss
 
@@ -87,15 +89,16 @@ def kp2d_l1_loss(output, mask, target):
     output = output[target[:, 2] == 1]
     target = target[target[:, 2] == 1]
 
-    loss = F.l1_loss(target[:, 0:2], output, reduce='sum')
-    loss = loss / (output.size(0) * output.size(1) + 1e-8)
+    # loss = F.l1_loss(target[:, 0:2], output, reduction='sum')
+    loss = torch.abs(target[:, 0:2] - output).sum()
+    loss = loss / (output.numel() + 1e-8)
 
     return loss
 
 
-
 def kp3d_l2_loss(output, mask, target):
     target_ = target[mask == 1, ...]
-    loss = F.mse_loss(output, target_, reduction='sum')
-    loss = loss / (output.size(0) * output.size(1) + 1e-8)
+    # loss = F.mse_loss(output, target_, reduction='sum')
+    loss = torch.sum((output - target_) ** 2)
+    loss = loss / (output.numel() + 1e-8)
     return loss

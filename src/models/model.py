@@ -1,5 +1,6 @@
 import os
 import sys
+import numpy as np
 abspath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, abspath + '/../')
 
@@ -17,6 +18,7 @@ class HmrLoss(nn.Module):
     def __init__(self):
         super(HmrLoss, self).__init__()
         self.smpl = SMPL(opt.smpl_path)
+        self.Rx = Rx_mat(torch.tensor([np.pi])).to(opt.device)[0].T
         print('finished create smpl module.')
 
 
@@ -59,8 +61,8 @@ class HmrLoss(nn.Module):
             kp2d_loss = kp2d_l1_loss(kp2d, batch['kp2d_mask'], batch['kp2d'])
 
         if opt.kp3d_weight > 0 and 'kp3d' in batch:
-            kp3d = self._get_pred_kp3d(output['pose'], output['shape'], output['has_theta'],
-                                  batch['box_ind'], batch['kp2d_mask'])
+            kp3d = self._get_pred_kp3d(output['pose'], output['shape'], batch['has_kp3d'],
+                                       batch['box_ind'], batch['kp3d_mask'])
             kp3d_loss = kp3d_l2_loss(kp3d, batch['kp3d_mask'], batch['kp3d'])
 
 
@@ -121,15 +123,15 @@ class HmrLoss(nn.Module):
         mask_pre = mask.unsqueeze(2).expand_as(pred)
         camera_off = pred[mask_pre == 1].view(-1, 3)
 
-        c = (box_center + box_cd) * opt.down_ratio
-        f = torch.sqrt(box_wh[:,0] * box_wh[:,1])
+        c = (box_center + box_cd + camera_off[:, :2]) * opt.down_ratio
+        f = (camera_off[:, 2].abs() * torch.sqrt(box_wh[:,0] * box_wh[:,1])).view(-1,1) # TODO give camera off bias a initial value
+        # t = torch.tensor([0, 0, opt.camera_pose_z]).to(opt.device)
 
-        ## globle rotation
-        # R = torch.matmul(Rz_mat(camera[:, 5]), \
-        #                  torch.matmul(Ry_mat(camera[:, 4]), Rx_mat(camera[:, 3])))
-        # kp3d = torch.matmul(kp3d, R.permute(0,2,1))
+        kp3d = torch.matmul(kp3d, self.Rx) # global rotation
+        kp3d[:,:, 2] = -(kp3d[:,:, 2] - opt.camera_pose_z) # let z be positive
 
-        kp2d = batch_orth_proj(kp3d, camera) # TODO fisrt tranlation or first scale ?
+        kp3d = kp3d / torch.unsqueeze(kp3d[:,:,2], 2) # homogeneous vector
+        kp2d = kp3d[:,:,:2] * f.view(-1,1,1) + c.view(-1,1,2) # camera transformation
 
         return kp2d
 
