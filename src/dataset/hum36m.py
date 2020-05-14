@@ -290,21 +290,21 @@ class Hum36m(Dataset):
         for k in range(num_objs):
             ann = anns[k]
 
-            bbox = self._get_bbox(ann['bbox'], trans_mat)
+            bbox = self._get_bbox(ann['bbox'], trans_mat) / self.down_ratio
             h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
 
             if (h > 0 and w > 0):  # if outside the image, discard
                 ### 1. handle bbox
-                ct = np.array([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]) / self.down_ratio # down ratio
+                ct = np.array([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]) # down ratio
                 ct_int = ct.astype(np.int32)
 
-                box_wh[k] = 1. * w, 1. * h  # width and height of bbox
+                box_wh[k] = 1. * w, 1. * h# width and height of bbox
                 box_ind[k] = ct_int[1] * self.output_res + ct_int[0]  # center of bbox in feature map index 0-16384
                 box_cd[k] = ct - ct_int  # decimal of center of bbox
                 box_mask[k] = 1  # box ind mask
 
-                radius = gaussian_radius((math.ceil(h / self.down_ratio),
-                                          math.ceil(w / self.down_ratio)))
+                radius = gaussian_radius((math.ceil(h),
+                                          math.ceil(w)))
                 radius = max(0, int(radius))
                 draw_gaussian(box_hm[0], ct_int, radius)  # draw heat map
 
@@ -336,7 +336,7 @@ class Hum36m(Dataset):
 
                 ### groud truth
                 gt.append({
-                    'bbox': bbox,
+                    'bbox': bbox * self.down_ratio,
                     'kp2d': kp2d[k],
                     'kp3d': kp3d[k],
                     'pose': pose[k],

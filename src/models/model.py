@@ -21,7 +21,8 @@ class HmrLoss(nn.Module):
 
 
     def forward(self, output, batch):
-        hm_loss, wh_loss, cd_loss, pose_loss, shape_loss, kp2d_loss, kp3d_loss = 0, 0., 0., 0., 0., 0., 0.
+        hm_loss, wh_loss, cd_loss, pose_loss, \
+            shape_loss, kp2d_loss, kp3d_loss = torch.zeros(7).to(opt.device)
 
         ## 1.loss of object bbox
         # heat map loss of objects center
@@ -41,30 +42,27 @@ class HmrLoss(nn.Module):
 
 
         ## 2. loss of pose and shape
-        if opt.batch_size_hum36m > 0:
+        if opt.pose_weight > 0 and 'pose' in batch:
             pose_loss = pose_l2_loss(output['pose'], batch['theta_mask'],
                                        batch['box_ind'], batch['has_theta'], batch['pose'])
 
-
+        if opt.shape_weight > 0 and 'shape' in batch:
             shape_loss = shape_l2_loss(output['shape'], batch['theta_mask'],
                                          batch['box_ind'], batch['has_theta'], batch['shape'])
-        else:
-            pose_loss = torch.tensor(0.).to(opt.device)
-            shape_loss = torch.tensor(0.).to(opt.device)
-
 
 
         ## 3. loss of key points
-        kp2d = self._get_pred_kp2d(output['pose'], output['shape'], output['camera'],
-                                   batch['box_ind'], batch['kp2d_mask'])
-        kp2d_loss = kp2d_l1_loss(kp2d, batch['kp2d_mask'], batch['kp2d'])
+        if opt.kp2d_weight > 0 and 'kp2d' in batch:
+            kp2d = self._get_pred_kp2d(output['pose'], output['shape'], output['camera_off'],
+                                       output['box_cd'], output['box_wh'],
+                                       batch['box_ind'], batch['kp2d_mask'])
+            kp2d_loss = kp2d_l1_loss(kp2d, batch['kp2d_mask'], batch['kp2d'])
 
-        if opt.batch_size_hum36m > 0:
-            kp3d = self._get_pred_kp3d(output['pose'], output['shape'], batch['has_kp3d'],
-                                       batch['box_ind'], batch['kp3d_mask'])
+        if opt.kp3d_weight > 0 and 'kp3d' in batch:
+            kp3d = self._get_pred_kp3d(output['pose'], output['shape'], output['has_theta'],
+                                  batch['box_ind'], batch['kp2d_mask'])
             kp3d_loss = kp3d_l2_loss(kp3d, batch['kp3d_mask'], batch['kp3d'])
-        else:
-            kp3d_loss = torch.tensor(0.).to(opt.device)
+
 
         ## total loss
         loss = opt.hm_weight * hm_loss + \
@@ -74,6 +72,7 @@ class HmrLoss(nn.Module):
                opt.shape_weight * shape_loss + \
                opt.kp2d_weight * kp2d_loss + \
                opt.kp3d_weight * kp3d_loss
+
 
         loss_stats = {'loss': loss,
                       'hm': hm_loss,
@@ -87,7 +86,7 @@ class HmrLoss(nn.Module):
         return loss, loss_stats
 
 
-    def _get_pred_kp2d(self, pose, shape, camera, ind, mask):
+    def _get_pred_kp2d(self, pose, shape, camera_off, cd, wh, ind, mask):
         # pose = pose[has_theta.flatten()==1, ...]
         # shape = shape[has_theta.flatten()==1, ...]
         # camera = camera[has_theta.flatten()==1, ...]
@@ -101,12 +100,29 @@ class HmrLoss(nn.Module):
         mask_pre = mask.unsqueeze(2).expand_as(pred)
         shape = pred[mask_pre == 1].view(-1, 10)
 
-        pred = transpose_and_gather_feat(camera, ind)
-        mask_pre = mask.unsqueeze(2).expand_as(pred)
-        camera = pred[mask_pre == 1].view(-1, 3)
 
         ## smpl
         _, kp3d, _, _ = self.smpl(beta=shape, theta=pose)
+
+
+        ## kp2d
+        ind_ = ind[mask == 1].view(ind.size(0), -1)
+        box_center = torch.cat((ind_ % opt.output_res, ind_ // opt.output_res), 1)
+
+        pred = transpose_and_gather_feat(wh, ind)
+        mask_pre = mask.unsqueeze(2).expand_as(pred)
+        box_wh = pred[mask_pre == 1].view(-1, 2)
+
+        pred = transpose_and_gather_feat(cd, ind)
+        mask_pre = mask.unsqueeze(2).expand_as(pred)
+        box_cd = pred[mask_pre == 1].view(-1, 2)
+
+        pred = transpose_and_gather_feat(camera_off, ind)
+        mask_pre = mask.unsqueeze(2).expand_as(pred)
+        camera_off = pred[mask_pre == 1].view(-1, 3)
+
+        c = (box_center + box_cd) * opt.down_ratio
+        f = torch.sqrt(box_wh[:,0] * box_wh[:,1])
 
         ## globle rotation
         # R = torch.matmul(Rz_mat(camera[:, 5]), \
@@ -116,6 +132,7 @@ class HmrLoss(nn.Module):
         kp2d = batch_orth_proj(kp3d, camera) # TODO fisrt tranlation or first scale ?
 
         return kp2d
+
 
     def _get_pred_kp3d(self, pose, shape, has_kp3d, ind, mask):
         # pose = pose[has_theta.flatten()==1, ...]

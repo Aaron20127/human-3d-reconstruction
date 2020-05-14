@@ -344,8 +344,8 @@ def decode_label_bbox(mask, ind, cd, wh, down_ratio=4.0, output_res=128):
     whs =  wh[mask==1]
 
     center = (np.stack((inds % output_res, inds // output_res),1) + cds) * down_ratio
-    l_t = center - whs / 2.0
-    r_b = center + whs / 2.0
+    l_t = center - whs / 2.0 * down_ratio
+    r_b = center + whs / 2.0 * down_ratio
 
     bbox = np.hstack((l_t, r_b))
 
