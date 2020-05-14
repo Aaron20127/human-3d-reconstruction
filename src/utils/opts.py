@@ -170,12 +170,15 @@ opt.eval_set = ['up3d']
 
 opt.data_set_path = {
     'coco2014': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2014',
-    'coco2017': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2017',
-    'lsp': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp/',
+    # 'coco2017': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2017',
+    'coco2017': "/opt/ZHENGXU/DATASET/COCO2017",
+    # 'lsp': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp/',
+    'lsp': "/opt/LIWEI/datasets/lsp",
     'lsp_ext': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_extend',
     # 'ai-ch':'E:/HMR/data/ai_challenger_keypoint_train_20170902',
     # 'mpi-inf-3dhp':'E:/HMR/data/mpi_inf_3dhp',
-    'hum36m': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/hum36m-toy',
+    'hum36m': '/opt/LIWEI/datasets/hum36m-toy',
+    # 'hum36m': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction//hum36m-toy',
     'mosh': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/mosh/neutrMosh',
     'up3d': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/up-3d'
 }

@@ -21,7 +21,8 @@ class HmrLoss(nn.Module):
 
 
     def forward(self, output, batch):
-        hm_loss, wh_loss, cd_loss, pose_loss, shape_loss, kp2d_loss, kp3d_loss = 0, 0., 0., 0., 0., 0., 0.
+        hm_loss, wh_loss, cd_loss, pose_loss, shape_loss, kp2d_loss, kp3d_loss = \
+            torch.zeros(7).to(opt.device)
 
         ## 1.loss of object bbox
         # heat map loss of objects center
@@ -53,11 +54,12 @@ class HmrLoss(nn.Module):
             shape_loss = torch.tensor(0.).to(opt.device)
 
 
+        if opt.kp2d_weight > 0:
+            ## 3. loss of key points
+            kp2d = self._get_pred_kp2d(output['pose'], output['shape'], output['camera'],
+                                       batch['box_ind'], batch['kp2d_mask'])
+            kp2d_loss = kp2d_l1_loss(kp2d, batch['kp2d_mask'], batch['kp2d'])
 
-        ## 3. loss of key points
-        kp2d = self._get_pred_kp2d(output['pose'], output['shape'], output['camera'],
-                                   batch['box_ind'], batch['kp2d_mask'])
-        kp2d_loss = kp2d_l1_loss(kp2d, batch['kp2d_mask'], batch['kp2d'])
 
         if opt.batch_size_hum36m > 0:
             kp3d = self._get_pred_kp3d(output['pose'], output['shape'], batch['has_kp3d'],
