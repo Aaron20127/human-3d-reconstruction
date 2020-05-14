@@ -151,7 +151,7 @@ class Debugger(object):
 
 
   def add_smpl_kp2d(self, pose, shape, camera, img_id='default', bbox_img_id=None):
-    camera = camera.to(self.device)
+    camera = camera.to(self.device).type(torch.float32)
     pose = pose.view(24,3).to(self.device)
     shape = shape.view(1,10).to(self.device)
     # camera[0] *=2
@@ -160,7 +160,7 @@ class Debugger(object):
     verts, joints, r, faces = self.smpl(shape, pose)
 
     # rotation for show
-    camera_show = torch.tensor([1, 0, 0]).to(self.device)
+    camera_show = torch.tensor([1., 0., 0.]).to(self.device)
     # rot_x = Rx_mat(torch.tensor([np.pi])).to(self.device)
     # verts_show = torch.matmul(verts, rot_x)
     # joints_show = torch.matmul(joints, rot_x)
