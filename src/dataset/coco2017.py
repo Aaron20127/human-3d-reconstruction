@@ -295,7 +295,7 @@ class COCO2017(Dataset):
                                 kps[j, 1] >= 0 and kps[j, 1] < self.input_res:  # key points in output feature map
                             vis_kps += 1
                             kp2d[k, j] = kps[j]
-                if vis_kps > 0:
+                if vis_kps >= self.min_vis_kps:
                     kp2d_mask[k] = 1
 
                 ### groud truth

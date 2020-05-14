@@ -28,10 +28,6 @@ def coco_data_loader():
             dataset = COCO2017(
                 data_path=path,
                 split='train',
-                # image_scale_range=(0.6, 1.2),
-                # trans_scale=0.5,
-                # flip_prob=0.5,
-                # rot_prob=0.5,
                 image_scale_range=(0.5, 1.21),
                 trans_scale=0.5,
                 flip_prob=0.5,
