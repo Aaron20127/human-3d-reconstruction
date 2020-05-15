@@ -33,7 +33,8 @@ def pre_process(opt):
 
     """debug"""
     if opt.debug > 0:
-        pass
+        if opt.batch_size_coco + opt.batch_size_lsp + opt.batch_size_hum36m > 1:
+            assert 0, 'needed one batch size to debug.'
 
 
 class AverageMeter(object):

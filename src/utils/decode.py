@@ -72,17 +72,14 @@ def decode(output, thresh=0.2, down_ratio=4.0):
             c[:, 0] = center_[:, 1]
             c[:, 1] = center_[:, 0]
 
-            lt = ((c + cd_)* down_ratio - wh_ / 2.0)
-            rb = ((c + cd_)* down_ratio + wh_ / 2.0)
+            lt = ((c + cd_) - wh_ / 2.0) * down_ratio
+            rb = ((c + cd_) + wh_ / 2.0) * down_ratio
 
             bbox_ = torch.cat((lt, rb), 1)
 
             # camera
-            # c = (c + cd_ + camera_[:, :2]) * down_ratio
-            # f = (camera_[:, 2].abs() * torch.sqrt(wh_[:, 0] * wh_[:, 1])).view(-1,1)
-
-            c = (c + cd_) * down_ratio
-            f = (torch.sqrt(wh_[:, 0] * wh_[:, 1])).view(-1,1) * 4
+            c = (c + cd_ + camera_[:, :2]) * down_ratio
+            f = (camera_[:, 2].abs() * torch.sqrt(wh_[:, 0] * wh_[:, 1]) * down_ratio).view(-1,1)
 
             camera_ = []
             for j in range(c.size(0)):
