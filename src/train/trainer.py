@@ -9,7 +9,7 @@ import sys
 abspath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, abspath + '/../')
 
-from dataset.dataloader import coco_data_loader, lsp_data_loader, hum36m_data_loader, multi_data_loader
+from dataset.dataloader import coco_data_loader, lsp_data_loader, hum36m_data_loader, multi_data_loader, val_data_loader
 from models.model import HmrNetBase, ModelWithLoss, HmrLoss
 from utils.debugger import Debugger
 
@@ -55,19 +55,23 @@ class HMRTrainer(object):
     def create_data_loader(self, opt):
         print('start creating data loader ...')
 
-        loaders = []
+        if opt.val:
+            self.val_loader = multi_data_loader([val_data_loader()])
+        else:
+            loaders = []
 
-        if opt.batch_size_coco > 0:
-            loaders.append(coco_data_loader())
-        if opt.batch_size_lsp > 0:
-            loaders.append(lsp_data_loader())
-        if opt.batch_size_hum36m > 0:
-            loaders.append(hum36m_data_loader())
+            if opt.batch_size_coco > 0:
+                loaders.append(coco_data_loader())
+            if opt.batch_size_lsp > 0:
+                loaders.append(lsp_data_loader())
+            if opt.batch_size_hum36m > 0:
+                loaders.append(hum36m_data_loader())
 
-        if not loaders:
-            assert 0, 'no data loaders.'
+            if not loaders:
+                assert 0, 'no data loaders.'
 
-        self.train_loader = multi_data_loader(loaders)
+            self.train_loader = multi_data_loader(loaders)
+        
 
         print('finished create data loader.')
 
@@ -115,7 +119,7 @@ class HMRTrainer(object):
         if phase == 'train':
             model_with_loss.train()
         else:
-            if len(self.opt.gpus) > 1:
+            if len(self.opt.gpus_list) > 1:
                 model_with_loss = self.model_with_loss.module
             model_with_loss.eval()
             torch.cuda.empty_cache()
@@ -211,7 +215,7 @@ class HMRTrainer(object):
 
 
     def val(self):
-        self.run_epoch('val', 0, self.train_loader)
+        self.run_epoch('val', 0, self.val_loader)
         # self.val_loader.dataset.run_eval(preds, self.opt.save_dir)
 
 
@@ -247,22 +251,15 @@ class HMRTrainer(object):
             smpl_id = 'pred_smpl'
             debugger.add_img(img, img_id=bbox_kp2d_id)
             debugger.add_img(img, img_id=smpl_id)
-            for obj in pred:
-                if len(obj) > 0:
-                    for j in range(obj['bbox'].size(0)):
-                        debugger.add_bbox(obj['bbox'][j].detach().cpu().numpy(),
-                                          conf=obj['score'][j].detach().cpu().numpy(), img_id=bbox_kp2d_id)
-                        debugger.add_smpl_kp2d(obj['pose'][j], obj['shape'][j], obj['camera'][j],
-                                                img_id=smpl_id, bbox_img_id=bbox_kp2d_id)
-                        # debugger.add_smpl_kp2d(obj['pose'][j], obj['shape'][j], obj['camera'][j],
-                        #                         img_id=smpl_id, bbox_img_id=bbox_kp2d_id)
+
+            obj = pred[i]
+            if len(obj) > 0:
+                for j in range(obj['bbox'].shape[0]):
+                    debugger.add_bbox(obj['bbox'][j],conf=obj['score'][j], img_id=bbox_kp2d_id)
+                    debugger.add_smpl_kp2d(obj['pose'][j], obj['shape'][j], obj['camera'][j],
+                                            img_id=smpl_id, bbox_img_id=bbox_kp2d_id)
 
             debugger.show_all_imgs(pause=True)
-            # # gt smpl
-            # gt_id = 'smpl'
-            # debugger.add_img(img, img_id=gt_id)
-            # for obj in batch['gt']:
-            #     debugger.add_smpl(obj['pose'][0], obj['shape'][0], img_id=gt_id)
 
 
 

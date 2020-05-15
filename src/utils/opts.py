@@ -147,6 +147,7 @@ agt('--batch_size_coco', default=1, type=int,  help='0: donot use this data set.
 agt('--batch_size_lsp',  default=0, type=int, help='0: donot use this data set.')
 agt('--batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
 agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single-thread.')
+agt('--min_vis_kps', default=6, type=int, help='minimum number of visible points.')
 
 
 opt = parser.parse_args()
@@ -154,7 +155,7 @@ opt = parser.parse_args()
 
 
 ################ network ################
-opt.heads = {'box_hm':1, 'box_wh':2, 'box_cd':2, 'pose':72, 'shape':10, 'camera_off':3}
+opt.heads = {'box_hm':1, 'box_wh':2, 'box_cd':2, 'pose':72, 'shape':10, 'camera':3}
 opt.smpl_path = os.path.join(root_dir, 'data', 'neutral_smpl_with_cocoplus_reg.pkl')
 opt.output_res = 128
 opt.input_res = 512
@@ -167,9 +168,10 @@ opt.coco_data_set=['coco2017']
 opt.lsp_data_set=['lsp']
 opt.hum36m_data_set=['hum36m']
 
-opt.train_set =  ['coco2017', 'lsp', 'hum36m']
-opt.train_adv_set = ['mosh']
-opt.eval_set = ['up3d']
+opt.val_data_set=['coco2017']
+
+# opt.train_adv_set = ['mosh']
+# opt.eval_set = ['up3d']
 
 
 opt.data_set_path = {

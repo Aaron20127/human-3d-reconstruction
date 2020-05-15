@@ -24,11 +24,17 @@ def pre_process(opt):
     opt.debug_dir = os.path.join(opt.save_dir, 'debug')
 
     """train"""
+    opt.gpus_list = [int(i) for i in opt.gpus.split(',')]
     opt.lr_step = [int(i) for i in opt.lr_step.split(',')]
 
     """model"""
     if opt.resume and opt.load_model == '':
         opt.load_model = os.path.join(opt.save_dir, 'model_last.pth')
+
+    """debug"""
+    if opt.debug > 0:
+
+
 
 
 class AverageMeter(object):
@@ -366,7 +372,7 @@ if __name__ == '__main__':
     p1 = torch.matmul(Rz_mat(torch.tensor(np.pi / 2)), p)
 
 
-def get_camera_from_batch(bbox, kp2d):
+def get_camera_from_batch(bbox):
     bbox = bbox.cpu().numpy()
 
     w = bbox[2] - bbox[0]
@@ -379,10 +385,20 @@ def get_camera_from_batch(bbox, kp2d):
     cx = (bbox[0] + bbox[2]) / 2.
     cy = (bbox[1] + bbox[3]) / 2.
 
-    return {
-        'camera_trans': np.array([0, 0, opt.camera_pose_z]),
-        'fx': fx,
-        'fy': fy,
-        'cx': cx,
-        'cy': cy
-    }
+    k = np.eye(4, 4)
+    k[0, 0] = fx
+    k[1, 1] = fx
+    k[0, 2] = cx
+    k[1, 2] = cy
+    k[2, 3] = opt.camera_pose_z
+
+    return k
+
+
+def perspective_transform(kp3d, K):
+    kp3d_h = np.hstack((kp3d, np.ones((kp3d.shape[0], 1))))
+    kp3d_h = np.dot(K, kp3d_h.T)[:3, :]
+    kp2d = kp3d_h / kp3d_h[2, :]
+
+    return kp2d.T
+

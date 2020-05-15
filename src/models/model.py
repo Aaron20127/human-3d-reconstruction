@@ -55,7 +55,7 @@ class HmrLoss(nn.Module):
 
         ## 3. loss of key points
         if opt.kp2d_weight > 0 and 'kp2d' in batch:
-            kp2d = self._get_pred_kp2d(output['pose'], output['shape'], output['camera_off'],
+            kp2d = self._get_pred_kp2d(output['pose'], output['shape'], output['camera'],
                                        output['box_cd'], output['box_wh'],
                                        batch['box_ind'], batch['kp2d_mask'])
             kp2d_loss = kp2d_l1_loss(kp2d, batch['kp2d_mask'], batch['kp2d'])
@@ -88,7 +88,7 @@ class HmrLoss(nn.Module):
         return loss, loss_stats
 
 
-    def _get_pred_kp2d(self, pose, shape, camera_off, cd, wh, ind, mask):
+    def _get_pred_kp2d(self, pose, shape, camera, cd, wh, ind, mask):
         # pose = pose[has_theta.flatten()==1, ...]
         # shape = shape[has_theta.flatten()==1, ...]
         # camera = camera[has_theta.flatten()==1, ...]
@@ -119,12 +119,12 @@ class HmrLoss(nn.Module):
         mask_pre = mask.unsqueeze(2).expand_as(pred)
         box_cd = pred[mask_pre == 1].view(-1, 2)
 
-        pred = transpose_and_gather_feat(camera_off, ind)
+        pred = transpose_and_gather_feat(camera, ind)
         mask_pre = mask.unsqueeze(2).expand_as(pred)
-        camera_off = pred[mask_pre == 1].view(-1, 3)
+        camera = pred[mask_pre == 1].view(-1, 3)
 
-        c = (box_center + box_cd + camera_off[:, :2]) * opt.down_ratio
-        f = (camera_off[:, 2].abs() * torch.sqrt(box_wh[:,0] * box_wh[:,1])).view(-1,1) # TODO give camera off bias a initial value
+        c = (box_center + box_cd + camera[:, :2]) * opt.down_ratio
+        f = (camera[:, 2].abs() * torch.sqrt(box_wh[:,0] * box_wh[:,1])).view(-1,1) # TODO give camera off bias a initial value
         # t = torch.tensor([0, 0, opt.camera_pose_z]).to(opt.device)
 
         kp3d = torch.matmul(kp3d, self.Rx) # global rotation

@@ -10,8 +10,8 @@ sys.path.insert(0, abspath + '/../')
 
 from models.network.smpl import SMPL
 from .smpl_np import SMPL_np
-from .render import weak_perspective_first_translate, perspective_render_obj
-from .util import Clock, Rx_mat, reflect_pose, batch_orth_proj
+from .render import perspective_render_obj
+from .util import Clock, Rx_mat, reflect_pose, perspective_transform
 from .opts import opt
 
 
@@ -55,13 +55,22 @@ class Debugger(object):
     self.camera = self.default_camera()
 
   def default_camera(self):
-      return {
-          'camera_trans': np.array([0, 0, opt.camera_pose_z]),
-          'fx': 1000,
-          'fy': 1000,
-          'cx': 256,
-          'cy': 256,
-      }
+      # return {
+      #     'camera_trans': np.array([0, 0, opt.camera_pose_z]),
+      #     'fx': 1000,
+      #     'fy': 1000,
+      #     'cx': 256,
+      #     'cy': 256,
+      # }
+
+      k = np.eye(4, 4)
+      k[0, 0] = 1000
+      k[1, 1] = 1000
+      k[0, 2] = 256
+      k[1, 2] = 256
+      k[2, 3] = opt.camera_pose_z
+
+      return k
 
   def add_blend_smpl(self, pyrender_color, img_id):
       gray = cv2.cvtColor(pyrender_color, cv2.COLOR_BGR2GRAY)
@@ -103,7 +112,7 @@ class Debugger(object):
 
   
   def gen_colormap(self, img, output_res=None):
-    img = img.copy()
+    # img = img.copy()
     c, h, w = img.shape[0], img.shape[1], img.shape[2]
     if output_res is None:
       output_res = (h * self.down_ratio, w * self.down_ratio)
@@ -163,49 +172,32 @@ class Debugger(object):
 
 
   def add_smpl_kp2d(self, pose, shape, camera, img_id='default', bbox_img_id=None):
-    camera = camera.to(self.device)
-    pose = pose.view(24,3).to(self.device)
-    shape = shape.view(1,10).to(self.device)
-    # camera[0] *=2
+
+    pose = torch.tensor(pose.reshape(24,3)).to(self.device)
+    shape = torch.tensor(shape.reshape(1,10)).to(self.device)
 
     # smpl
     verts, joints, r, faces = self.smpl(shape, pose)
 
-    # rotation for show
-    camera_show = torch.tensor([1, 0, 0]).to(self.device)
-    # rot_x = Rx_mat(torch.tensor([np.pi])).to(self.device)
-    # verts_show = torch.matmul(verts, rot_x)
-    # joints_show = torch.matmul(joints, rot_x)
-
-    verts_show_p = weak_perspective_first_translate(verts, camera_show).detach().cpu().numpy()
-    joints_show_p = weak_perspective_first_translate(joints, camera_show).detach().cpu().numpy()
-
-    # verts_show_p[:, :, 0] = -verts_show_p[:, :, 0]
-    # verts_show_p[:, :, 1] = -verts_show_p[:, :, 1]
-    # joints_show_p[:, :, 0] = -joints_show_p[:, :, 0]
-    # joints_show_p[:, :, 1] = -joints_show_p[:, :, 1]
-
     obj = {
-        'verts': verts_show_p[0],  # 模型顶点
+        'verts': verts[0],  # 模型顶点
         'faces': faces,  # 面片序号
-        'J': joints_show_p[0],  # 3D关节点
+        'J': joints[0],  # 3D关节点
     }
 
-    color, depth = perspective_render_obj(obj,
-                  width=512, height=512, show_smpl_joints=False, use_viewer=False)
+    # 弱透视投影
+    color, depth = perspective_render_obj(camera, obj,
+                   width=512, height=512, show_smpl_joints=True, use_viewer=False)
 
-
-    self.blend_smpl(color, img_id)
+    self.add_blend_smpl(color, img_id)
 
     ##
-    J = weak_perspective_first_translate(joints, camera).detach().cpu().numpy()
-    J[..., 2] = 1
-    self.add_kp2d(J[0], bbox_img_id)
+    kp2d = perspective_transform(joints[0].detach().cpu().numpy(), camera)
+    self.add_kp2d(kp2d, bbox_img_id)
 
 
 
   def add_smpl(self, pose, shape, kp3d=None, camera=None, img_id='default'):
-    # clk = Clock()
 
     if camera is None:
         camera = self.camera
@@ -213,12 +205,6 @@ class Debugger(object):
     pose = pose.reshape(24,3).to(self.device)
     shape = shape.reshape(1,10).to(self.device)
 
-    ## rotate from x axis, just for view. note pyrender y axis from bottom to top
-    # rot_v = pose[0].detach().clone().cpu().numpy()
-    # R_mat, _ = cv2.Rodrigues(rot_v)
-    # R_mat = Rx_mat(np.pi) * R_mat
-    # rot_v, _ = cv2.Rodrigues(R_mat)
-    # pose[0] = torch.tensor(rot_v.flatten())
 
     # smpl
     verts, joints, r, faces = self.smpl(shape, pose)
@@ -227,18 +213,6 @@ class Debugger(object):
         J = kp3d
     else:
         J = joints[0]
-
-    # rot_x = Rx_mat(torch.tensor([np.pi])).to(self.device)[0].T
-    ## render
-    # verts_p = weak_perspective_first_translate(torch.matmul(verts[0], rot_x),
-    #                                         camera).detach().cpu().numpy()  # 对x,y弱透视投影，投影，平移，放缩
-    #
-    # if kp3d is None:
-    #     J = weak_perspective_first_translate(torch.matmul(joints[0], rot_x),
-    #                                         camera).detach().cpu().numpy()
-    # else:
-    #     J = weak_perspective_first_translate(torch.matmul(kp3d.to(self.device), rot_x),
-    #                                         camera).detach().cpu().numpy()
 
     obj = {
         'verts': verts[0],  # 模型顶点

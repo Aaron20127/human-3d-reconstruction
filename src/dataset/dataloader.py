@@ -33,6 +33,7 @@ def coco_data_loader():
                 flip_prob=0.5,
                 rot_prob=-1,
                 rot_degree=30,
+                min_vis_kps= opt.min_vis_kps,
                 max_data_len=-1
             )
         else:
@@ -123,6 +124,42 @@ def hum36m_data_loader():
     )
 
 
+def val_data_loader():
+    datasets = []
+    for name in opt.val_data_set:
+        path = opt.data_set_path[name]
+        if name == 'coco2014':
+            dataset = COCO2014(path)
+        elif name == 'coco2017':
+            dataset = COCO2017(
+                data_path=path,
+                split='val',
+                image_scale_range=(1.0, 1.01),
+                trans_scale=0,
+                flip_prob=0.5,
+                rot_prob=-1,
+                rot_degree=30,
+                max_data_len=-1
+            )
+        else:
+            msg = 'invalid dataset {}.'.format(name)
+            sys.exit(msg)
+
+        datasets.append(dataset)
+
+    new_datasets = ConcatDataset(datasets)
+
+    return DataLoader(
+        dataset=new_datasets,
+        batch_size=2,
+        shuffle=True,
+        drop_last=True,
+        pin_memory=True,
+        num_workers=opt.num_workers
+    )
+
+
+
 class multi_data_loader(object):
     """
     Asseble multipule DataLoaders to one DataLoader.
@@ -161,7 +198,6 @@ class multi_data_loader(object):
 
         batch = self.merge_batch(data_list)
         return batch
-
 
     def merge_batch(self, batch):
         try:

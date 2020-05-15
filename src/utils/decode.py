@@ -1,4 +1,5 @@
-
+from .opts import opt
+import numpy as np
 import torch
 import torch.nn as nn
 from .util import gather_feat, transpose_and_gather_feat, sigmoid
@@ -46,7 +47,7 @@ def _topk(scores, K=32):
 def decode(output, thresh=0.2, down_ratio=4.0):
     hm, wh, cd, pose, shape, camera = \
         output['box_hm'], output['box_wh'], output['box_cd'], \
-        output['pose'], output['shape'], output['camera_off']
+        output['pose'], output['shape'], output['camera']
 
     b, c, h, w = hm.size()
 
@@ -66,23 +67,38 @@ def decode(output, thresh=0.2, down_ratio=4.0):
         score_ = score[i, :, mask[i]][0]
 
         if len(center_) > 0:
+            # bbox
             c = center_.clone()
             c[:, 0] = center_[:, 1]
             c[:, 1] = center_[:, 0]
 
-            lt = (c + cd_) * down_ratio - wh_ / 2.0
-            rb = (c + cd_) * down_ratio + wh_ / 2.0
+            lt = ((c + cd_)* down_ratio - wh_ / 2.0)
+            rb = ((c + cd_)* down_ratio + wh_ / 2.0)
 
             bbox_ = torch.cat((lt, rb), 1)
 
+            # camera
+            # c = (c + cd_ + camera_[:, :2]) * down_ratio
+            # f = (camera_[:, 2].abs() * torch.sqrt(wh_[:, 0] * wh_[:, 1])).view(-1,1)
+
+            c = (c + cd_) * down_ratio
+            f = (torch.sqrt(wh_[:, 0] * wh_[:, 1])).view(-1,1) * 4
+
+            k = torch.eye(4, 4).unsqueeze(0).expand(c.size(0), 4, 4)
+            k[:, 0, 0] = f[:, 0]
+            k[:, 1, 1] = f[:, 0]
+            k[:, 0, 2] = c[:, 0]
+            k[:, 1, 2] = c[:, 1]
+            k[:, 2, 3] = opt.camera_pose_z
+
             ret.append({
-                'score': score_,
-                'bbox': bbox_,
-                'pose': pose_,
-                'shape': shape_,
-                'camera': camera_})
+                'score': score_.detach().cpu().numpy(),
+                'bbox': bbox_.detach().cpu().numpy(),
+                'pose': pose_.detach().cpu().numpy(),
+                'shape': shape_.detach().cpu().numpy(),
+                'camera': k.detach().cpu().numpy()})
         else:
-            ret.append([])
+            ret.append({})
 
     return ret
 

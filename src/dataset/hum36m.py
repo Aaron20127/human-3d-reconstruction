@@ -437,7 +437,7 @@ if __name__ == '__main__':
         gt_id = 'smpl'
         debugger.add_img(img, img_id=gt_id)
         for obj in batch['gt']:
-            camera = get_camera_from_batch(obj['bbox'][0], obj['kp2d'][0])
+            camera = get_camera_from_batch(obj['bbox'][0])
             debugger.add_smpl(obj['pose'][0], obj['shape'][0], kp3d=obj['kp3d'][0], camera=camera, img_id=gt_id)
 
 
