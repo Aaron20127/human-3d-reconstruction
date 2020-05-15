@@ -151,7 +151,7 @@ def val_data_loader():
 
     return DataLoader(
         dataset=new_datasets,
-        batch_size=2,
+        batch_size=1,
         shuffle=True,
         drop_last=True,
         pin_memory=True,

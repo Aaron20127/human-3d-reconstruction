@@ -33,8 +33,7 @@ def pre_process(opt):
 
     """debug"""
     if opt.debug > 0:
-
-
+        pass
 
 
 class AverageMeter(object):
@@ -385,19 +384,23 @@ def get_camera_from_batch(bbox):
     cx = (bbox[0] + bbox[2]) / 2.
     cy = (bbox[1] + bbox[3]) / 2.
 
-    k = np.eye(4, 4)
+    k = np.eye(3, 3)
     k[0, 0] = fx
-    k[1, 1] = fx
+    k[1, 1] = fy
     k[0, 2] = cx
     k[1, 2] = cy
-    k[2, 3] = opt.camera_pose_z
 
-    return k
+    t = np.array([[0, 0, opt.camera_pose_z]]).T
+
+    return {
+        'k': k,
+        't': t
+    }
 
 
-def perspective_transform(kp3d, K):
-    kp3d_h = np.hstack((kp3d, np.ones((kp3d.shape[0], 1))))
-    kp3d_h = np.dot(K, kp3d_h.T)[:3, :]
+def perspective_transform(kp3d, camera):
+    kp3d_t = kp3d.T + camera['t']
+    kp3d_h = np.dot(camera['k'], kp3d_t)
     kp2d = kp3d_h / kp3d_h[2, :]
 
     return kp2d.T

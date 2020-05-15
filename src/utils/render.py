@@ -12,10 +12,10 @@ def perspective_render_obj(camera, obj, width=512, height=512, show_smpl_joints=
 
     # add camera
     camera_pose = np.eye(4,4)
-    camera_pose[:3, 3] = camera[:3, 3]
+    camera_pose[:3, 3] = camera['t'].flatten()
     camera=pyrender.camera.IntrinsicsCamera(
-            fx=camera[0,0], fy=camera[1,1],
-            cx=camera[0,2], cy=camera[1,2])
+            fx=camera['k'][0,0], fy=camera['k'][1,1],
+            cx=camera['k'][0,2], cy=camera['k'][1,2])
     scene.add(camera, pose=camera_pose)
 
     # add verts and faces

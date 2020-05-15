@@ -55,22 +55,18 @@ class Debugger(object):
     self.camera = self.default_camera()
 
   def default_camera(self):
-      # return {
-      #     'camera_trans': np.array([0, 0, opt.camera_pose_z]),
-      #     'fx': 1000,
-      #     'fy': 1000,
-      #     'cx': 256,
-      #     'cy': 256,
-      # }
-
-      k = np.eye(4, 4)
+      k = np.eye(3, 3)
       k[0, 0] = 1000
       k[1, 1] = 1000
       k[0, 2] = 256
       k[1, 2] = 256
-      k[2, 3] = opt.camera_pose_z
 
-      return k
+      t = np.array([[0, 0, opt.camera_pose_z]]).T
+
+      return {
+          'k': k,
+          't': t
+      }
 
   def add_blend_smpl(self, pyrender_color, img_id):
       gray = cv2.cvtColor(pyrender_color, cv2.COLOR_BGR2GRAY)
@@ -222,10 +218,13 @@ class Debugger(object):
 
     # 弱透视投影
     color, depth = perspective_render_obj(camera, obj,
-                   width=512, height=512, show_smpl_joints=True, use_viewer=False)
+                   width=512, height=512, show_smpl_joints=False, use_viewer=False)
 
     self.add_blend_smpl(color, img_id)
 
+    #
+    kp2d = perspective_transform(J.detach().cpu().numpy(), camera)
+    self.add_kp2d(kp2d, img_id)
 
 
   def add_smpl_np(self, pose, shape, kp3d=None, camera=[1,0,0], img_id='default'):

@@ -108,7 +108,7 @@ class HmrLoss(nn.Module):
 
 
         ## kp2d
-        ind_ = ind[mask == 1].view(ind.size(0), -1)
+        ind_ = ind[mask == 1].view(-1, 1)
         box_center = torch.cat((ind_ % opt.output_res, ind_ // opt.output_res), 1)
 
         pred = transpose_and_gather_feat(wh, ind)

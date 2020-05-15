@@ -55,9 +55,7 @@ class HMRTrainer(object):
     def create_data_loader(self, opt):
         print('start creating data loader ...')
 
-        if opt.val:
-            self.val_loader = multi_data_loader([val_data_loader()])
-        else:
+        if not opt.val:
             loaders = []
 
             if opt.batch_size_coco > 0:
@@ -71,7 +69,8 @@ class HMRTrainer(object):
                 assert 0, 'no data loaders.'
 
             self.train_loader = multi_data_loader(loaders)
-        
+
+        self.val_loader = multi_data_loader([val_data_loader()])
 
         print('finished create data loader.')
 

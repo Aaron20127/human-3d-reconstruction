@@ -84,19 +84,28 @@ def decode(output, thresh=0.2, down_ratio=4.0):
             c = (c + cd_) * down_ratio
             f = (torch.sqrt(wh_[:, 0] * wh_[:, 1])).view(-1,1) * 4
 
-            k = torch.eye(4, 4).unsqueeze(0).expand(c.size(0), 4, 4)
-            k[:, 0, 0] = f[:, 0]
-            k[:, 1, 1] = f[:, 0]
-            k[:, 0, 2] = c[:, 0]
-            k[:, 1, 2] = c[:, 1]
-            k[:, 2, 3] = opt.camera_pose_z
+            camera_ = []
+            for j in range(c.size(0)):
+                k = torch.eye(3, 3)
+                k[0, 0] = f[j, 0]
+                k[1, 1] = f[j, 0]
+                k[0, 2] = c[j, 0]
+                k[1, 2] = c[j, 1]
+
+                t = np.array([[0, 0, opt.camera_pose_z]]).T
+
+                camera_.append({
+                    'k': k.detach().cpu().numpy(),
+                    't': t
+                })
 
             ret.append({
                 'score': score_.detach().cpu().numpy(),
                 'bbox': bbox_.detach().cpu().numpy(),
                 'pose': pose_.detach().cpu().numpy(),
                 'shape': shape_.detach().cpu().numpy(),
-                'camera': k.detach().cpu().numpy()})
+                'camera': camera_
+            })
         else:
             ret.append({})
 
