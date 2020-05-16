@@ -277,13 +277,12 @@ class Debugger(object):
 
       self.imgs = {}
 
-  def save_img(self, imgId='default', path='./cache/debug/'):
-    cv2.imwrite(path + '{}.png'.format(imgId), self.imgs[imgId])
+
+  def save_all_imgs(self, iter_id, path):
+      for i, v in self.imgs.items():
+          cv2.imwrite(path + '/{}_{}.png'.format(iter_id, i), v)
 
 
-  def save_all_imgs(self, path='./cache/debug/', prefix='', genID=False):
-    for i, v in self.imgs.items():
-      cv2.imwrite(path + '/{}{}.png'.format(prefix, i), v)
 
 
 color_list = np.array(

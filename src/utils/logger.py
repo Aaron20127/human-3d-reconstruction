@@ -83,3 +83,8 @@ class Logger(object):
         """ add a graph. """
         if USE_TENSORBOARD:
             self.writer.add_graph(model, input_to_model)
+
+    def add_image(self, name, img, total_step):
+        """ add a image. """
+        if USE_TENSORBOARD:
+            self.writer.add_image(name, img, global_step=total_step)

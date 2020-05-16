@@ -178,8 +178,8 @@ class HMRTrainer(object):
             if opt.debug > 0:
                 self.debug(batch, output, iter_id)
 
-
-            if opt.epoch_save_intervals > 0 and \
+            if phase == 'train' and \
+               opt.epoch_save_intervals > 0 and \
                iter_id % opt.epoch_save_intervals == 0:
                 self.save_model(os.path.join(opt.save_dir, 'model_epoch_{}_{}.pth'.format(epoch, iter_id)),
                           epoch, self.model, self.optimizer)
@@ -237,8 +237,8 @@ class HMRTrainer(object):
             img = np.clip(((img + 1) / 2 * 255.), 0, 255).astype(np.uint8)
 
             # gt heat map
-            gt_box_hm = debugger.gen_colormap(batch['label']['box_hm'][i].detach().cpu().numpy())
-            debugger.add_blend_img(img, gt_box_hm, 'gt_box_hm')
+            # gt_box_hm = debugger.gen_colormap(batch['label']['box_hm'][i].detach().cpu().numpy())
+            # debugger.add_blend_img(img, gt_box_hm, 'gt_box_hm')
 
             # gt bbox, key points
             gt_id = 'gt_bbox_kp2d'
@@ -249,8 +249,8 @@ class HMRTrainer(object):
                     debugger.add_kp2d(obj['kp2d'][0].detach().cpu().numpy(), img_id=gt_id)
 
             # pred heat map
-            pred_box_hm = debugger.gen_colormap(output['box_hm'][i].detach().cpu().numpy())
-            debugger.add_blend_img(img, pred_box_hm, 'pred_box_hm')
+            # pred_box_hm = debugger.gen_colormap(output['box_hm'][i].detach().cpu().numpy())
+            # debugger.add_blend_img(img, pred_box_hm, 'pred_box_hm')
 
             # pred bbox, key points
             bbox_kp2d_id = 'pred_bbox_kp2d'
@@ -265,8 +265,11 @@ class HMRTrainer(object):
                     debugger.add_smpl_kp2d(obj['pose'][j], obj['shape'][j], obj['camera'][j],
                                             img_id=smpl_id, bbox_img_id=bbox_kp2d_id)
 
-            debugger.show_all_imgs(pause=True)
+            if opt.debug == 1:
+                debugger.show_all_imgs(pause=True)
 
+            if opt.debug == 2:
+                debugger.save_all_imgs(iter_id, opt.debug_dir)
 
 
     def load_model(self, model, model_path, device, optimizer=None, resume=False,
