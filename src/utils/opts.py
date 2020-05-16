@@ -168,7 +168,7 @@ opt.coco_data_set=['coco2017']
 opt.lsp_data_set=['lsp']
 opt.hum36m_data_set=['hum36m']
 
-opt.val_data_set=['coco2017']
+opt.val_data_set=['hum36m', 'coco2017']
 
 # opt.train_adv_set = ['mosh']
 # opt.eval_set = ['up3d']

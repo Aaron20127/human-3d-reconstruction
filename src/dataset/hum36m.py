@@ -76,10 +76,14 @@ class Hum36m(Dataset):
 
     def _load_data_set(self):
         clk = Clock()
-        print('==> loading hum3.6m data.'.format(self.split))
+        print('==> loading hum3.6m {} data.'.format(self.split))
         self.images = []
 
-        anno_file_path = os.path.join(self.data_path, 'annot_cocoplus_19_3dkp.h5')
+        if self.split == 'train':
+            anno_file_path = os.path.join(self.data_path, 'train.h5')
+        if self.split == 'val':
+            anno_file_path = os.path.join(self.data_path, 'val.h5')
+        # anno_file_path = os.path.join(self.data_path, 'annot_cocoplus_19_3dkp.h5')
         with h5py.File(anno_file_path, 'r') as fp:
             self.kp2ds = np.array(fp['gt2d']).reshape(-1,14,3)
             self.kp3ds = np.array(fp['gt3d']).reshape(-1,19,3)
@@ -393,10 +397,10 @@ class Hum36m(Dataset):
 
 if __name__ == '__main__':
     data = Hum36m('D:/paper/human_body_reconstruction/datasets/human_reconstruction/hum36m-toy',
-               split='train',
-               image_scale_range=(0.4, 1.1),
-               trans_scale=0.5,
-               flip_prob=0.5,
+               split='val',
+               image_scale_range=(1.0, 1.01),
+               trans_scale=0,
+               flip_prob=-1,
                rot_prob=-1,
                rot_degree=45,
                box_stretch=20,

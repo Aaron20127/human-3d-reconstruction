@@ -9,7 +9,7 @@ import sys
 abspath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, abspath + '/../')
 
-from dataset.dataloader import coco_data_loader, lsp_data_loader, hum36m_data_loader, multi_data_loader, val_data_loader
+from dataset.dataloader import coco_data_loader, lsp_data_loader, hum36m_data_loader, multi_data_loader, val_coco_data_loader, val_hum36m_data_loader
 from models.model import HmrNetBase, ModelWithLoss, HmrLoss
 from utils.debugger import Debugger
 
@@ -70,7 +70,14 @@ class HMRTrainer(object):
 
             self.train_loader = multi_data_loader(loaders)
 
-        self.val_loader = multi_data_loader([val_data_loader()])
+
+        loaders = []
+        if 'hum36m' in opt.val_data_set:
+            loaders.append(val_hum36m_data_loader())
+        if 'coco2017' in opt.val_data_set:
+            loaders.append(val_coco_data_loader())
+
+        self.val_loader = multi_data_loader(loaders)
 
         print('finished create data loader.')
 

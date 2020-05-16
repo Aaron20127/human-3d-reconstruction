@@ -12,7 +12,7 @@ from models.network.smpl import SMPL
 
 file_dir = 'D:\paper\human_body_reconstruction\datasets\human_reconstruction\hum36m-toy'
 src_file = os.path.join(file_dir, 'annot.h5')
-dst_file = os.path.join(file_dir, 'annot_cocoplus_19_3dkp_1.h5')
+dst_file = os.path.join(file_dir, 'annot_val.h5')
 
 
 with h5py.File(dst_file, 'w') as dst_f:

@@ -124,13 +124,11 @@ def hum36m_data_loader():
     )
 
 
-def val_data_loader():
+def val_coco_data_loader():
     datasets = []
     for name in opt.val_data_set:
         path = opt.data_set_path[name]
-        if name == 'coco2014':
-            dataset = COCO2014(path)
-        elif name == 'coco2017':
+        if name == 'coco2017':
             dataset = COCO2017(
                 data_path=path,
                 split='val',
@@ -141,19 +139,44 @@ def val_data_loader():
                 rot_degree=30,
                 max_data_len=-1
             )
-        else:
-            msg = 'invalid dataset {}.'.format(name)
-            sys.exit(msg)
-
-        datasets.append(dataset)
+            datasets.append(dataset)
 
     new_datasets = ConcatDataset(datasets)
 
     return DataLoader(
         dataset=new_datasets,
         batch_size=1,
-        shuffle=True,
-        drop_last=True,
+        shuffle=False,
+        drop_last=False,
+        pin_memory=True,
+        num_workers=opt.num_workers
+    )
+
+def val_hum36m_data_loader():
+    datasets = []
+    for name in opt.val_data_set:
+        path = opt.data_set_path[name]
+        if name == 'hum36m':
+            dataset = Hum36m(
+                data_path=path,
+                split='val',
+                image_scale_range=(0.4, 1.11),
+                trans_scale=0.5,
+                flip_prob=0.5,
+                rot_prob=-1,
+                rot_degree=45,
+                box_stretch=20,
+                max_data_len=-1
+            )
+            datasets.append(dataset)
+
+    new_datasets = ConcatDataset(datasets)
+
+    return DataLoader(
+        dataset=new_datasets,
+        batch_size=1,
+        shuffle=False,
+        drop_last=False,
         pin_memory=True,
         num_workers=opt.num_workers
     )
