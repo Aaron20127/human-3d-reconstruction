@@ -79,7 +79,8 @@ def decode(output, thresh=0.2, down_ratio=4.0):
 
             # camera
             c = (c + cd_ + camera_[:, 1:]) * down_ratio
-            f = (camera_[:, 0].abs() * torch.sqrt(wh_[:, 0].abs() * wh_[:, 1].abs()) * down_ratio).view(-1,1)
+            # f = (camera_[:, 0].abs() * torch.sqrt(wh_[:, 0].abs() * wh_[:, 1].abs()) * down_ratio).view(-1,1)
+            f = (camera_[:, 0].abs() * torch.sqrt(wh_[:, 0].abs() * wh_[:, 1].abs()) * down_ratio * opt.camera_pose_z).view(-1,1) # just for show
 
             camera_ = []
             for j in range(c.size(0)):
