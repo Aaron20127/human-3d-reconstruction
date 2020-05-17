@@ -183,12 +183,14 @@ class Debugger(object):
 
     # 弱透视投影
     color, depth = perspective_render_obj(camera, obj,
-                   width=512, height=512, show_smpl_joints=True, use_viewer=False)
+                   width=512, height=512, rotate_x_axis =False, show_smpl_joints=True, use_viewer=False)
 
     self.add_blend_smpl(color, img_id)
 
     ##
-    kp2d = perspective_transform(joints[0].detach().cpu().numpy(), camera)
+    rot_x = Rx_mat(torch.tensor([np.pi])).numpy()[0]
+    J = np.dot(joints[0], rot_x.T)
+    kp2d = perspective_transform(J, camera)
     self.add_kp2d(kp2d, bbox_img_id)
 
 
@@ -218,7 +220,7 @@ class Debugger(object):
 
     # 弱透视投影
     color, depth = perspective_render_obj(camera, obj,
-                   width=512, height=512, show_smpl_joints=False, use_viewer=False)
+                   width=512, height=512, show_smpl_joints=True, use_viewer=False)
 
     self.add_blend_smpl(color, img_id)
 
@@ -280,7 +282,7 @@ class Debugger(object):
 
   def save_all_imgs(self, iter_id, path):
       for i, v in self.imgs.items():
-          cv2.imwrite(path + '/{}_{}.png'.format(iter_id, i), v)
+          cv2.imwrite(path + '/{}_{}.jpg'.format(iter_id, i), v)
 
 
 

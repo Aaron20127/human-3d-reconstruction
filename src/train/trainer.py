@@ -35,13 +35,19 @@ class HMRTrainer(object):
         ### 1.object detection model
         model = HmrNetBase()
         optimizer = torch.optim.Adam(model.parameters(), opt.lr)
+
         if os.path.exists(opt.load_model):
             model, optimizer, self.start_epoch = \
               self.load_model(
                   model, opt.load_model, opt.device,
                   optimizer, opt.resume,
-                  opt.lr, opt.lr_step
+                  opt.lr
               )
+
+        self.lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode='min', factor=opt.lr_scheduler_factor, patience=opt.lr_scheduler_patience,
+            verbose=True, threshold=opt.lr_scheduler_threshold, threshold_mode='rel',
+            cooldown=0, min_lr=0, eps=1e-08)
 
         self.model = model
         self.optimizer = optimizer
@@ -55,6 +61,7 @@ class HMRTrainer(object):
     def create_data_loader(self, opt):
         print('start creating data loader ...')
 
+        ## train
         if not opt.val:
             loaders = []
 
@@ -70,14 +77,17 @@ class HMRTrainer(object):
 
             self.train_loader = multi_data_loader(loaders)
 
-
+        ## val
         loaders = []
-        if 'hum36m' in opt.val_data_set:
-            loaders.append(val_hum36m_data_loader())
-        if 'coco2017' in opt.val_data_set:
+        if opt.val_batch_size_coco > 0:
             loaders.append(val_coco_data_loader())
+        if opt.val_batch_size_hum36m > 0:
+            loaders.append(val_hum36m_data_loader())
 
-        self.val_loader = multi_data_loader(loaders)
+        if len(loaders) == 0:
+            self.val_loader = None
+        else:
+            self.val_loader = multi_data_loader(loaders)
 
         print('finished create data loader.')
 
@@ -153,7 +163,8 @@ class HMRTrainer(object):
             if phase == 'train':
                 self.optimizer.zero_grad()
                 loss.backward()
-                self.optimizer.step()
+                # self.optimizer.step()
+                self.lr_scheduler.step(loss)
             batch_time.update(clock.elapsed())
 
             # training message
@@ -203,13 +214,8 @@ class HMRTrainer(object):
 
             if opt.val_intervals > 0 and \
                 epoch % opt.val_intervals == 0:
-                self.run_val(epoch)
-
-            if epoch in opt.lr_step:
-                lr = opt.lr * (0.1 ** (opt.lr_step.index(epoch) + 1))
-                print('Drop LR to', lr)
-                for param_group in self.optimizer.param_groups:
-                    param_group['lr'] = lr
+                if self.val_loader is not None:
+                    self.run_val(epoch)
 
             if opt.save_intervals > 0 and \
                epoch % opt.save_intervals == 0:
@@ -221,7 +227,8 @@ class HMRTrainer(object):
 
 
     def val(self):
-        self.run_epoch('val', 0, self.val_loader)
+        if self.val_loader is not None:
+            self.run_epoch('val', 0, self.val_loader)
         # self.val_loader.dataset.run_eval(preds, self.opt.save_dir)
 
 

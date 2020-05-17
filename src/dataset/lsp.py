@@ -371,12 +371,12 @@ class Lsp(Dataset):
 if __name__ == '__main__':
     data = Lsp('D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp',
                   split='train',
-                  image_scale_range=(0.2, 1.21),
-                  trans_scale=0.2,
+                  image_scale_range=(0.2, 1.11),
+                  trans_scale=0.5,
                   flip_prob=0.5,
                   rot_prob=0.5,
-                  rot_degree=90,
-                  box_stretch=20,
+                  rot_degree=20,
+                  box_stretch=15,
                   max_data_len=-1)
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 

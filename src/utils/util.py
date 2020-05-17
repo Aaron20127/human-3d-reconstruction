@@ -25,7 +25,6 @@ def pre_process(opt):
 
     """train"""
     opt.gpus_list = [int(i) for i in opt.gpus.split(',')]
-    opt.lr_step = [int(i) for i in opt.lr_step.split(',')]
 
     """model"""
     if opt.resume and opt.load_model == '':
@@ -34,6 +33,9 @@ def pre_process(opt):
     """debug"""
     if opt.debug > 0:
         if opt.batch_size_coco + opt.batch_size_lsp + opt.batch_size_hum36m > 1:
+            assert 0, 'needed one batch size to debug.'
+
+        if opt.val_batch_size_coco + opt.val_batch_size_hum36m > 1:
             assert 0, 'needed one batch size to debug.'
 
 

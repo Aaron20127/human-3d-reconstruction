@@ -131,14 +131,15 @@ agt('--kp3d_weight',  default=1, type=float, help='loss weight for bounding box 
 agt('--val', action='store_true', help='train or eval.')
 agt('--load_model', default='', help='pretraining model')
 agt('--resume', action='store_true', help='resume optimizer.')
-agt('--val_intervals', default=-1, type=int,  help='number of epochs to run validation.')
 agt('--save_intervals', default=-1, type=int,  help='number of epochs to save model.')
 agt('--epoch_save_intervals', default=-1, type=int,  help='number of iters of one epoch to save model.')
 agt('--num_iters', default=-1, type=int, help='default: #samples / batch_size.')
 agt('--num_epochs', default=1, type=int, help='.')
 
 agt('--lr', default=1.25e-4, type=float,  help='learning rate for batch size 32.')
-agt('--lr_step', default='90,120', type=str, help='drop learning rate by 10.')
+agt('--lr_scheduler_factor', default=0.33, type=float,  help='learning rate for batch size 32.')
+agt('--lr_scheduler_patience', default=10, type=float,  help='learning rate for batch size 32.')
+agt('--lr_scheduler_threshold', default=0.001, type=float,  help='learning rate for batch size 32.')
 
 agt('--camera_pose_z', default=10, type=int, help='parameter z of camera pose of translation')
 
@@ -149,6 +150,10 @@ agt('--batch_size_hum36m', default=0, type=int,  help='0: donot use this data se
 agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single-thread.')
 agt('--min_vis_kps', default=6, type=int, help='minimum number of visible points.')
 
+# value
+agt('--val_intervals', default=-1, type=int,  help='number of epochs to run validation.')
+agt('--val_batch_size_coco', default=0, type=int,  help='0: donot use this data set.')
+agt('--val_batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
 
 opt = parser.parse_args()
 
@@ -163,12 +168,12 @@ opt.down_ratio = 4
 
 
 ################ dataset ################
-# opt.train_set =  ['coco2014', 'coco2017', 'lsp', 'lsp_ext', 'hum3.6m']
 opt.coco_data_set=['coco2017']
 opt.lsp_data_set=['lsp']
 opt.hum36m_data_set=['hum36m']
 
-opt.val_data_set=['hum36m', 'coco2017']
+opt.coco_val_data_set=['coco2017']
+opt.hum36m_val_data_set=['hum36m']
 
 # opt.train_adv_set = ['mosh']
 # opt.eval_set = ['up3d']
