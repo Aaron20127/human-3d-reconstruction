@@ -55,15 +55,17 @@ class HmrLoss(nn.Module):
 
         ## 3. loss of key points
         if opt.kp2d_weight > 0 and 'kp2d' in batch:
-            kp2d = self._get_pred_kp2d(output['pose'], output['shape'], output['camera'],
-                                       output['box_cd'], output['box_wh'],
-                                       batch['box_ind'], batch['kp2d_mask'])
-            kp2d_loss = kp2d_l1_loss(kp2d, batch['kp2d_mask'], batch['kp2d'])
+            if batch['kp2d_mask'].sum() > 0:
+                kp2d = self._get_pred_kp2d(output['pose'], output['shape'], output['camera'],
+                                           output['box_cd'], output['box_wh'],
+                                           batch['box_ind'], batch['kp2d_mask'])
+                kp2d_loss = kp2d_l1_loss(kp2d, batch['kp2d_mask'], batch['kp2d'])
 
         if opt.kp3d_weight > 0 and 'kp3d' in batch:
-            kp3d = self._get_pred_kp3d(output['pose'], output['shape'], batch['has_kp3d'],
-                                       batch['box_ind'], batch['kp3d_mask'])
-            kp3d_loss = kp3d_l2_loss(kp3d, batch['kp3d_mask'], batch['kp3d'])
+            if batch['kp3d_mask'].sum() > 0:
+                kp3d = self._get_pred_kp3d(output['pose'], output['shape'], batch['has_kp3d'],
+                                           batch['box_ind'], batch['kp3d_mask'])
+                kp3d_loss = kp3d_l2_loss(kp3d, batch['kp3d_mask'], batch['kp3d'])
 
 
         ## total loss

@@ -163,7 +163,7 @@ class HMRTrainer(object):
             if phase == 'train':
                 self.optimizer.zero_grad()
                 loss.backward()
-                # self.optimizer.step()
+                # # self.optimizer.step()
                 self.lr_scheduler.step(loss)
             batch_time.update(clock.elapsed())
 
@@ -321,9 +321,7 @@ class HMRTrainer(object):
                 optimizer.load_state_dict(checkpoint['optimizer'])
                 start_epoch = checkpoint['epoch']
                 start_lr = lr
-                for step in lr_step:
-                    if start_epoch >= step:
-                        start_lr *= 0.1
+
                 for param_group in optimizer.param_groups:
                     param_group['lr'] = start_lr
                 print('Resumed optimizer with start lr', start_lr)
