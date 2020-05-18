@@ -137,9 +137,9 @@ agt('--num_iters', default=-1, type=int, help='default: #samples / batch_size.')
 agt('--num_epochs', default=1, type=int, help='.')
 
 agt('--lr', default=1.25e-4, type=float,  help='learning rate for batch size 32.')
-agt('--lr_scheduler_factor', default=0.33, type=float,  help='learning rate for batch size 32.')
+agt('--lr_scheduler_factor', default=0.9, type=float,  help='learning rate for batch size 32.')
 agt('--lr_scheduler_patience', default=10, type=float,  help='learning rate for batch size 32.')
-agt('--lr_scheduler_threshold', default=0.001, type=float,  help='learning rate for batch size 32.')
+agt('--lr_scheduler_threshold', default=0.01, type=float,  help='learning rate for batch size 32.')
 
 agt('--camera_pose_z', default=10, type=int, help='parameter z of camera pose of translation')
 

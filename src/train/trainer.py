@@ -163,7 +163,7 @@ class HMRTrainer(object):
             if phase == 'train':
                 self.optimizer.zero_grad()
                 loss.backward()
-                # # self.optimizer.step()
+                self.optimizer.step()
                 self.lr_scheduler.step(loss)
             batch_time.update(clock.elapsed())
 
