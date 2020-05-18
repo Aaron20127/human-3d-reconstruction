@@ -1,4 +1,5 @@
 
+import scipy.io as scio
 import os
 import sys
 abspath = os.path.abspath(os.path.dirname(__file__))
@@ -24,23 +25,23 @@ from utils.image   import draw_dense_reg
 from utils.image  import addCocoAnns
 
 
-class COCO2017(Dataset):
+class LspExt(Dataset):
     def __init__(self,
-                 data_path,
-                 image_scale_range=(0.6, 1.4),
-                 trans_scale=1,
-                 flip_prob=0.5,
-                 rot_prob=0.0,
-                 rot_degree=0.0,
-                 color_aug=True,
-                 input_res=512,
-                 output_res=128,
-                 max_objs=32,
-                 split='train',  # train, val, test
-                 min_vis_kps=6,
-                 normalize=True,
-                 box_stretch=10,
-                 max_data_len=-1):
+                data_path,
+                image_scale_range=(0.6, 1.4),
+                trans_scale=1,
+                flip_prob=0.5,
+                rot_prob=0.0,
+                rot_degree=0.0,
+                color_aug=True,
+                input_res=512,
+                output_res=128,
+                max_objs = 32,
+                split = 'train', # train, val, test
+                min_vis_kps = 6,
+                normalize = True,
+                box_stretch = 10,
+                max_data_len = -1):
 
         self.data_path = data_path
         self.image_scale_range = image_scale_range
@@ -60,13 +61,13 @@ class COCO2017(Dataset):
         self.max_data_len = max_data_len
 
         # defaut parameters
+        # key points
         self.num_joints = 19
-        self.kps_map = [16, 14, 12, 11, 13, 15, 10, 8, 6,
-                        5, 7, 9, -1, -1, 0, 1, 2, 3, 4]  # key points map coco to smpl cocoplus key points
-        self.not_exist_kps = [12, 13] # not exist kps in cocoplus
+        self.kps_map = [0, 1, 2, 3, 4, 5, 6, 7, 8,
+                        9, 10, 11, 12, 13, 0, 0, 0, 0, 0]  # key points map lsp to smpl cocoplus key points
+        self.not_exist_kps = [14, 15, 16, 17, 18]
         self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
                          [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
-
 
         # load data set
         self._load_data_set()
@@ -74,32 +75,30 @@ class COCO2017(Dataset):
 
     def _load_data_set(self):
         clk = Clock()
-        print('==> loading coco2017 {} data.'.format(self.split))
-
-        self.img_dir = os.path.join(self.data_path, '{}2017'.format(self.split))
-        if self.split == 'test':
-            self.annot_path = os.path.join(
-                self.data_path, 'annotations',
-                'image_info_test-dev2017.json')
-        else: # train or val
-            self.annot_path = os.path.join(
-                self.data_path, 'annotations',
-                'person_keypoints_{}2017.json').format(self.split)
-        self.coco = coco.COCO(self.annot_path)
-        image_ids = self.coco.getImgIds()
-
-        # person and not crowd
+        print('==> loading LSP_ext data.'.format(self.split))
         self.images = []
-        for img_id in image_ids: # only save the image ids who have annotations
-            idxs = self.coco.getAnnIds(imgIds=[img_id], catIds=1, iscrowd=0)
-            anns = self.coco.loadAnns(ids=idxs)
-            for ann in anns:
-                if ann['num_keypoints'] >= self.min_vis_kps:
-                    self.images.append(img_id)
-                    break
+        self.kp2ds = []
 
-            if  self.max_data_len > 0 and \
-                self.max_data_len <= len(self.images):
+        anno_file_path = os.path.join(self.data_path, 'joints.mat') # joints.mat 0 visible, 1 invisible
+        anno = scio.loadmat(anno_file_path)
+
+        # key points
+        kp2d = anno['joints'].transpose(2, 0, 1).astype(np.float32) # N x k x 3
+        # visible = np.logical_not(kp2d[:, :, 2])
+        # kp2d[:, :, 2] = visible.astype(kp2d.dtype) # 1 visible, 0 invisible
+
+        # images
+        self.img_dir = os.path.join(self.data_path, 'images')
+        images = sorted(os.listdir(self.img_dir))
+
+        # key points
+        for i in range(len(images)):
+            if kp2d[i, :, 2].sum() >= self.min_vis_kps:
+                self.kp2ds.append(kp2d[i])
+                self.images.append(images[i])
+
+            if self.max_data_len > 0 and \
+               self.max_data_len <= len(self.images):
                 break
 
         print('loaded {} samples (t={:.2f}s)'.format(len(self.images), clk.elapsed()))
@@ -110,30 +109,26 @@ class COCO2017(Dataset):
 
 
     def _get_image(self, index):
-        img_id = self.images[index]
-        file_name = self.coco.loadImgs(ids=[img_id])[0]['file_name']
-        img_path = os.path.join(self.img_dir, file_name)
-        ann_ids = self.coco.getAnnIds(imgIds=[img_id], catIds=1, iscrowd=0) # remove crowd annotations
-        anns = self.coco.loadAnns(ids=ann_ids)
-
-        img = cv2.imread(img_path)
+        img_name = self.images[index]
+        img = cv2.imread(self.img_dir + '/' + img_name)
         # import jpeg4py as jpeg
         # img = jpeg.JPEG(img_path).decode() # accelerate jpeg image read speed
 
-        return img, anns, img_id
-
+        return img
 
     def _get_input(self, img):
         h, w = img.shape[0], img.shape[1]
         s = self.input_res * 1.0 / max(w, h)  # defalut scale
         t = np.array([self.input_res / 2., self.input_res / 2.])  # translate to image center
         r = 0
+        rand_scale = 0
         flip = False
 
         if self.split == 'train':
             ## scale
-            s = s * np.random.choice(np.arange(
+            rand_scale = np.random.choice(np.arange(
                 self.image_scale_range[0], self.image_scale_range[1], 0.1))
+            s = s * rand_scale
 
             ## translate
             t[0] = t[0] + self.trans_scale * (np.random.random() * 2 - 1) \
@@ -171,7 +166,7 @@ class COCO2017(Dataset):
 
         inp = inp.transpose(2, 0, 1)  # change channel (3, 512, 512)
 
-        return inp, trans_mat, flip
+        return inp, trans_mat, flip, rand_scale
 
 
     def _convert_kp2d_to_smpl(self, pts):
@@ -186,6 +181,7 @@ class COCO2017(Dataset):
         kps[:, 2] = kps[:, 2] > 0  # visible points to be 1 # TODO debug
         return kps
 
+
     def _convert_kp3d_to_smpl(self, pts):
         """
          covert coco key pints to smpl cocoplus key points.
@@ -196,6 +192,29 @@ class COCO2017(Dataset):
         kps = pts[self.kps_map].copy()
         kps[self.not_exist_kps] = 0
         return kps
+
+
+    def _generate_bbox(self, kp, flip, affine_mat, rand_scale):  # TODO use object detection to get bbox
+        kp = self._get_kp_2d(kp, flip, affine_mat)
+        box_stretch = rand_scale * self.box_stretch
+
+        v_kp = kp[kp[:, 2] > 0]
+        x_min = v_kp[:, 0].min()
+        x_max = v_kp[:, 0].max()
+        y_min = v_kp[:, 1].min()
+        y_max = v_kp[:, 1].max()
+
+        x_l = x_min - box_stretch if x_min - box_stretch > 0 else 0
+        y_l = y_min - box_stretch if y_min - box_stretch > 0 else 0  # head special handle
+        x_r = x_max + box_stretch if x_max + box_stretch < self.input_res - 1 else self.input_res - 1
+        y_r = y_max + box_stretch if y_max + box_stretch < self.input_res - 1 else self.input_res - 1
+
+        coco_bbox = [x_l,
+                     y_l,
+                     x_r - x_l,
+                     y_r - y_l]
+
+        return coco_bbox
 
 
     def _get_bbox(self, bbox, affine_mat):
@@ -212,8 +231,8 @@ class COCO2017(Dataset):
                          bbox[1] + bbox[3]], dtype=np.float32)
 
         ## bbox transform
-        bbox = affine_transform_bbox(bbox, affine_mat)  # auto flip
-        bbox = np.clip(bbox, 0, self.input_res - 1)  # save the bbox in the image
+        # bbox = affine_transform_bbox(bbox, affine_mat)  # auto flip
+        # bbox = np.clip(bbox, 0, self.input_res - 1)  # save the bbox in the image
 
         return bbox
 
@@ -295,8 +314,17 @@ class COCO2017(Dataset):
                                 kps[j, 1] >= 0 and kps[j, 1] < self.input_res:  # key points in output feature map
                             vis_kps += 1
                             kp2d[k, j] = kps[j]
-                if vis_kps >= self.min_vis_kps:
+                if vis_kps > 0:
                     kp2d_mask[k] = 1
+
+                # ### 3. handle 3d key points
+                # kp3d[k] = self._get_kp_3d(ann['kp3d'], flip)
+                # kp3d_mask[k] = 1
+                #
+                # ### 4. handle pose and shape
+                # pose[k] = ann['pose']
+                # shape[k] = ann['shape']
+                # theta_mask[k] = 1
 
                 ### groud truth
                 gt.append({
@@ -306,18 +334,21 @@ class COCO2017(Dataset):
 
         return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, has_kp3d, gt
 
-
     def __getitem__(self, index):
 
         ## 1.get img and anns
-        img, anns_coco, img_id = self._get_image(index)
+        img = self._get_image(index)
 
         ## 2. handle input of network to 512x512, namely crop and normalize image
-        inp, trans_mat, flip = self._get_input(img)
+        inp, trans_mat, flip, rand_scale = self._get_input(img)
 
         ## 3. handle output of network, namely label
-        anns = [{'bbox': ann['bbox'],'kp2d': np.array(ann['keypoints']).reshape(-1,3)} \
-                for ann in anns_coco]
+        kp2d = self.kp2ds[index]
+        coco_bbox = self._generate_bbox(kp2d, flip, trans_mat, rand_scale)
+        anns = [{
+            'bbox': coco_bbox,
+            'kp2d': kp2d
+        }]
 
         box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, has_kp3d, gt = \
             self._get_label(trans_mat, flip, anns)
@@ -334,25 +365,24 @@ class COCO2017(Dataset):
             'has_kp3d': has_kp3d,
             'has_theta': has_theta,
             'gt': gt,
-            'dataset': 'COCO2017'
+            'dataset': 'lsp'
         }
 
 if __name__ == '__main__':
-    data = COCO2017('D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2017',
-               split='train',
-               image_scale_range=(1.0, 1.01),
-               trans_scale=0,
-               flip_prob=0.5,
-               rot_prob=-1,
-               rot_degree=20,
-               max_data_len=-1,
-               min_vis_kps=14)
+    data = Lsp('D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_extend',
+                  split='train',
+                  image_scale_range=(1.0, 1.01),
+                  trans_scale=0,
+                  flip_prob=0.5,
+                  rot_prob=-1,
+                  rot_degree=20,
+                  box_stretch=25,
+                  max_data_len=-1)
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
     for batch in data_loader:
 
         debugger = Debugger(opt.smpl_path)
-
         img = batch['input'][0].detach().cpu().numpy().transpose(1, 2, 0)
         img = np.clip(((img + 1) / 2 * 255.), 0, 255).astype(np.uint8)
 
@@ -381,4 +411,3 @@ if __name__ == '__main__':
 
 
         debugger.show_all_imgs(pause=True)
-

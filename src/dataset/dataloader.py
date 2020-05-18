@@ -13,7 +13,7 @@ from  utils.opts import opt
 from .coco2017 import COCO2017
 # from .coco2014 import COCO2014
 from .lsp import Lsp
-# from .lsp_ext import LspExt
+from .lsp_ext import LspExt
 from .hum36m import Hum36m
 
 
@@ -66,12 +66,22 @@ def lsp_data_loader():
                 trans_scale=0.5,
                 flip_prob=0.5,
                 rot_prob=0.5,
-                rot_degree=20,
+                rot_degree=25,
                 box_stretch=15,
                 max_data_len=-1
             )
         elif name == 'lsp_ext':
-            dataset = LspExt(path)
+            dataset = LspExt(
+                data_path=path,
+                split='train',
+                image_scale_range=(0.4, 1.01),
+                trans_scale=0.5,
+                flip_prob=0.5,
+                rot_prob=0.5,
+                rot_degree=25,
+                box_stretch=15,
+                max_data_len=-1
+            )
         else:
             msg = 'invalid dataset {}.'.format(name)
             sys.exit(msg)

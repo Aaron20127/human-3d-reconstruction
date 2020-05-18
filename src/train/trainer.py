@@ -102,7 +102,7 @@ class HMRTrainer(object):
         logger.write(phase, text + '\n')
 
 
-    def run_val(self, phase, epoch, total_iters, num_iters=-1):
+    def run_val(self, phase, epoch, total_iters=-1, num_iters=-1):
         """ val """
         with torch.no_grad():
           loss_states = self.run_val_epoch(epoch, self.val_loader)
