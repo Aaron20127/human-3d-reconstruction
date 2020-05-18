@@ -281,9 +281,8 @@ class Debugger(object):
 
 
   def save_all_imgs(self, iter_id, path):
-      for i, v in self.imgs.items():
-          cv2.imwrite(path + '/{}_{}.jpg'.format(iter_id, i), v)
-
+     for i, v in self.imgs.items():
+        cv2.imwrite(path + '/{}_{}.jpg'.format(iter_id, i), v)
 
 
 

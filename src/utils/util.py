@@ -1,9 +1,3 @@
-import numpy as np
-import cv2
-import random
-import copy
-import torch.nn as nn
-import math
 
 import os
 import time
@@ -296,11 +290,7 @@ def batch_global_rigid_transformation(Rs, Js, parent, device, rotate_base=False)
     Js = torch.unsqueeze(Js, -1)
 
     def make_A(R, t):
-        try:
-            R_homo = F.pad(R, [0, 0, 0, 1, 0, 0])
-        except:
-            print(R)
-
+        R_homo = F.pad(R, [0, 0, 0, 1, 0, 0])
         t_homo = torch.cat([t, Variable(torch.ones(N, 1, 1)).to(device)], dim=1)
         return torch.cat([R_homo, t_homo], 2)
 

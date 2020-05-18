@@ -129,19 +129,30 @@ agt('--kp3d_weight',  default=1, type=float, help='loss weight for bounding box 
 
 # train
 agt('--val', action='store_true', help='train or eval.')
+agt('--lr', default=1.25e-4, type=float,  help='learning rate for batch size 32.')
+agt('--lr_scheduler_factor', default=0.9, type=float,  help='learning factor.')
+agt('--lr_scheduler_patience', default=10, type=float,  help='learning patience.')
+agt('--lr_scheduler_threshold', default=0.01, type=float,  help='learning threshold.')
+
+agt('--num_iters', default=-1, type=int, help='default: #samples / batch_size.')
+agt('--num_epochs', default=10, type=int, help='.')
+agt('--log_iters', default=-1, type=int,  help='number of iters to log.')
+
 agt('--load_model', default='', help='pretraining model')
 agt('--resume', action='store_true', help='resume optimizer.')
-agt('--save_intervals', default=-1, type=int,  help='number of epochs to save model.')
-agt('--epoch_save_intervals', default=-1, type=int,  help='number of iters of one epoch to save model.')
-agt('--num_iters', default=-1, type=int, help='default: #samples / batch_size.')
-agt('--num_epochs', default=1, type=int, help='.')
-
-agt('--lr', default=1.25e-4, type=float,  help='learning rate for batch size 32.')
-agt('--lr_scheduler_factor', default=0.9, type=float,  help='learning rate for batch size 32.')
-agt('--lr_scheduler_patience', default=10, type=float,  help='learning rate for batch size 32.')
-agt('--lr_scheduler_threshold', default=0.01, type=float,  help='learning rate for batch size 32.')
+agt('--save_iter_interval', default=-1, type=int,  help='number of epochs to save model.')
+agt('--save_epoch_interval', default=-1, type=int,  help='number of epochs to save model.')
 
 agt('--camera_pose_z', default=10, type=int, help='parameter z of camera pose of translation')
+
+
+
+# value
+agt('--val_iter_interval', default=-1, type=int,  help='number of iter of one epoch to run validation.')
+agt('--val_epoch_interval', default=-1, type=int,  help='number of iter of one epoch to run validation.')
+agt('--val_batch_size_coco', default=0, type=int,  help='0: donot use this data set.')
+agt('--val_batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
+
 
 # dataset
 agt('--batch_size_coco', default=1, type=int,  help='0: donot use this data set.')
@@ -149,11 +160,6 @@ agt('--batch_size_lsp',  default=0, type=int, help='0: donot use this data set.'
 agt('--batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
 agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single-thread.')
 agt('--min_vis_kps', default=6, type=int, help='minimum number of visible points.')
-
-# value
-agt('--val_intervals', default=-1, type=int,  help='number of epochs to run validation.')
-agt('--val_batch_size_coco', default=0, type=int,  help='0: donot use this data set.')
-agt('--val_batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
 
 opt = parser.parse_args()
 

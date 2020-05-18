@@ -92,66 +92,112 @@ class HMRTrainer(object):
         print('finished create data loader.')
 
 
-    def run_train(self, epoch):
-        """ train """
-        ret = self.run_epoch('train', epoch, self.train_loader)
-
-        ## save train.txt
+    def write_log(self, phase, epoch, num_iters, loss_states):
         logger = self.opt.logger
         text = time.strftime('%Y-%m-%d_%H-%M-%S: ')
-        text += 'epoch: {} |'.format(epoch)
-        for k, v in ret.items():
-            logger.scalar_summary('train_{}'.format(k), v, epoch)
-            text += '{} {:8f} | '.format(k, v)
-        logger.write('train', text + '\n')
+        text += 'epoch:{:2}-{} |'.format(epoch, num_iters)
+        for k, v in loss_states.items():
+          logger.scalar_summary('{}_{}'.format(phase, k), v, epoch)
+          text += '{} {:8f} | '.format(k, v)
+        logger.write(phase, text + '\n')
 
 
-    def run_val(self, epoch):
+    def run_val(self, phase, epoch, train_num_iters=-1):
         """ val """
         with torch.no_grad():
-          ret = self.run_epoch('val', epoch, self.val_loader)
+          loss_states = self.run_val_epoch(epoch, self.val_loader)
 
-        ## save val.txt
-        logger = self.opt.logger
-        text = time.strftime('%Y-%m-%d_%H-%M-%S: ')
-        text += 'epoch: {} |'.format(epoch)
-        for k, v in ret.items():
-          logger.scalar_summary('val_{}'.format(k), v, epoch)
-          text += '{} {:8f} | '.format(k, v)
-        logger.write('val', text + '\n')
-
-        ## save best model
-        if ret['loss'] < self.min_val_loss:
-            self.min_val_loss = ret['loss']
-            self.save_model(os.path.join(self.opt.save_dir,
-                          'model_best.pth'),
-                           epoch, self.model)
-
-
-    def run_epoch(self, phase, epoch, data_loader):
-        """ run one epoch """
-        model_with_loss = self.model_with_loss
-        ### 1. train or eval
+        ## train
         if phase == 'train':
-            model_with_loss.train()
-        else:
+            ## save best model
+            if loss_states['loss'] < self.min_val_loss:
+                self.min_val_loss = loss_states['loss']
+                self.save_model(os.path.join(self.opt.save_dir,
+                              'model_best.pth'),
+                               epoch, self.model)
+
+            ## save log
+            self.write_log('val', epoch, train_num_iters, loss_states)
+
+
+    def run_val_epoch(self, epoch, data_loader):
+        """ val """
+        with torch.no_grad():
+            model_with_loss = self.model_with_loss
+
             if len(self.opt.gpus_list) > 1:
-                model_with_loss = self.model_with_loss.module
+                model_with_loss = self.model_with_loss.module # what this operation does?
             model_with_loss.eval()
             torch.cuda.empty_cache()
+
+            ### 2. val
+            opt = self.opt
+            data_time, batch_time = AverageMeter(), AverageMeter()
+            avg_loss_stats = {l: AverageMeter() for l in self.loss_stats}
+            num_iters = len(data_loader)
+
+            clock = Clock()
+            clock_ETA = Clock()
+            for iter_id in range(num_iters):
+                batch = next(data_loader)
+                data_time.update(clock.elapsed())
+
+                # forward
+                for k in batch['label']:
+                    batch['label'][k] = batch['label'][k].to(device=opt.device, non_blocking=True)
+                output, loss, loss_stats = model_with_loss(batch['label'])
+                batch_time.update(clock.elapsed())
+
+                # train message
+                msg = '{phase}: [{0}][{1}/{2}]|Tot: {total:} |ETA: {eta:} '.format(
+                    epoch, iter_id, num_iters, phase='val',
+                    total=str_time(clock_ETA.total()),
+                    eta=str_time(clock_ETA.elapsed() * (num_iters - iter_id)))
+
+                for l in avg_loss_stats:
+                    avg_loss_stats[l].update(
+                        loss_stats[l].mean().item(), batch['label']['input'].size(0))
+                    msg += '|{} {:.4f} '.format(l, avg_loss_stats[l].avg)
+
+                if not opt.hide_data_time:
+                    msg += '|Data {dt.val:.3f}s({dt.avg:.3f}s) ' \
+                           '|Net {bt.avg:.3f}s'.format(dt=data_time, bt=batch_time)
+
+                if opt.print_iter > 0:
+                    if iter_id % opt.print_iter == 0:
+                        print(msg)
+
+                ## debug
+                if opt.debug > 0:
+                    self.debug(batch, output, iter_id)
+
+                del output, loss, loss_stats
+                clock.elapsed()
+
+        ret = {k: v.avg for k, v in avg_loss_stats.items()}
+        ret['time'] = clock_ETA.total() / 60.  # spending time of each epoch.
+        return ret
+
+
+    def run_train_epoch(self, epoch):
+        """ run one epoch """
+        data_loader = self.train_loader
+        model_with_loss = self.model_with_loss
+        model_with_loss.train()
 
         ### 2. train
         opt = self.opt
         data_time, batch_time = AverageMeter(), AverageMeter()
         avg_loss_stats = {l: AverageMeter() for l in self.loss_stats}
         num_iters = len(data_loader) if opt.num_iters < 0 else opt.num_iters
-        msg = ''
 
         clock = Clock()
         clock_ETA = Clock()
         for iter_id in range(num_iters):
+            iter_id += 1
+
             batch = next(data_loader)
-            if iter_id >= num_iters:
+            if iter_id > num_iters:
                 break
             data_time.update(clock.elapsed())
 
@@ -159,17 +205,17 @@ class HMRTrainer(object):
             for k in batch['label']:
                 batch['label'][k] = batch['label'][k].to(device=opt.device, non_blocking=True)
             output, loss, loss_stats = model_with_loss(batch['label'])
+
             loss = loss.mean()
-            if phase == 'train':
-                self.optimizer.zero_grad()
-                loss.backward()
-                self.optimizer.step()
-                self.lr_scheduler.step(loss)
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+            self.lr_scheduler.step(loss)
             batch_time.update(clock.elapsed())
 
-            # training message
+            # train message
             msg = '{phase}: [{0}][{1}/{2}]|Tot: {total:} |ETA: {eta:} '.format(
-                epoch, iter_id, num_iters, phase=phase,
+                epoch, iter_id, num_iters, phase='train',
                 total=str_time(clock_ETA.total()),
                 eta=str_time(clock_ETA.elapsed() * (num_iters-iter_id)))
 
@@ -182,54 +228,70 @@ class HMRTrainer(object):
                 msg +=  '|Data {dt.val:.3f}s({dt.avg:.3f}s) ' \
                         '|Net {bt.avg:.3f}s'.format(dt=data_time, bt=batch_time)
 
+            ## mag
             if opt.print_iter > 0:
                 if iter_id % opt.print_iter == 0:
                     print(msg)
 
+            ## debug
             if opt.debug > 0:
                 self.debug(batch, output, iter_id)
 
-            if phase == 'train' and \
-               opt.epoch_save_intervals > 0 and \
-               iter_id % opt.epoch_save_intervals == 0:
+            ## val
+            if opt.val_iter_interval > 0 and \
+                iter_id % opt.val_iter_interval == 0:
+                    self.run_val('train', epoch, iter_id)
+
+            ## log
+            if opt.log_iters > 0 and \
+                iter_id % opt.log_iters == 0:
+                    ret = {k: v.avg for k, v in avg_loss_stats.items()}
+                    ret['time'] = clock_ETA.total() / 60.
+                    self.write_log('train', epoch, iter_id, ret)
+
+            ## save model
+            if opt.save_iter_interval > 0 and \
+               iter_id % opt.save_iter_interval == 0:
                 self.save_model(os.path.join(opt.save_dir, 'model_epoch_{}_{}.pth'.format(epoch, iter_id)),
                           epoch, self.model, self.optimizer)
-
 
             del output, loss, loss_stats
             clock.elapsed()
 
-        ret = {k: v.avg for k, v in avg_loss_stats.items()}
-        ret['time'] = clock_ETA.total() / 60. # spending time of each epoch.
-        return ret
+        if opt.log_iters > 0 and \
+                iter_id % opt.log_iters != 0:
+            ret = {k: v.avg for k, v in avg_loss_stats.items()}
+            ret['time'] = clock_ETA.total() / 60.
+            self.write_log('train', epoch, iter_id, ret)
+        return num_iters
 
 
     def train(self):
         print('start training ...')
 
         opt = self.opt
-        start_epoch = self.start_epoch
-        for epoch in range(start_epoch + 1, opt.num_epochs + 1):
-            self.run_train(epoch)
+        start_epoch = self.start_epoch if self.start_epoch > 0 else 1
 
-            if opt.val_intervals > 0 and \
-                epoch % opt.val_intervals == 0:
+        for epoch in range(start_epoch, opt.num_epochs):
+            total_iter = self.run_train_epoch(epoch)
+
+            if opt.val_epoch_interval > 0 and \
+                epoch % opt.val_epoch_interval == 0:
                 if self.val_loader is not None:
-                    self.run_val(epoch)
+                    self.run_val('train', epoch, total_iter)
 
-            if opt.save_intervals > 0 and \
-               epoch % opt.save_intervals == 0:
+            if opt.save_epoch_interval > 0 and \
+               epoch % opt.save_epoch_interval == 0:
                 self.save_model(os.path.join(opt.save_dir, 'model_epoch_{}.pth'.format(epoch)),
                           epoch, self.model, self.optimizer)
 
-            self.save_model(os.path.join(opt.save_dir,'model_last.pth'),
+            self.save_model(os.path.join(opt.save_dir, 'model_last.pth'),
                       epoch, self.model, self.optimizer)
 
 
     def val(self):
         if self.val_loader is not None:
-            self.run_epoch('val', 0, self.val_loader)
-        # self.val_loader.dataset.run_eval(preds, self.opt.save_dir)
+            self.run_val('val', 0)
 
 
     def debug(self, batch, output, iter_id):
