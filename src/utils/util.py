@@ -13,8 +13,7 @@ def pre_process(opt):
     """log"""
     root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
     exp_dir = os.path.join(root_dir, 'exp')
-    dir_name = opt.exp_id.replace(" ", "_")
-    opt.save_dir = os.path.join(exp_dir, dir_name)
+    opt.save_dir = os.path.join(exp_dir, opt.task, opt.subtask)
     opt.debug_dir = os.path.join(opt.save_dir, 'debug')
 
     """train"""

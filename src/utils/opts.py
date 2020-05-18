@@ -101,7 +101,8 @@ agt('--mail_sender', default='test_aaron@163.com', help='mail sender.')
 agt('--mail_receiver', default='lwalgorithm@163.com', help='mail receiver.')
 
 # log
-agt('--exp_id', default='demo', help='experiments name.')
+agt('--task', default='task', help='experiments name.')
+agt('--subtask', default='demo', help='subtask of experiments name.')
 agt('--note', default='none', help='some notes for the experiment.')
 agt('--print_iter', default=1, type=int, help='disable progress bar and print to screen.')
 agt('--debug', default=0, type=int, help='level of visualization.')
