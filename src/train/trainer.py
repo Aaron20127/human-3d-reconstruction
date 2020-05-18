@@ -262,7 +262,7 @@ class HMRTrainer(object):
                 iter_id % opt.log_iters != 0:
             ret = {k: v.avg for k, v in avg_loss_stats.items()}
             ret['time'] = clock_ETA.total() / 60.
-            self.write_log('train', epoch, iter_id, ret)
+            self.write_log('train', epoch, epoch *num_iters + iter_id, iter_id, ret)
         return num_iters
 
 
