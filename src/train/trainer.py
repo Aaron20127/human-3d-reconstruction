@@ -92,17 +92,17 @@ class HMRTrainer(object):
         print('finished create data loader.')
 
 
-    def write_log(self, phase, epoch, num_iters, loss_states):
+    def write_log(self, phase, epoch, total_iters, num_iters, loss_states):
         logger = self.opt.logger
         text = time.strftime('%Y-%m-%d_%H-%M-%S: ')
         text += 'epoch:{:2}-{} |'.format(epoch, num_iters)
         for k, v in loss_states.items():
-          logger.scalar_summary('{}_{}'.format(phase, k), v, epoch)
+          logger.scalar_summary('{}_{}'.format(phase, k), v, total_iters)
           text += '{} {:8f} | '.format(k, v)
         logger.write(phase, text + '\n')
 
 
-    def run_val(self, phase, epoch, train_num_iters=-1):
+    def run_val(self, phase, epoch, total_iters, num_iters=-1):
         """ val """
         with torch.no_grad():
           loss_states = self.run_val_epoch(epoch, self.val_loader)
@@ -117,7 +117,7 @@ class HMRTrainer(object):
                                epoch, self.model)
 
             ## save log
-            self.write_log('val', epoch, train_num_iters, loss_states)
+            self.write_log('val', epoch, total_iters, num_iters, loss_states)
 
 
     def run_val_epoch(self, epoch, data_loader):
@@ -240,14 +240,14 @@ class HMRTrainer(object):
             ## val
             if opt.val_iter_interval > 0 and \
                 iter_id % opt.val_iter_interval == 0:
-                    self.run_val('train', epoch, iter_id)
+                    self.run_val('train', epoch, epoch *num_iters + iter_id, iter_id)
 
             ## log
             if opt.log_iters > 0 and \
                 iter_id % opt.log_iters == 0:
                     ret = {k: v.avg for k, v in avg_loss_stats.items()}
                     ret['time'] = clock_ETA.total() / 60.
-                    self.write_log('train', epoch, iter_id, ret)
+                    self.write_log('train', epoch, epoch *num_iters + iter_id, iter_id, ret)
 
             ## save model
             if opt.save_iter_interval > 0 and \
