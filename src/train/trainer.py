@@ -270,7 +270,7 @@ class HMRTrainer(object):
         print('start training ...')
 
         opt = self.opt
-        start_epoch = self.start_epoch if self.start_epoch > 0 else 1
+        start_epoch = self.start_epoch
 
         for epoch in range(start_epoch, opt.num_epochs):
             total_iter = self.run_train_epoch(epoch)
