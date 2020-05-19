@@ -38,6 +38,7 @@ class COCO2017(Dataset):
                  max_objs=32,
                  split='train',  # train, val, test
                  min_vis_kps=6,
+                 coco_min_vis_kps=6,
                  normalize=True,
                  box_stretch=10,
                  max_data_len=-1):
@@ -54,6 +55,7 @@ class COCO2017(Dataset):
         self.max_objs = max_objs
         self.split = split  # train, val, test
         self.min_vis_kps = min_vis_kps
+        self.coco_min_vis_kps = coco_min_vis_kps
         self.normalize = normalize
         self.box_stretch = box_stretch
         self.down_ratio = input_res / output_res
@@ -94,7 +96,7 @@ class COCO2017(Dataset):
             idxs = self.coco.getAnnIds(imgIds=[img_id], catIds=1, iscrowd=0)
             anns = self.coco.loadAnns(ids=idxs)
             for ann in anns:
-                if ann['num_keypoints'] >= self.min_vis_kps:
+                if ann['num_keypoints'] >= self.coco_min_vis_kps:
                     self.images.append(img_id)
                     break
 
@@ -346,6 +348,7 @@ if __name__ == '__main__':
                rot_prob=-1,
                rot_degree=20,
                max_data_len=-1,
+               coco_min_vis_kps=14,
                min_vis_kps=14)
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 

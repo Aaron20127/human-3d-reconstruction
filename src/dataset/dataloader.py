@@ -34,6 +34,7 @@ def coco_data_loader():
                 rot_prob=-1,
                 rot_degree=30,
                 min_vis_kps= opt.min_vis_kps,
+                coco_min_vis_kps=opt.coco_min_vis_kps,
                 max_data_len=-1
             )
         else:

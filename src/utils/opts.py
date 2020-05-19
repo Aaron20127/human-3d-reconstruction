@@ -132,7 +132,7 @@ agt('--kp3d_weight',  default=1, type=float, help='loss weight for bounding box 
 agt('--val', action='store_true', help='train or eval.')
 agt('--lr', default=1.25e-4, type=float,  help='learning rate for batch size 32.')
 agt('--lr_scheduler_factor', default=0.9, type=float,  help='learning factor.')
-agt('--lr_scheduler_patience', default=10, type=float,  help='learning patience.')
+agt('--lr_scheduler_patience', default=1000, type=float,  help='learning patience.')
 agt('--lr_scheduler_threshold', default=0.01, type=float,  help='learning threshold.')
 
 agt('--num_iters', default=-1, type=int, help='default: #samples / batch_size.')
@@ -160,7 +160,11 @@ agt('--batch_size_coco', default=1, type=int,  help='0: donot use this data set.
 agt('--batch_size_lsp',  default=0, type=int, help='0: donot use this data set.')
 agt('--batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
 agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single-thread.')
-agt('--min_vis_kps', default=6, type=int, help='minimum number of visible points.')
+
+agt('--min_vis_kps', default=6, type=int, help='minimum number of visible points of kp2d to train.')
+
+## dataset coco
+agt('--coco_min_vis_kps', default=6, type=int, help='every coco picture shuold have one number of visible points at least.')
 
 opt = parser.parse_args()
 
@@ -176,7 +180,7 @@ opt.down_ratio = 4
 
 ################ dataset ################
 opt.coco_data_set=['coco2017']
-opt.lsp_data_set=['lsp', 'lsp_ext']
+opt.lsp_data_set=['lsp']
 opt.hum36m_data_set=['hum36m']
 
 opt.coco_val_data_set=['coco2017']
