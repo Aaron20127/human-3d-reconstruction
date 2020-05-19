@@ -148,8 +148,8 @@ def val_coco_data_loader():
                 flip_prob=0.5,
                 rot_prob=-1,
                 rot_degree=30,
-                min_vis_kps=opt.min_vis_kps,
-                coco_min_vis_kps=opt.coco_min_vis_kps,
+                min_vis_kps=0,
+                coco_min_vis_kps=0,
                 max_data_len=-1
             )
         else:
@@ -177,8 +177,8 @@ def val_hum36m_data_loader():
             dataset = Hum36m(
                 data_path=path,
                 split='val',
-                image_scale_range=(0.4, 1.11),
-                trans_scale=0.5,
+                image_scale_range=(1.0, 1.01),
+                trans_scale=0,
                 flip_prob=0.5,
                 rot_prob=-1,
                 rot_degree=45,
