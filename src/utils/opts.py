@@ -180,7 +180,7 @@ opt.down_ratio = 4
 
 ################ dataset ################
 opt.coco_data_set=['coco2017']
-opt.lsp_data_set=['lsp']
+opt.lsp_data_set=['lsp', 'lsp_ext']
 opt.hum36m_data_set=['hum36m']
 
 opt.coco_val_data_set=['coco2017']

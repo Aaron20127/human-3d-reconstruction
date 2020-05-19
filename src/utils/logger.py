@@ -24,6 +24,10 @@ class Logger(object):
             os.makedirs(opt.save_dir)
         if not os.path.exists(opt.debug_dir):
             os.makedirs(opt.debug_dir)
+        if not os.path.exists(opt.debug_image_dir):
+            os.makedirs(opt.debug_image_dir)
+        if not os.path.exists(opt.debug_obj_dir):
+            os.makedirs(opt.debug_obj_dir)
    
         ## save options
         args = dict((name, getattr(opt, name)) for name in dir(opt)

@@ -338,7 +338,7 @@ class HMRTrainer(object):
                 debugger.show_all_imgs(pause=True)
 
             if opt.debug == 2:
-                debugger.save_all_imgs(iter_id, opt.debug_dir)
+                debugger.save_all_imgs(iter_id, opt.debug_image_dir, opt.debug_obj_dir)
 
 
     def load_model(self, model, model_path, device, optimizer=None, resume=False,

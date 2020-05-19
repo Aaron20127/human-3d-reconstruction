@@ -15,6 +15,8 @@ def pre_process(opt):
     exp_dir = os.path.join(root_dir, 'exp')
     opt.save_dir = os.path.join(exp_dir, opt.task, opt.subtask)
     opt.debug_dir = os.path.join(opt.save_dir, 'debug')
+    opt.debug_image_dir = os.path.join(opt.debug_dir, 'images')
+    opt.debug_obj_dir = os.path.join(opt.debug_dir, 'objs')
 
     """train"""
     opt.gpus_list = [int(i) for i in opt.gpus.split(',')]

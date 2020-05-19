@@ -79,9 +79,9 @@ class SMPL(nn.Module):
 
 
     def save_obj(self, verts, obj_mesh_name):
-        if not self.faces:
-            msg = 'obj not saveable!'
-            sys.exit(msg)
+        # if not self.faces:
+        #     msg = 'obj not saveable!'
+        #     sys.exit(msg)
 
         with open(obj_mesh_name, 'w') as fp:
             for v in verts:

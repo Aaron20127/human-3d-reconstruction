@@ -20,6 +20,7 @@ class Debugger(object):
 
     self.device = device
     self.imgs = {}
+    self.smpl_obj = []
     self.theme = theme
     colors = [(color_list[_]).astype(np.uint8) \
             for _ in range(len(color_list))]
@@ -181,6 +182,8 @@ class Debugger(object):
         'J': joints[0],  # 3D关节点
     }
 
+    self.smpl_obj.append(verts[0])
+
     # 弱透视投影
     color, depth = perspective_render_obj(camera, obj,
                    width=512, height=512, rotate_x_axis =False, show_smpl_joints=True, use_viewer=False)
@@ -280,9 +283,18 @@ class Debugger(object):
       self.imgs = {}
 
 
-  def save_all_imgs(self, iter_id, path):
+  def save_all_imgs(self, iter_id, img_path, obj_path):
+      ## image
      for i, v in self.imgs.items():
-        cv2.imwrite(path + '/{}_{}.jpg'.format(iter_id, i), v)
+         cv2.imwrite(img_path + '/{}_{}.jpg'.format(iter_id, i), v)
+
+     ## obj
+     obj_dir = os.path.join(obj_path, str(iter_id))
+     if not os.path.exists(obj_dir):
+         os.makedirs(obj_dir)
+     for i, verts in enumerate(self.smpl_obj):
+         path = os.path.join(obj_dir, str(i) + '.obj')
+         self.smpl.save_obj(verts + np.random.random() * 10, path)
 
 
 
