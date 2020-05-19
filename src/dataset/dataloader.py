@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader, ConcatDataset
 from  utils.opts import opt
 
 from .coco2017 import COCO2017
-# from .coco2014 import COCO2014
+from .coco2014 import COCO2014
 from .lsp import Lsp
 from .lsp_ext import LspExt
 from .hum36m import Hum36m
@@ -23,7 +23,18 @@ def coco_data_loader():
     for name in opt.coco_data_set:
         path = opt.data_set_path[name]
         if name == 'coco2014':
-            dataset = COCO2014(path)
+            dataset = COCO2014(
+                data_path=path,
+                split='train',
+                image_scale_range=(0.3, 1.11),
+                trans_scale=0.5,
+                flip_prob=0.5,
+                rot_prob=-1,
+                rot_degree=30,
+                min_vis_kps= opt.min_vis_kps,
+                load_min_vis_kps=opt.load_min_vis_kps,
+                max_data_len=-1
+            )
         elif name == 'coco2017':
             dataset = COCO2017(
                 data_path=path,
@@ -34,7 +45,7 @@ def coco_data_loader():
                 rot_prob=-1,
                 rot_degree=30,
                 min_vis_kps= opt.min_vis_kps,
-                coco_min_vis_kps=opt.coco_min_vis_kps,
+                load_min_vis_kps=opt.load_min_vis_kps,
                 max_data_len=-1
             )
         else:
@@ -139,7 +150,20 @@ def val_coco_data_loader():
     datasets = []
     for name in opt.coco_val_data_set:
         path = opt.data_set_path[name]
-        if name == 'coco2017':
+        if name == 'coco2014':
+            dataset = COCO2014(
+                data_path=path,
+                split='val',
+                image_scale_range=(1.0, 1.01),
+                trans_scale=0,
+                flip_prob=0.5,
+                rot_prob=-1,
+                rot_degree=30,
+                min_vis_kps=0,
+                load_min_vis_kps=15,
+                max_data_len=-1
+            )
+        elif name == 'coco2017':
             dataset = COCO2017(
                 data_path=path,
                 split='val',
@@ -149,7 +173,7 @@ def val_coco_data_loader():
                 rot_prob=-1,
                 rot_degree=30,
                 min_vis_kps=0,
-                coco_min_vis_kps=0,
+                load_min_vis_kps=15,
                 max_data_len=-1
             )
         else:

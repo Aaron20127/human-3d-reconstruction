@@ -164,7 +164,7 @@ agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single
 agt('--min_vis_kps', default=6, type=int, help='minimum number of visible points of kp2d to train.')
 
 ## dataset coco
-agt('--coco_min_vis_kps', default=6, type=int, help='every coco picture shuold have one number of visible points at least.')
+agt('--load_min_vis_kps', default=6, type=int, help='every coco picture shuold have one number of visible points at least.')
 
 opt = parser.parse_args()
 
@@ -179,11 +179,12 @@ opt.down_ratio = 4
 
 
 ################ dataset ################
-opt.coco_data_set=['coco2017']
+opt.coco_data_set=['coco2014', 'coco2017']
 opt.lsp_data_set=['lsp', 'lsp_ext']
 opt.hum36m_data_set=['hum36m']
 
-opt.coco_val_data_set=['coco2017']
+opt.coco_val_data_set=['coco2014', 'coco2017']
+# opt.coco_val_data_set=['coco2017']
 opt.hum36m_val_data_set=['hum36m']
 
 # opt.train_adv_set = ['mosh']

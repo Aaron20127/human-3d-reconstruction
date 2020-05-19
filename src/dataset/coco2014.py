@@ -24,7 +24,7 @@ from utils.image   import draw_dense_reg
 from utils.image  import addCocoAnns
 
 
-class COCO2017(Dataset):
+class COCO2014(Dataset):
     def __init__(self,
                  data_path,
                  image_scale_range=(0.6, 1.4),
@@ -76,17 +76,17 @@ class COCO2017(Dataset):
 
     def _load_data_set(self):
         clk = Clock()
-        print('==> loading coco2017 {} data.'.format(self.split))
+        print('==> loading coco2014 {} data.'.format(self.split))
 
-        self.img_dir = os.path.join(self.data_path, '{}2017'.format(self.split))
+        self.img_dir = os.path.join(self.data_path, '{}2014'.format(self.split))
         if self.split == 'test':
             self.annot_path = os.path.join(
                 self.data_path, 'annotations',
-                'image_info_test-dev2017.json')
+                'image_info_test-dev2014.json')
         else: # train or val
             self.annot_path = os.path.join(
                 self.data_path, 'annotations',
-                'person_keypoints_{}2017.json').format(self.split)
+                'person_keypoints_{}2014.json').format(self.split)
         self.coco = coco.COCO(self.annot_path)
         image_ids = self.coco.getImgIds()
 
@@ -340,7 +340,7 @@ class COCO2017(Dataset):
         }
 
 if __name__ == '__main__':
-    data = COCO2017('D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2017',
+    data = COCO2014('D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2014',
                split='train',
                image_scale_range=(1.0, 1.01),
                trans_scale=0,
@@ -348,8 +348,8 @@ if __name__ == '__main__':
                rot_prob=-1,
                rot_degree=20,
                max_data_len=-1,
-               load_min_vis_kps=14,
-               min_vis_kps=14)
+               load_min_vis_kps=6,
+               min_vis_kps=10)
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
     for batch in data_loader:
