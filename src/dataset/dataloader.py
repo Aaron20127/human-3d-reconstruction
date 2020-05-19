@@ -78,7 +78,7 @@ def lsp_data_loader():
                 trans_scale=0.5,
                 flip_prob=0.5,
                 rot_prob=0.5,
-                rot_degree=15,
+                rot_degree=25,
                 box_stretch=25,
                 max_data_len=-1
             )
@@ -90,7 +90,7 @@ def lsp_data_loader():
                 trans_scale=0.5,
                 flip_prob=0.5,
                 rot_prob=0.5,
-                rot_degree=15,
+                rot_degree=25,
                 box_stretch=25,
                 max_data_len=-1
             )
