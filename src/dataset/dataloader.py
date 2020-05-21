@@ -160,7 +160,7 @@ def val_coco_data_loader():
                 rot_prob=-1,
                 rot_degree=30,
                 min_vis_kps=0,
-                load_min_vis_kps=15,
+                load_min_vis_kps=6,
                 max_data_len=-1
             )
         elif name == 'coco2017':
@@ -173,7 +173,7 @@ def val_coco_data_loader():
                 rot_prob=-1,
                 rot_degree=30,
                 min_vis_kps=0,
-                load_min_vis_kps=15,
+                load_min_vis_kps=6,
                 max_data_len=-1
             )
         else:

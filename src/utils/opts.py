@@ -105,7 +105,10 @@ agt('--task', default='task', help='experiments name.')
 agt('--subtask', default='demo', help='subtask of experiments name.')
 agt('--note', default='none', help='some notes for the experiment.')
 agt('--print_iter', default=1, type=int, help='disable progress bar and print to screen.')
-agt('--debug', default=0, type=int, help='level of visualization.')
+agt('--debug', default=0, type=int, help='0 - donnot debug.'
+                                         '1 - show image.'
+                                         '2 - save image.'
+                                         '3 - save image and obj.')
 agt('--hide_data_time', action='store_true', help='hide print of time of model and dataload.')
 
 # system
@@ -183,7 +186,7 @@ opt.coco_data_set=['coco2014', 'coco2017']
 opt.lsp_data_set=['lsp', 'lsp_ext']
 opt.hum36m_data_set=['hum36m']
 
-opt.coco_val_data_set=['coco2014', 'coco2017']
+opt.coco_val_data_set=['coco2017']
 # opt.coco_val_data_set=['coco2017']
 opt.hum36m_val_data_set=['hum36m']
 
