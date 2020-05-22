@@ -283,11 +283,13 @@ class Debugger(object):
       self.imgs = {}
 
 
-  def save_all_imgs(self, iter_id, img_path, obj_path):
+  def save_all_imgs(self, iter_id, img_path):
       ## image
      for i, v in self.imgs.items():
          cv2.imwrite(img_path + '/{}_{}.jpg'.format(iter_id, i), v)
 
+
+  def save_objs(self, iter_id, obj_path):
      ## obj
      obj_dir = os.path.join(obj_path, str(iter_id))
      if not os.path.exists(obj_dir):
@@ -295,7 +297,6 @@ class Debugger(object):
      for i, verts in enumerate(self.smpl_obj):
          path = os.path.join(obj_dir, str(i) + '.obj')
          self.smpl.save_obj(verts + np.random.random() * 10, path)
-
 
 
 color_list = np.array(
