@@ -10,14 +10,12 @@ sys.path.insert(0, abspath + '/../')
 
 
 from utils.opts import opt
-from utils.util import pre_process
 from utils.logger import Logger
 from utils.emailSender import send_email
 from train.trainer import HMRTrainer
 
 def main(opt):
     ## 1. basic
-    pre_process(opt)
     torch.manual_seed(opt.seed)
     torch.backends.cudnn.benchmark = not opt.not_cuda_benchmark
     os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus

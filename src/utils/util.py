@@ -6,7 +6,6 @@ import torch
 import numpy as np
 from torch.autograd import Variable
 import torch.nn.functional as F
-from .opts import opt
 
 
 def pre_process(opt):
@@ -20,6 +19,11 @@ def pre_process(opt):
 
     """train"""
     opt.gpus_list = [int(i) for i in opt.gpus.split(',')]
+    opt.coco_data_set=[i for i in opt.coco_data_set.split(',')]
+    opt.lsp_data_set=[i for i in opt.lsp_data_set.split(',')]
+    opt.hum36m_data_set=[i for i in opt.hum36m_data_set.split(',')]
+    opt.coco_val_data_set=[i for i in opt.coco_val_data_set.split(',')]
+    opt.hum36m_val_data_set=[i for i in opt.hum36m_val_data_set.split(',')]
 
     """model"""
     if opt.resume and opt.load_model == '':

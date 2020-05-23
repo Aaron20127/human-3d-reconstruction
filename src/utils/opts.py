@@ -8,6 +8,7 @@ import sys
 import time
 import numpy as np
 
+from utils.util import pre_process
 
 parser = argparse.ArgumentParser()
 agt = parser.add_argument
@@ -166,6 +167,12 @@ agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single
 
 agt('--min_vis_kps', default=6, type=int, help='minimum number of visible points of kp2d to train.')
 
+agt('--coco_data_set', default='coco2017',  help='0: donot use this data set.')
+agt('--lsp_data_set',  default='lsp, lsp_ext', help='0: donot use this data set.')
+agt('--hum36m_data_set', default='hum36m',  help='0: donot use this data set.')
+agt('--coco_val_data_set', default='coco2017',  help='0: donot use this data set.')
+agt('--hum36m_val_data_set', default='hum36m',  help='0: donot use this data set.')
+
 ## dataset coco
 agt('--load_min_vis_kps', default=6, type=int, help='every coco picture shuold have one number of visible points at least.')
 
@@ -182,13 +189,12 @@ opt.down_ratio = 4
 
 
 ################ dataset ################
-opt.coco_data_set=['coco2014', 'coco2017']
-opt.lsp_data_set=['lsp', 'lsp_ext']
-opt.hum36m_data_set=['hum36m']
+# opt.coco_data_set=['coco2014', 'coco2017']
+# opt.lsp_data_set=['lsp', 'lsp_ext']
+# opt.hum36m_data_set=['hum36m']
 
-opt.coco_val_data_set=['coco2017']
 # opt.coco_val_data_set=['coco2017']
-opt.hum36m_val_data_set=['hum36m']
+# opt.hum36m_val_data_set=['hum36m']
 
 # opt.train_adv_set = ['mosh']
 # opt.eval_set = ['up3d']
@@ -206,6 +212,7 @@ opt.data_set_path = {
     'up3d': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/up-3d'
 }
 
+pre_process(opt)
 
 ################### preprocess ##################
 # """log"""
