@@ -127,8 +127,8 @@ def hum36m_data_loader():
                 image_scale_range=(0.3, 1.11),
                 trans_scale=0.7,
                 flip_prob=0.5,
-                rot_prob=-1,
-                rot_degree=45,
+                rot_prob=opt.hum36m_rot_prob,
+                rot_degree=opt.hum36m_rot_degree,
                 box_stretch=20,
                 max_data_len=-1,
                 keep_kps_in_image = opt.keep_kps_in_image

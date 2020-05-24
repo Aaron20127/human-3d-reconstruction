@@ -183,6 +183,11 @@ agt('--hum36m_val_data_set', default='hum36m',  help='0: donot use this data set
 ## dataset coco
 agt('--load_min_vis_kps', default=6, type=int, help='every coco picture shuold have one number of visible points at least.')
 
+## dataset hum36m
+agt('--hum36m_rot_prob', default=-1, type=float, help='.')
+agt('--hum36m_rot_degree', default=25, type=float, help='.')
+
+
 opt = parser.parse_args()
 
 
