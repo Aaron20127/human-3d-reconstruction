@@ -60,7 +60,6 @@ class Lsp(Dataset):
         self.box_stretch = box_stretch
         self.down_ratio = input_res / output_res
         self.max_data_len = max_data_len
-        self.keep_box_in_image = keep_box_in_image
         self.keep_kps_in_image = keep_kps_in_image
 
         # defaut parameters
