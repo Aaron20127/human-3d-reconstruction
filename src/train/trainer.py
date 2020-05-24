@@ -48,7 +48,7 @@ class HMRTrainer(object):
         self.lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, mode='min', factor=opt.lr_scheduler_factor, patience=opt.lr_scheduler_patience,
             verbose=True, threshold=opt.lr_scheduler_threshold, threshold_mode='rel',
-            cooldown=0, min_lr=0, eps=1e-10)
+            cooldown=0, min_lr=0, eps=1e-14)
 
         self.model = model
         self.optimizer = optimizer
