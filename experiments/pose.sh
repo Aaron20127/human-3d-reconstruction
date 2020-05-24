@@ -14,6 +14,6 @@ python main.py --task pose --subtask pose_70 \
     --lr 1.25e-5 \
     --lr_scheduler_factor 0.978 \
     --lr_scheduler_patience 200  \
-    --lr_scheduler_threshold 0.01 \
+    --lr_scheduler_threshold 0.01
 
 cd ..

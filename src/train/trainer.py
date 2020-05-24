@@ -15,6 +15,7 @@ from utils.debugger import Debugger
 
 from utils.util import AverageMeter, Clock, str_time, show_net_para, sigmoid
 from utils.decode import decode
+from utils.evaluate import covert_eval_data, eval
 
 
 class HMRTrainer(object):
@@ -102,10 +103,11 @@ class HMRTrainer(object):
         logger.write(phase, text + '\n')
 
 
-    def run_val(self, phase, epoch, total_iters=-1, num_iters=-1):
+    def run_val(self, phase, epoch, total_iters=0, train_num_iters=0):
+        opt = self.opt
         """ val """
         with torch.no_grad():
-          loss_states = self.run_val_epoch(epoch, self.val_loader)
+          loss_states = self.run_val_epoch(epoch, train_num_iters, self.val_loader)
 
         ## train
         if phase == 'train':
@@ -117,10 +119,10 @@ class HMRTrainer(object):
                                epoch, self.model)
 
             ## save log
-            self.write_log('val', epoch, total_iters, num_iters, loss_states)
+            self.write_log('val', epoch, total_iters, train_num_iters, loss_states)
 
 
-    def run_val_epoch(self, epoch, data_loader):
+    def run_val_epoch(self, epoch, train_num_iters, data_loader):
         """ val """
         with torch.no_grad():
             model_with_loss = self.model_with_loss
@@ -135,6 +137,13 @@ class HMRTrainer(object):
             data_time, batch_time = AverageMeter(), AverageMeter()
             avg_loss_stats = {l: AverageMeter() for l in self.loss_stats}
             num_iters = len(data_loader)
+            # num_iters = 200
+
+            # get mAP
+            eval_data = {
+                'dts':[],
+                'gts':[]
+            }
 
             clock = Clock()
             clock_ETA = Clock()
@@ -171,11 +180,19 @@ class HMRTrainer(object):
                 if opt.debug > 0:
                     self.debug(batch, output, iter_id)
 
+                if opt.eval_average_precision:
+                    covert_eval_data(output, batch, iter_id, eval_data, opt.eval_data_type, opt.score_thresh)
+
                 del output, loss, loss_stats
                 clock.elapsed()
 
         ret = {k: v.avg for k, v in avg_loss_stats.items()}
         ret['time'] = clock_ETA.total() / 60.  # spending time of each epoch.
+        if opt.eval_average_precision:
+            ret['mAP'] = eval(eval_data, opt.iou_thresh,
+                              data_type=opt.eval_data_type,
+                              save_path=opt.log_dir,
+                              image_id='{}_{}'.format(epoch, train_num_iters))
         return ret
 
 
@@ -338,7 +355,11 @@ class HMRTrainer(object):
                 debugger.show_all_imgs(pause=True)
 
             if opt.debug == 2:
-                debugger.save_all_imgs(iter_id, opt.debug_image_dir, opt.debug_obj_dir)
+                debugger.save_all_imgs(iter_id, opt.debug_image_dir)
+
+            if opt.debug == 3:
+                debugger.save_all_imgs(iter_id, opt.debug_image_dir)
+                debugger.save_objs(iter_id, opt.debug_obj_dir)
 
 
     def load_model(self, model, model_path, device, optimizer=None, resume=False,

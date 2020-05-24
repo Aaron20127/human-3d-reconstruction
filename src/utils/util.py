@@ -18,6 +18,7 @@ def pre_process(opt):
     opt.debug_obj_dir = os.path.join(opt.debug_dir, 'objs')
 
     """train"""
+    opt.iou_thresh = [float(i) for i in opt.iou_thresh.split(',')]
     opt.gpus_list = [int(i) for i in opt.gpus.split(',')]
     opt.coco_data_set=[i for i in opt.coco_data_set.split(',')]
     opt.lsp_data_set=[i for i in opt.lsp_data_set.split(',')]
@@ -367,10 +368,6 @@ def decode_label_kp2d(mask, kp2d):
 
     return kp2ds
 
-
-if __name__ == '__main__':
-    p = torch.tensor([1., 0., 0.]).view(3, 1)
-    p1 = torch.matmul(Rz_mat(torch.tensor(np.pi / 2)), p)
 
 
 def get_camera_from_batch(bbox):

@@ -80,10 +80,10 @@ class Hum36m(Dataset):
         self.images = []
 
         if self.split == 'train':
-            anno_file_path = os.path.join(self.data_path, 'train.h5')
+            # anno_file_path = os.path.join(self.data_path, 'train.h5')
+            anno_file_path = os.path.join(self.data_path, 'annot_cocoplus_19_3dkp.h5')
         if self.split == 'val':
             anno_file_path = os.path.join(self.data_path, 'val.h5')
-        # anno_file_path = os.path.join(self.data_path, 'annot_cocoplus_19_3dkp.h5')
         with h5py.File(anno_file_path, 'r') as fp:
             self.kp2ds = np.array(fp['gt2d']).reshape(-1,14,3)
             self.kp3ds = np.array(fp['gt3d']).reshape(-1,19,3)
@@ -397,14 +397,14 @@ class Hum36m(Dataset):
 
 if __name__ == '__main__':
     data = Hum36m('D:/paper/human_body_reconstruction/datasets/human_reconstruction/hum36m-toy',
-               split='val',
-               image_scale_range=(1.0, 1.01),
-               trans_scale=0,
-               flip_prob=-1,
-               rot_prob=-1,
-               rot_degree=45,
-               box_stretch=20,
-               max_data_len=-1)
+               split='train',
+                image_scale_range=(0.3, 1.11),
+                trans_scale=0.5,
+                flip_prob=0.5,
+                rot_prob=-1,
+                rot_degree=45,
+                box_stretch=20,
+                max_data_len=-1)
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
     for batch in data_loader:

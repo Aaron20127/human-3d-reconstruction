@@ -52,6 +52,7 @@ class Logger(object):
           
         ## log file of train and val
         log_dir = opt.save_dir + '/logs'
+        opt.log_dir = log_dir
         if USE_TENSORBOARD:
             self.writer = tensorboardX.SummaryWriter(log_dir=log_dir)
         else:

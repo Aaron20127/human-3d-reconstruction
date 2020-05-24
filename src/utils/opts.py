@@ -158,6 +158,11 @@ agt('--val_epoch_interval', default=-1, type=int,  help='number of iter of one e
 agt('--val_batch_size_coco', default=0, type=int,  help='0: donot use this data set.')
 agt('--val_batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
 
+agt('--eval_average_precision', action='store_true', help='0: donot use this data set.')
+agt('--iou_thresh', default='0.1,0.2,0.5', help='0: donot use this data set.')
+agt('--eval_data_type', default='kps',  help='if , kps iou_thresh mean the reciprocal of mean joints loss.'
+                                             'if , bbox iou_thresh mean the iou of bbox.')
+
 
 # dataset
 agt('--batch_size_coco', default=1, type=int,  help='0: donot use this data set.')
@@ -167,8 +172,8 @@ agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single
 
 agt('--min_vis_kps', default=6, type=int, help='minimum number of visible points of kp2d to train.')
 
-agt('--coco_data_set', default='coco2017',  help='0: donot use this data set.')
-agt('--lsp_data_set',  default='lsp, lsp_ext', help='0: donot use this data set.')
+agt('--coco_data_set', default='coco2014,coco2017',  help='0: donot use this data set.')
+agt('--lsp_data_set',  default='lsp,lsp_ext', help='0: donot use this data set.')
 agt('--hum36m_data_set', default='hum36m',  help='0: donot use this data set.')
 agt('--coco_val_data_set', default='coco2017',  help='0: donot use this data set.')
 agt('--hum36m_val_data_set', default='hum36m',  help='0: donot use this data set.')
