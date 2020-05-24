@@ -46,7 +46,8 @@ class HmrLoss(nn.Module):
         ## 2. loss of pose and shape
         if opt.pose_weight > 0 and 'pose' in batch:
             pose_loss = pose_l2_loss(output['pose'], batch['theta_mask'],
-                                       batch['box_ind'], batch['has_theta'], batch['pose'])
+                                     batch['box_ind'], batch['has_theta'], batch['pose'],
+                                     opt.pose_loss_type)
 
         if opt.shape_weight > 0 and 'shape' in batch:
             shape_loss = shape_l2_loss(output['shape'], batch['theta_mask'],

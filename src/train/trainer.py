@@ -241,6 +241,7 @@ class HMRTrainer(object):
                      loss_stats[l].mean().item(), batch['label']['input'].size(0))
                 msg += '|{} {:.4f} '.format(l, avg_loss_stats[l].avg)
 
+
             if not opt.hide_data_time:
                 msg +=  '|Data {dt.val:.3f}s({dt.avg:.3f}s) ' \
                         '|Net {bt.avg:.3f}s'.format(dt=data_time, bt=batch_time)

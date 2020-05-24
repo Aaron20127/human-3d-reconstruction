@@ -13,7 +13,7 @@ import torch.nn.functional as F
 abspath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, abspath + '/../')
 
-from utils.util import transpose_and_gather_feat, sigmoid
+from utils.util import transpose_and_gather_feat, sigmoid, batch_rodrigues
 
 
 def FocalLoss(pred, gt):
@@ -65,13 +65,31 @@ def L2loss(output, mask, ind, target):
     return loss
 
 
+def pose_l2_euler_loss(output, mask, ind, target):
+    pred = transpose_and_gather_feat(output, ind)[mask == 1]
+    target = target[mask == 1]
 
-def pose_l2_loss(output, mask, ind, has_theta, target):
-    output = output[has_theta.flatten() == 1, ...]
-    ind = ind[has_theta.flatten() == 1, ...]
-    loss = L2loss(output[:, 3:, :, :], mask, ind, target[:, :, 3:])
+    pred = batch_rodrigues(pred.view(-1, 3)).view(-1, 23, 9)
+    target = batch_rodrigues(target.view(-1, 3)).view(-1, 23, 9)
+
+    loss = torch.sum((pred - target) ** 2)
+    loss = loss / (pred.numel() + 1e-8)
+
     return loss
 
+
+def pose_l2_loss(output, mask, ind, has_theta, target, loss_type):
+    output = output[has_theta.flatten() == 1, ...]
+    ind = ind[has_theta.flatten() == 1, ...]
+
+    if loss_type == 1: # rotating vector
+        loss = L2loss(output[:, 3:, :, :], mask, ind, target[:, :, 3:])
+    elif loss_type == 2: # euler angle
+        loss = pose_l2_euler_loss(output[:, 3:, :, :], mask, ind, target[:, :, 3:])
+    else:
+        assert 0, 'wrong pose loss type {}'.format(loss_type)
+
+    return loss
 
 
 def shape_l2_loss(output, mask, ind, has_theta, target):

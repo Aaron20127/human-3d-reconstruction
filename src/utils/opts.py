@@ -131,6 +131,8 @@ agt('--pose_weight',  default=1, type=float, help='loss weight for keypoint heat
 agt('--shape_weight', default=1, type=float, help='loss weight for bounding box width and height.')
 agt('--kp2d_weight',  default=1, type=float, help='loss weight for bounding box center decimal.')
 agt('--kp3d_weight',  default=1, type=float, help='loss weight for bounding box center decimal.')
+agt('--pose_loss_type',  default=1, type=int, help='1 - rotating vector.'
+                                                   '2 - euler angle.')
 
 # train
 agt('--val', action='store_true', help='train or eval.')
