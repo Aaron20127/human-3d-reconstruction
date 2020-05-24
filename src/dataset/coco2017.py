@@ -39,6 +39,7 @@ class COCO2017(Dataset):
                  split='train',  # train, val, test
                  min_vis_kps=6,
                  load_min_vis_kps=6,
+                 keep_kps_in_image=True,
                  normalize=True,
                  box_stretch=10,
                  max_data_len=-1):
@@ -60,6 +61,7 @@ class COCO2017(Dataset):
         self.box_stretch = box_stretch
         self.down_ratio = input_res / output_res
         self.max_data_len = max_data_len
+        self.keep_kps_in_image = keep_kps_in_image
 
         # defaut parameters
         self.num_joints = 19
@@ -290,15 +292,23 @@ class COCO2017(Dataset):
                 ### 2.handle 2d key points
                 kps = self._get_kp_2d(ann['kp2d'], flip, trans_mat)
 
-                vis_kps = 0
-                for j in range(self.num_joints):
-                    if kps[j, 2] > 0:  # key points is visible
-                        if kps[j, 0] >= 0 and kps[j, 0] < self.input_res and \
-                                kps[j, 1] >= 0 and kps[j, 1] < self.input_res:  # key points in output feature map
-                            vis_kps += 1
-                            kp2d[k, j] = kps[j]
-                if vis_kps >= self.min_vis_kps:
-                    kp2d_mask[k] = 1
+                if kps[:, 2].sum() >= self.min_vis_kps:
+                    vis_kps = 0
+                    for j in range(self.num_joints):
+                        if kps[j, 2] > 0:  # key points is visible
+                            if kps[j, 0] >= 0 and kps[j, 0] < self.input_res and \
+                                    kps[j, 1] >= 0 and kps[j, 1] < self.input_res:  # key points in output feature map
+                                vis_kps += 1
+                                kp2d[k, j] = kps[j]
+                            if self.keep_kps_in_image is False:
+                                kp2d[k, j] = kps[j]
+
+                    if self.keep_kps_in_image:
+                        if vis_kps > self.min_vis_kps:
+                            kp2d_mask[k] = 1
+                    else:
+                        if vis_kps > 0:
+                            kp2d_mask[k] = 1
 
                 ### groud truth
                 gt.append({
@@ -342,14 +352,15 @@ class COCO2017(Dataset):
 if __name__ == '__main__':
     data = COCO2017('D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2017',
                split='train',
-               image_scale_range=(1.0, 1.01),
-               trans_scale=0,
+               image_scale_range=(0.3, 1.21),
+               trans_scale=0.65,
                flip_prob=0.5,
                rot_prob=-1,
                rot_degree=20,
                max_data_len=-1,
-               load_min_vis_kps=14,
-               min_vis_kps=14)
+               load_min_vis_kps=6,
+               min_vis_kps=6,
+               keep_kps_in_image=False)
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
     for batch in data_loader:

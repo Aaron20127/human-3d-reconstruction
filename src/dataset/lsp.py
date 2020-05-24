@@ -40,7 +40,8 @@ class Lsp(Dataset):
                 split = 'train', # train, val, test
                 min_vis_kps = 6,
                 normalize = True,
-                box_stretch = 10,
+                box_stretch = 30,
+                keep_kps_in_image = True,
                 max_data_len = -1):
 
         self.data_path = data_path
@@ -59,6 +60,8 @@ class Lsp(Dataset):
         self.box_stretch = box_stretch
         self.down_ratio = input_res / output_res
         self.max_data_len = max_data_len
+        self.keep_box_in_image = keep_box_in_image
+        self.keep_kps_in_image = keep_kps_in_image
 
         # defaut parameters
         # key points
@@ -204,10 +207,12 @@ class Lsp(Dataset):
         y_min = v_kp[:, 1].min()
         y_max = v_kp[:, 1].max()
 
+
         x_l = x_min - box_stretch if x_min - box_stretch > 0 else 0
         y_l = y_min - box_stretch if y_min - box_stretch > 0 else 0  # head special handle
         x_r = x_max + box_stretch if x_max + box_stretch < self.input_res - 1 else self.input_res - 1
         y_r = y_max + box_stretch if y_max + box_stretch < self.input_res - 1 else self.input_res - 1
+
 
         coco_bbox = [x_l,
                      y_l,
@@ -289,7 +294,7 @@ class Lsp(Dataset):
             bbox = self._get_bbox(ann['bbox'], trans_mat) / self.down_ratio
             h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
 
-            if (h > 0 and w > 0):  # if outside the image, discard
+            if (h > 0 and w > 0):
                 ### 1. handle bbox
                 ct = np.array([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2])  # down ratio
                 ct_int = ct.astype(np.int32)
@@ -307,15 +312,23 @@ class Lsp(Dataset):
                 ### 2.handle 2d key points
                 kps = self._get_kp_2d(ann['kp2d'], flip, trans_mat)
 
-                vis_kps = 0
-                for j in range(self.num_joints):
-                    if kps[j, 2] > 0:  # key points is visible
-                        if kps[j, 0] >= 0 and kps[j, 0] < self.input_res and \
-                                kps[j, 1] >= 0 and kps[j, 1] < self.input_res:  # key points in output feature map
-                            vis_kps += 1
-                            kp2d[k, j] = kps[j]
-                if vis_kps > 0:
-                    kp2d_mask[k] = 1
+                if kps[:, 2].sum() >= self.min_vis_kps:
+                    vis_kps = 0
+                    for j in range(self.num_joints):
+                        if kps[j, 2] > 0:  # key points is visible
+                            if kps[j, 0] >= 0 and kps[j, 0] < self.input_res and \
+                                    kps[j, 1] >= 0 and kps[j, 1] < self.input_res:  # key points in output feature map
+                                vis_kps += 1
+                                kp2d[k, j] = kps[j]
+                            if self.keep_kps_in_image is False:
+                                kp2d[k, j] = kps[j]
+
+                    if self.keep_kps_in_image:
+                        if vis_kps > self.min_vis_kps:
+                            kp2d_mask[k] = 1
+                    else:
+                        if vis_kps > 0:
+                            kp2d_mask[k] = 1
 
                 # ### 3. handle 3d key points
                 # kp3d[k] = self._get_kp_3d(ann['kp3d'], flip)
@@ -371,12 +384,14 @@ class Lsp(Dataset):
 if __name__ == '__main__':
     data = Lsp('D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp',
                   split='train',
-                  image_scale_range=(0.2, 1.11),
-                  trans_scale=0.5,
+                  image_scale_range=(0.2, 1.01),
+                  trans_scale=0.7,
                   flip_prob=0.5,
                   rot_prob=0.5,
                   rot_degree=20,
-                  box_stretch=15,
+                  box_stretch=30,
+                  keep_kps_in_image=False,
+                  min_vis_kps=6,
                   max_data_len=-1)
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 

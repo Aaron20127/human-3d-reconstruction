@@ -25,7 +25,7 @@ from utils.image  import addCocoAnns
 
 
 
-class Hum36m(Dataset):
+class PW3D(Dataset):
     def __init__(self,
                 data_path,
                 image_scale_range=(0.6, 1.4),
@@ -39,7 +39,6 @@ class Hum36m(Dataset):
                 max_objs = 32,
                 split = 'train', # train, val, test
                 min_vis_kps = 6,
-                keep_kps_in_image=True,
                 normalize = True,
                 box_stretch = 10,
                 max_data_len = -1):
@@ -60,7 +59,6 @@ class Hum36m(Dataset):
         self.box_stretch = box_stretch
         self.down_ratio = input_res / output_res
         self.max_data_len = max_data_len
-        self.keep_kps_in_image = keep_kps_in_image
 
         # defaut parameters
         # key points
@@ -78,16 +76,16 @@ class Hum36m(Dataset):
 
     def _load_data_set(self):
         clk = Clock()
-        print('==> loading hum3.6m {} data.'.format(self.split))
+        print('==> loading 3dpw {} data.'.format(self.split))
         self.images = []
 
         if self.split == 'train':
-            # anno_file_path = os.path.join(self.data_path, 'train.h5')
-            anno_file_path = os.path.join(self.data_path, 'annot_cocoplus_19_3dkp.h5')
+            anno_file_path = os.path.join(self.data_path, 'train.h5')
         if self.split == 'val':
             anno_file_path = os.path.join(self.data_path, 'val.h5')
+
         with h5py.File(anno_file_path, 'r') as fp:
-            self.kp2ds = np.array(fp['gt2d']).reshape(-1,14,3)
+            self.kp2ds = np.array(fp['gt2d']).reshape(-1,19,3)
             self.kp3ds = np.array(fp['gt3d']).reshape(-1,19,3)
             self.shape = np.array(fp['shape'])
             self.pose = np.array(fp['pose'])
@@ -99,7 +97,7 @@ class Hum36m(Dataset):
                    self.max_data_len <= len(self.images):
                     break
 
-            self.img_dir = os.path.join(self.data_path, 'image')
+            self.img_dir = os.path.join(self.data_path, 'imageFiles')
 
         print('loaded {} samples (t={:.2f}s)'.format(len(self.images), clk.elapsed()))
 
@@ -109,7 +107,7 @@ class Hum36m(Dataset):
 
     def _get_image(self, index):
         img_name = self.images[index]
-        img = cv2.imread(self.img_dir + img_name)
+        img = cv2.imread(self.img_dir + '/' + img_name)
         # import jpeg4py as jpeg
         # img = jpeg.JPEG(img_path).decode() # accelerate jpeg image read speed
 
@@ -318,23 +316,15 @@ class Hum36m(Dataset):
                 ### 2.handle 2d key points
                 kps = self._get_kp_2d(ann['kp2d'], flip, trans_mat)
 
-                if kps[:, 2].sum() >= self.min_vis_kps:
-                    vis_kps = 0
-                    for j in range(self.num_joints):
-                        if kps[j, 2] > 0:  # key points is visible
-                            if kps[j, 0] >= 0 and kps[j, 0] < self.input_res and \
-                                    kps[j, 1] >= 0 and kps[j, 1] < self.input_res:  # key points in output feature map
-                                vis_kps += 1
-                                kp2d[k, j] = kps[j]
-                            if self.keep_kps_in_image is False:
-                                kp2d[k, j] = kps[j]
-
-                    if self.keep_kps_in_image:
-                        if vis_kps > self.min_vis_kps:
-                            kp2d_mask[k] = 1
-                    else:
-                        if vis_kps > 0:
-                            kp2d_mask[k] = 1
+                vis_kps = 0
+                for j in range(self.num_joints):
+                    if kps[j, 2] > 0:  # key points is visible
+                        if kps[j, 0] >= 0 and kps[j, 0] < self.input_res and \
+                                kps[j, 1] >= 0 and kps[j, 1] < self.input_res:  # key points in output feature map
+                            vis_kps += 1
+                            kp2d[k, j] = kps[j]
+                if vis_kps > 0:
+                    kp2d_mask[k] = 1
 
 
                 ### 3. handle 3d key points
@@ -406,16 +396,15 @@ class Hum36m(Dataset):
 
 
 if __name__ == '__main__':
-    data = Hum36m('D:/paper/human_body_reconstruction/datasets/human_reconstruction/hum36m-toy',
+    data = PW3D('D:/paper/human_body_reconstruction/datasets/human_reconstruction/3DPW',
                split='train',
-                image_scale_range=(0.3, 1.11),
-                trans_scale=0.7,
-                flip_prob=0.5,
+                image_scale_range=(1.0, 1.01),
+                trans_scale=0,
+                flip_prob=-1,
                 rot_prob=-1,
                 rot_degree=45,
                 box_stretch=20,
-                max_data_len=-1,
-                keep_kps_in_image=False)
+                max_data_len=-1)
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
     for batch in data_loader:
@@ -452,7 +441,7 @@ if __name__ == '__main__':
         gt_id = 'smpl'
         debugger.add_img(img, img_id=gt_id)
         for obj in batch['gt']:
-            camera = get_camera_from_batch(obj['bbox'][0], opt.camera_pose_z)
+            camera = get_camera_from_batch(obj['bbox'][0])
             debugger.add_smpl(obj['pose'][0], obj['shape'][0], kp3d=obj['kp3d'][0], camera=camera, img_id=gt_id)
 
 

@@ -1,4 +1,5 @@
 
+# from .opts import opt
 import os
 import time
 import math
@@ -370,7 +371,7 @@ def decode_label_kp2d(mask, kp2d):
 
 
 
-def get_camera_from_batch(bbox):
+def get_camera_from_batch(bbox, camera_pose_z):
     bbox = bbox.cpu().numpy()
 
     w = bbox[2] - bbox[0]
@@ -378,7 +379,7 @@ def get_camera_from_batch(bbox):
 
     # fx = (w+h) / 2.0 * opt.camera_pose_z
     # fx = max(w,h) / 2. * opt.camera_pose_z
-    fx = math.sqrt(w*h) * opt.camera_pose_z
+    fx = math.sqrt(w*h) * camera_pose_z
     fy = fx
     cx = (bbox[0] + bbox[2]) / 2.
     cy = (bbox[1] + bbox[3]) / 2.
@@ -389,7 +390,7 @@ def get_camera_from_batch(bbox):
     k[0, 2] = cx
     k[1, 2] = cy
 
-    t = np.array([[0, 0, opt.camera_pose_z]]).T
+    t = np.array([[0, 0, camera_pose_z]]).T
 
     return {
         'k': k,
