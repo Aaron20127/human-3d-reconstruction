@@ -39,7 +39,8 @@ class COCO2014(Dataset):
                  split='train',  # train, val, test
                  min_vis_kps=6,
                  load_min_vis_kps=6,
-                 keep_kps_in_image=True,
+                 keep_truncation_kps=False,
+                 min_truncation_kps_in_image=6,
                  normalize=True,
                  box_stretch=10,
                  max_data_len=-1):
@@ -61,7 +62,8 @@ class COCO2014(Dataset):
         self.box_stretch = box_stretch
         self.down_ratio = input_res / output_res
         self.max_data_len = max_data_len
-        self.keep_kps_in_image = keep_kps_in_image
+        self.keep_truncation_kps = keep_truncation_kps
+        self.min_truncation_kps_in_image = min_truncation_kps_in_image
 
         # defaut parameters
         self.num_joints = 19
@@ -300,14 +302,14 @@ class COCO2014(Dataset):
                                     kps[j, 1] >= 0 and kps[j, 1] < self.input_res:  # key points in output feature map
                                 vis_kps += 1
                                 kp2d[k, j] = kps[j]
-                            if self.keep_kps_in_image is False:
+                            if self.keep_truncation_kps:
                                 kp2d[k, j] = kps[j]
 
-                    if self.keep_kps_in_image:
-                        if vis_kps > self.min_vis_kps:
+                    if self.keep_truncation_kps:
+                        if vis_kps >=  self.min_truncation_kps_in_image:
                             kp2d_mask[k] = 1
                     else:
-                        if vis_kps > 0:
+                        if vis_kps >=  self.min_vis_kps:
                             kp2d_mask[k] = 1
 
                 ### groud truth
@@ -360,7 +362,8 @@ if __name__ == '__main__':
                max_data_len=-1,
                load_min_vis_kps=6,
                min_vis_kps=6,
-               keep_kps_in_image=False)
+               keep_truncation_kps=True,
+               min_truncation_kps_in_image=1)
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
     for batch in data_loader:

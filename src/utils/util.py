@@ -17,6 +17,7 @@ def pre_process(opt):
     opt.debug_dir = os.path.join(opt.save_dir, 'debug')
     opt.debug_image_dir = os.path.join(opt.debug_dir, 'images')
     opt.debug_obj_dir = os.path.join(opt.debug_dir, 'objs')
+    opt.log_pr_curve_dir = os.path.join(opt.debug_dir, 'pr_curve')
 
     """train"""
     opt.iou_thresh = [float(i) for i in opt.iou_thresh.split(',')]

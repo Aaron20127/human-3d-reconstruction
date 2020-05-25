@@ -172,8 +172,9 @@ agt('--batch_size_lsp',  default=0, type=int, help='0: donot use this data set.'
 agt('--batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
 agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single-thread.')
 
-agt('--min_vis_kps', default=6, type=int, help='minimum number of visible points of kp2d to train.')
-agt('--keep_kps_in_image', action='store_true', help='minimum number of visible points of kp2d to train.')
+agt('--min_vis_kps', default=6, type=int, help='minimum number of oringinal visible points of kp2d to train.')
+agt('--keep_truncation_kps', action='store_true', help='keep points of kp2d out of image when trunction.')
+agt('--min_truncation_kps_in_image', default=6, type=int, help='minimum number of visible points of kp2d in image when trunction.')
 
 
 agt('--coco_data_set', default='coco2014,coco2017',  help='0: donot use this data set.')

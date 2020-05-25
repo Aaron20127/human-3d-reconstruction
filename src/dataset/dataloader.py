@@ -27,28 +27,30 @@ def coco_data_loader():
                 data_path=path,
                 split='train',
                 image_scale_range=(0.3, 1.21),
-                trans_scale=0.65,
+                trans_scale=0.6,
                 flip_prob=0.5,
                 rot_prob=-1,
                 rot_degree=30,
                 min_vis_kps= opt.min_vis_kps,
                 load_min_vis_kps=opt.load_min_vis_kps,
                 max_data_len=-1,
-                keep_kps_in_image = opt.keep_kps_in_image
+                keep_truncation_kps = opt.keep_truncation_kps,
+                min_truncation_kps_in_image=opt.min_truncation_kps_in_image
             )
         elif name == 'coco2017':
             dataset = COCO2017(
                 data_path=path,
                 split='train',
                 image_scale_range=(0.3, 1.21),
-                trans_scale=0.65,
+                trans_scale=0.6,
                 flip_prob=0.5,
                 rot_prob=-1,
                 rot_degree=30,
                 min_vis_kps= opt.min_vis_kps,
                 load_min_vis_kps=opt.load_min_vis_kps,
                 max_data_len=-1,
-                keep_kps_in_image=opt.keep_kps_in_image
+                keep_truncation_kps=opt.keep_truncation_kps,
+                min_truncation_kps_in_image=opt.min_truncation_kps_in_image
             )
         else:
             msg = 'invalid dataset {}.'.format(name)
@@ -77,26 +79,28 @@ def lsp_data_loader():
                 data_path=path,
                 split='train',
                 image_scale_range=(0.2, 1.01),
-                trans_scale=0.7,
+                trans_scale=0.6,
                 flip_prob=0.5,
                 rot_prob=0.5,
                 rot_degree=20,
                 box_stretch=30,
                 max_data_len=-1,
-                keep_kps_in_image=opt.keep_kps_in_image
+                keep_truncation_kps=opt.keep_truncation_kps,
+                min_truncation_kps_in_image=opt.min_truncation_kps_in_image
             )
         elif name == 'lsp_ext':
             dataset = LspExt(
                 data_path=path,
                 split='train',
                 image_scale_range=(0.2, 1.01),
-                trans_scale=0.7,
+                trans_scale=0.6,
                 flip_prob=0.5,
                 rot_prob=0.5,
                 rot_degree=20,
                 box_stretch=30,
                 max_data_len=-1,
-                keep_kps_in_image = opt.keep_kps_in_image
+                keep_truncation_kps = opt.keep_truncation_kps,
+                min_truncation_kps_in_image=opt.min_truncation_kps_in_image
             )
         else:
             msg = 'invalid dataset {}.'.format(name)
@@ -125,13 +129,14 @@ def hum36m_data_loader():
                 data_path=path,
                 split='train',
                 image_scale_range=(0.3, 1.11),
-                trans_scale=0.7,
+                trans_scale=0.6,
                 flip_prob=0.5,
                 rot_prob=opt.hum36m_rot_prob,
                 rot_degree=opt.hum36m_rot_degree,
                 box_stretch=20,
                 max_data_len=-1,
-                keep_kps_in_image = opt.keep_kps_in_image
+                keep_truncation_kps = opt.keep_truncation_kps,
+                min_truncation_kps_in_image = opt.min_truncation_kps_in_image
             )
         else:
             msg = 'invalid dataset {}.'.format(name)

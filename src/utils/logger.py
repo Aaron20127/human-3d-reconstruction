@@ -28,7 +28,10 @@ class Logger(object):
             os.makedirs(opt.debug_image_dir)
         if not os.path.exists(opt.debug_obj_dir):
             os.makedirs(opt.debug_obj_dir)
-   
+        if not os.path.exists(opt.log_pr_curve_dir):
+            os.makedirs(opt.log_pr_curve_dir)
+
+
         ## save options
         args = dict((name, getattr(opt, name)) for name in dir(opt)
                     if not name.startswith('_'))

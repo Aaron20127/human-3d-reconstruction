@@ -137,7 +137,7 @@ class HMRTrainer(object):
             data_time, batch_time = AverageMeter(), AverageMeter()
             avg_loss_stats = {l: AverageMeter() for l in self.loss_stats}
             num_iters = len(data_loader)
-            # num_iters = 200
+            # num_iters = 2
 
             # get mAP
             eval_data = {
@@ -191,7 +191,7 @@ class HMRTrainer(object):
         if opt.eval_average_precision:
             ret['mAP'] = eval(eval_data, opt.iou_thresh,
                               data_type=opt.eval_data_type,
-                              save_path=opt.log_dir,
+                              save_path=opt.log_pr_curve_dir,
                               image_id='{}_{}'.format(epoch, train_num_iters))
         return ret
 
@@ -258,14 +258,14 @@ class HMRTrainer(object):
             ## val
             if opt.val_iter_interval > 0 and \
                 iter_id % opt.val_iter_interval == 0:
-                    self.run_val('train', epoch, epoch *num_iters + iter_id, iter_id)
+                    self.run_val('train', epoch, (epoch-1) *num_iters + iter_id, iter_id)
 
             ## log
             if opt.log_iters > 0 and \
                 iter_id % opt.log_iters == 0:
                     ret = {k: v.avg for k, v in avg_loss_stats.items()}
                     ret['time'] = clock_ETA.total() / 60.
-                    self.write_log('train', epoch, epoch *num_iters + iter_id, iter_id, ret)
+                    self.write_log('train', epoch, (epoch-1) *num_iters + iter_id, iter_id, ret)
 
             ## save model
             if opt.save_iter_interval > 0 and \
@@ -280,7 +280,7 @@ class HMRTrainer(object):
                 iter_id % opt.log_iters != 0:
             ret = {k: v.avg for k, v in avg_loss_stats.items()}
             ret['time'] = clock_ETA.total() / 60.
-            self.write_log('train', epoch, epoch *num_iters + iter_id, iter_id, ret)
+            self.write_log('train', epoch, (epoch-1) *num_iters + iter_id, iter_id, ret)
         return num_iters
 
 
