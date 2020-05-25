@@ -28,6 +28,9 @@ def pre_process(opt):
     opt.coco_val_data_set=[i for i in opt.coco_val_data_set.split(',')]
     opt.hum36m_val_data_set=[i for i in opt.hum36m_val_data_set.split(',')]
 
+    if opt.hum36m_rot_prob > 0:
+        opt.kp3d_weight = 0
+
     """model"""
     if opt.resume and opt.load_model == '':
         opt.load_model = os.path.join(opt.save_dir, 'model_last.pth')

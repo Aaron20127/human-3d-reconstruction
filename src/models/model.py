@@ -62,6 +62,7 @@ class HmrLoss(nn.Module):
                                            batch['box_ind'], batch['kp2d_mask'])
                 kp2d_loss = kp2d_l1_loss(kp2d, batch['kp2d_mask'], batch['kp2d'])
 
+
         if opt.kp3d_weight > 0 and 'kp3d' in batch:
             if batch['kp3d_mask'].sum() > 0:
                 kp3d = self._get_pred_kp3d(output['pose'], output['shape'], batch['has_kp3d'],
