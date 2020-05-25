@@ -137,7 +137,7 @@ class HMRTrainer(object):
             data_time, batch_time = AverageMeter(), AverageMeter()
             avg_loss_stats = {l: AverageMeter() for l in self.loss_stats}
             num_iters = len(data_loader)
-            # num_iters = 2
+            # num_iters = 50
 
             # get mAP
             eval_data = {
@@ -191,7 +191,7 @@ class HMRTrainer(object):
         if opt.eval_average_precision:
             ret['mAP'] = eval(eval_data, opt.iou_thresh,
                               data_type=opt.eval_data_type,
-                              save_path=opt.log_pr_curve_dir,
+                              save_path=opt.pr_curve_dir,
                               image_id='{}_{}'.format(epoch, train_num_iters))
         return ret
 

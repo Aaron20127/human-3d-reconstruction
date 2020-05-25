@@ -28,8 +28,10 @@ class Logger(object):
             os.makedirs(opt.debug_image_dir)
         if not os.path.exists(opt.debug_obj_dir):
             os.makedirs(opt.debug_obj_dir)
-        if not os.path.exists(opt.log_pr_curve_dir):
-            os.makedirs(opt.log_pr_curve_dir)
+        if not os.path.exists(opt.log_dir):
+            os.makedirs(opt.log_dir)
+        if not os.path.exists(opt.pr_curve_dir):
+            os.makedirs(opt.pr_curve_dir)
 
 
         ## save options
@@ -54,8 +56,9 @@ class Logger(object):
                 opt_file.write('    %s: %s\n' % (str(k), str(v)))
           
         ## log file of train and val
-        log_dir = opt.save_dir + '/logs'
-        opt.log_dir = log_dir
+        # log_dir = opt.save_dir + '/logs'
+        # opt.log_dir =
+        log_dir = opt.log_dir
         if USE_TENSORBOARD:
             self.writer = tensorboardX.SummaryWriter(log_dir=log_dir)
         else:
