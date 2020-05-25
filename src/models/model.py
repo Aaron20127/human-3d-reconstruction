@@ -129,7 +129,7 @@ class HmrLoss(nn.Module):
         c = (box_center + box_cd + camera[:, 1:]) * opt.down_ratio
         f = (camera[:, 0].abs() * torch.sqrt(box_wh[:,0].abs() * box_wh[:,1].abs()) * opt.down_ratio * opt.camera_pose_z).view(-1,1) # TODO give camera off bias a initial value
 
-        kp3d = torch.matmul(kp3d, self.Rx) # global rotation
+        # kp3d = torch.matmul(kp3d, self.Rx) # global rotation
         kp3d[:,:, 2] = kp3d[:,:, 2] + opt.camera_pose_z # let z be positive
 
         kp3d = kp3d / torch.unsqueeze(kp3d[:,:,2], 2) # homogeneous vector
