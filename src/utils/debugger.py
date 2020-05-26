@@ -186,14 +186,14 @@ class Debugger(object):
 
     # 弱透视投影
     color, depth = perspective_render_obj(camera, obj,
-                   width=512, height=512, rotate_x_axis =False, show_smpl_joints=True, use_viewer=False)
+                   width=512, height=512, rotate_x_axis =True, show_smpl_joints=True, use_viewer=False)
 
     self.add_blend_smpl(color, img_id)
 
     ##
-    rot_x = Rx_mat(torch.tensor([np.pi])).numpy()[0]
-    J = np.dot(joints[0], rot_x.T)
-    kp2d = perspective_transform(J, camera)
+    # rot_x = Rx_mat(torch.tensor([np.pi])).numpy()[0]
+    # J = np.dot(joints[0], rot_x.T)
+    kp2d = perspective_transform(joints[0], camera)
     self.add_kp2d(kp2d, bbox_img_id)
 
 
