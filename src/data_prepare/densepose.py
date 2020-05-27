@@ -12,11 +12,12 @@ import json
 import copy
 from mpl_toolkits.mplot3d import axes3d, Axes3D
 
+abspath = os.path.abspath(os.path.dirname(__file__))
 
 class DensePoseMethods:
     def __init__(self):
         #
-        ALP_UV = loadmat('D:\\paper\\human_body_reconstruction\\code\\master\\data\\UV_Processed.mat')
+        ALP_UV = loadmat(abspath + '/../../data/UV_Processed.mat')
         self.FaceIndices = np.array(ALP_UV['All_FaceIndices']).squeeze()
         self.FacesDensePose = ALP_UV['All_Faces'] - 1
         self.U_norm = ALP_UV['All_U_norm'].squeeze()
@@ -26,7 +27,7 @@ class DensePoseMethods:
         self.SemanticMaskSymmetries = [0, 1, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 14]
         self.Index_Symmetry_List = [1, 2, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17, 20, 19, 22, 21, 24,
                                     23]
-        UV_symmetry_filename = 'D:\\paper\\human_body_reconstruction\\code\\master\\data\\UV_symmetry_transforms.mat'
+        UV_symmetry_filename = abspath + '/../../data/UV_symmetry_transforms.mat'
         self.UV_symmetry_transformations = loadmat(UV_symmetry_filename)
 
     def get_symmetric_densepose(self, I, U, V, x, y, Mask):
@@ -265,7 +266,7 @@ def demo_matching_with_smpl():
         ax.axis('off')
 
     # Now read the smpl model.
-    with open('D:/paper/human_body_reconstruction/code/master/data/neutral_smpl_with_cocoplus_reg.pkl', 'rb') as f:
+    with open(abspath + '/../../data/neutral_smpl_with_cocoplus_reg.pkl', 'rb') as f:
         data = pickle.load(f,encoding='iso-8859-1')
         Vertices = data['v_template']  ##  Loaded vertices of size (6890, 3)
         X, Y, Z = [Vertices[:, 0], Vertices[:, 1], Vertices[:, 2]]
@@ -357,7 +358,7 @@ def test_dense_points(img, dense_points):
 
         # Now read the smpl model.
 
-    with open('D:/paper/human_body_reconstruction/code/master/data/neutral_smpl_with_cocoplus_reg.pkl', 'rb') as f:
+    with open(abspath + '/../../data/neutral_smpl_with_cocoplus_reg.pkl', 'rb') as f:
         data = pickle.load(f, encoding='iso-8859-1')
         Vertices = data['v_template']  ##  Loaded vertices of size (6890, 3)
         X, Y, Z = [Vertices[:, 0], Vertices[:, 1], Vertices[:, 2]]
@@ -394,7 +395,7 @@ def test_dense_points(img, dense_points):
     collected_y = np.zeros(dense_points['pts_2d'][0].shape)
     collected_z = np.zeros(dense_points['pts_2d'][0].shape)
 
-    for i in range(len(dense_points['pts_2d'])):
+    for i in range(len(dense_points['pts_2d'][0])):
         # Convert IUV to FBC (faceIndex and barycentric coordinates.)
         # FaceIndex, bc1, bc2, bc3 = DP.IUV2FBC(ii, uu, vv)
         # Use FBC to get 3D coordinates on the surface.
