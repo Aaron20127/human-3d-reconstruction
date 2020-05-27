@@ -137,7 +137,7 @@ class HMRTrainer(object):
             data_time, batch_time = AverageMeter(), AverageMeter()
             avg_loss_stats = {l: AverageMeter() for l in self.loss_stats}
             num_iters = len(data_loader)
-            # num_iters = 50
+            # num_iters = 10
 
             # get mAP
             eval_data = {

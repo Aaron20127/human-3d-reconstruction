@@ -2,9 +2,11 @@ import numpy as np
 import cv2
 import random
 import copy
+from .opts import opt
 
 # data color augment
-_data_rng = np.random.RandomState(123)
+random.seed(opt.data_aug_seed)
+_data_rng = np.random.RandomState(opt.data_aug_seed)
 
 _eig_val = np.array([0.2141788, 0.01817699, 0.00341571],
                     dtype=np.float32)
@@ -424,3 +426,6 @@ def addCocoAnns(anns, img, draw_skeleton=True, draw_key_points=True, draw_bbox=T
         for ann in anns:
             print(ann['caption'])
     return img
+
+
+

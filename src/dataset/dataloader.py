@@ -35,7 +35,8 @@ def coco_data_loader():
                 load_min_vis_kps=opt.load_min_vis_kps,
                 max_data_len=-1,
                 keep_truncation_kps = opt.keep_truncation_kps,
-                min_truncation_kps_in_image=opt.min_truncation_kps_in_image
+                min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
+                min_truncation_kps=opt.min_truncation_kps
             )
         elif name == 'coco2017':
             dataset = COCO2017(
@@ -50,7 +51,8 @@ def coco_data_loader():
                 load_min_vis_kps=opt.load_min_vis_kps,
                 max_data_len=-1,
                 keep_truncation_kps=opt.keep_truncation_kps,
-                min_truncation_kps_in_image=opt.min_truncation_kps_in_image
+                min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
+                min_truncation_kps=opt.min_truncation_kps
             )
         else:
             msg = 'invalid dataset {}.'.format(name)
@@ -86,7 +88,8 @@ def lsp_data_loader():
                 box_stretch=30,
                 max_data_len=-1,
                 keep_truncation_kps=opt.keep_truncation_kps,
-                min_truncation_kps_in_image=opt.min_truncation_kps_in_image
+                min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
+                min_truncation_kps=opt.min_truncation_kps
             )
         elif name == 'lsp_ext':
             dataset = LspExt(
@@ -100,7 +103,8 @@ def lsp_data_loader():
                 box_stretch=30,
                 max_data_len=-1,
                 keep_truncation_kps = opt.keep_truncation_kps,
-                min_truncation_kps_in_image=opt.min_truncation_kps_in_image
+                min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
+                min_truncation_kps=opt.min_truncation_kps
             )
         else:
             msg = 'invalid dataset {}.'.format(name)
@@ -136,7 +140,8 @@ def hum36m_data_loader():
                 box_stretch=20,
                 max_data_len=-1,
                 keep_truncation_kps = opt.keep_truncation_kps,
-                min_truncation_kps_in_image = opt.min_truncation_kps_in_image
+                min_truncation_kps_in_image = opt.min_truncation_kps_in_image,
+                min_truncation_kps = opt.min_truncation_kps
             )
         else:
             msg = 'invalid dataset {}.'.format(name)

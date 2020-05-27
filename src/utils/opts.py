@@ -116,6 +116,7 @@ agt('--hide_data_time', action='store_true', help='hide print of time of model a
 agt('--gpus', default='0', help='-1 for CPU, use comma for multiple gpus')
 agt('--not_cuda_benchmark', action='store_true', help='disable when the input size is not fixed.')
 agt('--seed', default=317, type=int, help='random seed')
+agt('--data_aug_seed', default=123, type=int, help='random seed for data aurgment')
 
 # network
 agt('--use_dcn', action='store_true', help='whether or not to use the DeformConv convolution')
@@ -174,6 +175,7 @@ agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single
 
 agt('--min_vis_kps', default=6, type=int, help='minimum number of oringinal visible points of kp2d to train.')
 agt('--keep_truncation_kps', action='store_true', help='keep points of kp2d out of image when trunction.')
+agt('--min_truncation_kps', default=10, type=int, help='total points of trunction people.')
 agt('--min_truncation_kps_in_image', default=6, type=int, help='minimum number of visible points of kp2d in image when trunction.')
 
 

@@ -24,6 +24,7 @@ from utils.image   import gaussian_radius, draw_umich_gaussian
 from utils.image   import draw_dense_reg
 from utils.image  import addCocoAnns
 
+np.random.seed(opt.data_aug_seed)
 
 class LspExt(Dataset):
     def __init__(self,
@@ -39,7 +40,8 @@ class LspExt(Dataset):
                 max_objs = 32,
                 split = 'train', # train, val, test
                 min_vis_kps = 6,
-                keep_truncation_kps=False,
+                keep_truncation_kps = False,
+                min_truncation_kps = 12,
                 min_truncation_kps_in_image=6,
                 normalize = True,
                 box_stretch = 30,
@@ -63,6 +65,7 @@ class LspExt(Dataset):
         self.max_data_len = max_data_len
         self.keep_truncation_kps = keep_truncation_kps
         self.min_truncation_kps_in_image=min_truncation_kps_in_image
+        self.min_truncation_kps = min_truncation_kps
 
         # defaut parameters
         # key points
@@ -311,7 +314,8 @@ class LspExt(Dataset):
                 ### 2.handle 2d key points
                 kps = self._get_kp_2d(ann['kp2d'], flip, trans_mat)
 
-                if kps[:, 2].sum() >= self.min_vis_kps:
+                total_kps = kps[:, 2].sum()
+                if total_kps >= self.min_vis_kps:
                     vis_kps = 0
                     for j in range(self.num_joints):
                         if kps[j, 2] > 0:  # key points is visible
@@ -319,15 +323,17 @@ class LspExt(Dataset):
                                     kps[j, 1] >= 0 and kps[j, 1] < self.input_res:  # key points in output feature map
                                 vis_kps += 1
                                 kp2d[k, j] = kps[j]
-                            if self.keep_truncation_kps:
-                                kp2d[k, j] = kps[j]
 
-                    if self.keep_truncation_kps:
-                        if vis_kps >=  self.min_truncation_kps_in_image:
-                            kp2d_mask[k] = 1
-                    else:
-                        if vis_kps >=  self.min_vis_kps:
-                            kp2d_mask[k] = 1
+
+                    if vis_kps >= self.min_vis_kps:
+                        if total_kps != vis_kps:
+                            if self.keep_truncation_kps == True and \
+                            self.min_truncation_kps <= total_kps and \
+                            self.min_truncation_kps_in_image <= vis_kps:
+                                kp2d[k] = kps
+
+                        kp2d_mask[k] = 1
+
 
                 # ### 3. handle 3d key points
                 # kp3d[k] = self._get_kp_3d(ann['kp3d'], flip)
@@ -384,16 +390,17 @@ if __name__ == '__main__':
     data = LspExt('D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_extend',
                   split='train',
                   image_scale_range=(0.2, 1.01),
-                  trans_scale=0.7,
+                  trans_scale=0.5,
                   flip_prob=0.5,
                   rot_prob=0.5,
                   rot_degree=20,
                   box_stretch=30,
                   keep_truncation_kps=True,
-                  min_truncation_kps_in_image=1,
+                  min_truncation_kps_in_image=8,
+                  min_truncation_kps=12,
                   min_vis_kps=6,
                   max_data_len=-1)
-    data_loader = DataLoader(data, batch_size=1, shuffle=False)
+    data_loader = DataLoader(data, batch_size=1, shuffle=True)
 
     for batch in data_loader:
 
