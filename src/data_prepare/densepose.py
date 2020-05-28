@@ -485,6 +485,11 @@ def data_prepare():
     coco_2014 = COCO(coco_2014_file)
     coco_2014_dp = COCO(coco_2014_dp_file)
 
+    dst_data = coco_2014.get_dataset()
+
+    dst_f = open(dst_file, 'w')
+    json.dump(dst_data, dst_f)
+    dst_f.close()
 
     ##
     im_ids = coco_2014_dp.getImgIds()
@@ -515,11 +520,13 @@ def data_prepare():
 
                     # dense_points = get_dens_points(ann_dp)
 
-    dst_data = copy.deepcopy(coco_2014.get_dataset())
+    ### save
+    dst_data = coco_2014.get_dataset()
 
     dst_f = open(dst_file, 'w')
     json.dump(dst_data, dst_f)
     dst_f.close()
+
 
 if __name__ == '__main__':
     # demo_visualize_densepose_label()
