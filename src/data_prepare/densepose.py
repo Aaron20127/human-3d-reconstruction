@@ -14,6 +14,7 @@ from mpl_toolkits.mplot3d import axes3d, Axes3D
 
 abspath = os.path.abspath(os.path.dirname(__file__))
 
+
 class DensePoseMethods:
     def __init__(self):
         #
@@ -478,11 +479,12 @@ def data_prepare():
     coco_2014_file = coco_folder + '/annotations/person_keypoints_train2014.json'
     dst_file = coco_folder + '/annotations/densepose_person_keypoints_train2014.json'
 
-    coco_2014_data = json.load(open(coco_2014_file, 'r'))
-    dst_data = copy.deepcopy(coco_2014_data)
+    # coco_2014_data = json.load(open(coco_2014_file, 'r'))
+    # dst_data = copy.deepcopy(coco_2014_data)
 
-    coco_2014_dp = COCO(coco_2014_dp_file)
     coco_2014 = COCO(coco_2014_file)
+    coco_2014_dp = COCO(coco_2014_dp_file)
+
 
     ##
     im_ids = coco_2014_dp.getImgIds()
@@ -498,19 +500,22 @@ def data_prepare():
                 if idx_dp == idx:
                     ann_dp = coco_2014_dp.loadAnns(ids=idx_dp)
 
-                    for ann_ in dst_data['annotations']:
-                        if ann_['id'] == idx:
-                            ann_['dense_points'] = pack_dense_points(ann_dp[0])
+                    if 'dp_masks' in ann_dp[0].keys():
+                        ann = coco_2014.loadAnns(ids=idx)
 
-                            im = coco_2014_dp.loadImgs(im_id)[0]
-                            im_name = os.path.join(coco_folder + '/train2014', im['file_name'])
-                            I = cv2.imread(im_name)
+                        ann[0]['dense_points'] = pack_dense_points(ann_dp[0])
 
-                            test_dense_points(I, ann_['dense_points'])
+                        # im = coco_2014_dp.loadImgs(im_id)[0]
+                        # im_name = os.path.join(coco_folder + '/train2014', im['file_name'])
+                        # I = cv2.imread(im_name)
+                        #
+                        # test_dense_points(I, ann[0]['dense_points'])
+                        break
 
-                            break
-                    break
+
                     # dense_points = get_dens_points(ann_dp)
+
+    dst_data = copy.deepcopy(coco_2014.get_dataset())
 
     dst_f = open(dst_file, 'w')
     json.dump(dst_data, dst_f)
