@@ -451,7 +451,7 @@ def pack_dense_points(ann):
         Point_x = Point_x + x1
         Point_y = Point_y + y1
 
-        gt['pts_2d'] = np.stack((Point_x, Point_y), 0)
+        gt['pts_2d'] = np.stack((Point_x, Point_y), 1).flatten().tolist() # nx3
 
         ## gt smpl points index
         DP = DensePoseMethods()
@@ -467,8 +467,8 @@ def pack_dense_points(ann):
             v_ind[i] = verts_index
             v_rat[i] = [bc1, bc2, bc3]
 
-        gt['v_ind'] = v_ind
-        gt['v_rat'] = v_rat
+        gt['v_ind'] = v_ind.flatten().tolist() # nx3
+        gt['v_rat'] = v_rat.flatten().tolist()  # nx3
 
         return gt
 
@@ -479,17 +479,22 @@ def data_prepare():
     coco_2014_file = coco_folder + '/annotations/person_keypoints_train2014.json'
     dst_file = coco_folder + '/annotations/densepose_person_keypoints_train2014.json'
 
-    # coco_2014_data = json.load(open(coco_2014_file, 'r'))
-    # dst_data = copy.deepcopy(coco_2014_data)
 
     coco_2014 = COCO(coco_2014_file)
     coco_2014_dp = COCO(coco_2014_dp_file)
 
-    dst_data = coco_2014.get_dataset()
-
-    dst_f = open(dst_file, 'w')
-    json.dump(dst_data, dst_f)
-    dst_f.close()
+    # compute max num pts, max==184
+    # im_ids = coco_2014_dp.getImgIds()
+    # max_num_pts = 0
+    # for i, im_id in enumerate(im_ids):
+    #     print('{} / {}'.format(i, len(im_ids)))
+    #     idxs_dp = coco_2014_dp.getAnnIds(imgIds=[im_id], catIds=1, iscrowd=0)
+    #     for idx_dp in idxs_dp:
+    #         ann_dp = coco_2014_dp.loadAnns(ids=idx_dp)
+    #         if 'dp_masks' in ann_dp[0].keys():
+    #             if max_num_pts < len(ann_dp[0]['dp_I']):
+    #                 max_num_pts = len(ann_dp[0]['dp_I'])
+    # print('max_num_pts: {}'.format(max_num_pts))
 
     ##
     im_ids = coco_2014_dp.getImgIds()
@@ -516,13 +521,18 @@ def data_prepare():
                         #
                         # test_dense_points(I, ann[0]['dense_points'])
                         break
-
-
                     # dense_points = get_dens_points(ann_dp)
+
+        if (i+1) % 10000 == 0:
+            dst_data = coco_2014.get_dataset()
+            dst_f = open(dst_file, 'w')
+            json.dump(dst_data, dst_f)
+            dst_f.close()
+            print('save {}'.format(i))
+
 
     ### save
     dst_data = coco_2014.get_dataset()
-
     dst_f = open(dst_file, 'w')
     json.dump(dst_data, dst_f)
     dst_f.close()
