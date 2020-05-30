@@ -161,7 +161,8 @@ agt('--camera_pose_z', default=10, type=int, help='parameter z of camera pose of
 agt('--val_iter_interval', default=4000, type=int,  help='number of iter of one epoch to run validation.')
 agt('--val_epoch_interval', default=1, type=int,  help='number of iter of one epoch to run validation.')
 agt('--val_batch_size_coco', default=1, type=int,  help='0: donot use this data set.')
-agt('--val_batch_size_smpl', default=0, type=int,  help='0: donot use this data set.')
+agt('--val_batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
+agt('--val_batch_size_3dpw', default=0, type=int,  help='0: donot use this data set.')
 
 agt('--eval_average_precision', action='store_true', help='0: donot use this data set.')
 agt('--iou_thresh', default='0.1,0.2,0.3', help='0: donot use this data set.')
@@ -172,7 +173,8 @@ agt('--eval_data_type', default='kps',  help='if , kps iou_thresh mean the recip
 # dataset
 agt('--batch_size_coco', default=1, type=int,  help='0: donot use this data set.')
 agt('--batch_size_lsp',  default=0, type=int, help='0: donot use this data set.')
-agt('--batch_size_smpl', default=0, type=int,  help='0: donot use this data set.')
+agt('--batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
+agt('--batch_size_3dpw', default=0, type=int,  help='0: donot use this data set.')
 agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single-thread.')
 
 
@@ -187,17 +189,22 @@ agt('--min_trunction_vis_dp_ratio',  default=0.5, type=int,  help='when dense po
 
 agt('--coco_data_set', default='coco2014,coco2017',  help='0: donot use this data set.')
 agt('--lsp_data_set',  default='lsp,lsp_ext', help='0: donot use this data set.')
-agt('--smpl_data_set', default='hum36m,3dpw',  help='0: donot use this data set.')
+agt('--hum36m_data_set', default='hum36m',  help='0: donot use this data set.')
+agt('--pw3d_data_set', default='3dpw',  help='0: donot use this data set.')
 agt('--coco_val_data_set', default='coco2017',  help='0: donot use this data set.')
-agt('--smpl_val_data_set', default='hum36m,3dpw',  help='0: donot use this data set.')
+agt('--hum36m_val_data_set', default='hum36m',  help='0: donot use this data set.')
+agt('--pw3d_val_data_set', default='3dpw',  help='0: donot use this data set.')
 
 
 ## dataset coco
 agt('--load_min_vis_kps', default=6, type=int, help='every coco picture shuold have one number of visible points at least.')
 
+
 ## dataset hum36m
-agt('--smpl_rot_prob', default=-1, type=float, help='.')
-agt('--smpl_rot_degree', default=25, type=float, help='.')
+agt('--hum36m_rot_prob', default=-1, type=float, help='.')
+agt('--hum36m_rot_degree', default=25, type=float, help='.')
+agt('--pw3d_rot_prob', default=-1, type=float, help='.')
+agt('--pw3d_rot_degree', default=25, type=float, help='.')
 
 
 opt = parser.parse_args()
@@ -217,7 +224,7 @@ opt.down_ratio = 4
 # opt.hum36m_data_set=['hum36m']
 
 # opt.coco_val_data_set=['coco2017']
-# opt.smpl_val_data_set=['hum36m']
+# opt.hum36m_val_data_set=['hum36m']
 
 # opt.train_adv_set = ['mosh']
 # opt.eval_set = ['up3d']

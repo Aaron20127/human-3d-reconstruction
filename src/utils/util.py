@@ -25,11 +25,13 @@ def pre_process(opt):
     opt.gpus_list = [int(i) for i in opt.gpus.split(',')]
     opt.coco_data_set=[i for i in opt.coco_data_set.split(',')]
     opt.lsp_data_set=[i for i in opt.lsp_data_set.split(',')]
-    opt.smpl_data_set=[i for i in opt.smpl_data_set.split(',')]
+    opt.hum36m_data_set=[i for i in opt.hum36m_data_set.split(',')]
+    opt.pw3d_data_set=[i for i in opt.pw3d_data_set.split(',')]
     opt.coco_val_data_set=[i for i in opt.coco_val_data_set.split(',')]
-    opt.smpl_val_data_set=[i for i in opt.smpl_val_data_set.split(',')]
+    opt.hum36m_val_data_set=[i for i in opt.hum36m_val_data_set.split(',')]
+    opt.pw3d_val_data_set=[i for i in opt.pw3d_val_data_set.split(',')]
 
-    if opt.smpl_rot_prob > 0:
+    if opt.hum36m_rot_prob or opt.pw3d_rot_prob > 0:
         opt.kp3d_weight = 0
 
     """model"""
@@ -38,10 +40,10 @@ def pre_process(opt):
 
     """debug"""
     if opt.debug > 0:
-        if opt.batch_size_coco + opt.batch_size_lsp + opt.batch_size_smpl > 1:
+        if opt.batch_size_coco + opt.batch_size_lsp + opt.batch_size_hum36m > 1:
             assert 0, 'needed one batch size to debug.'
 
-        if opt.val_batch_size_coco + opt.val_batch_size_smpl > 1:
+        if opt.val_batch_size_coco + opt.val_batch_size_hum36m > 1:
             assert 0, 'needed one batch size to debug.'
 
 
