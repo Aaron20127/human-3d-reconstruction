@@ -132,6 +132,8 @@ agt('--pose_weight',  default=1, type=float, help='loss weight for keypoint heat
 agt('--shape_weight', default=1, type=float, help='loss weight for bounding box width and height.')
 agt('--kp2d_weight',  default=1, type=float, help='loss weight for bounding box center decimal.')
 agt('--kp3d_weight',  default=1, type=float, help='loss weight for bounding box center decimal.')
+agt('--dp_2d_weight',  default=1, type=float, help='loss weight for densepose points.')
+
 agt('--pose_loss_type',  default=1, type=int, help='1 - rotating vector.'
                                                    '2 - euler angle.')
 
@@ -159,7 +161,7 @@ agt('--camera_pose_z', default=10, type=int, help='parameter z of camera pose of
 agt('--val_iter_interval', default=4000, type=int,  help='number of iter of one epoch to run validation.')
 agt('--val_epoch_interval', default=1, type=int,  help='number of iter of one epoch to run validation.')
 agt('--val_batch_size_coco', default=1, type=int,  help='0: donot use this data set.')
-agt('--val_batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
+agt('--val_batch_size_smpl', default=0, type=int,  help='0: donot use this data set.')
 
 agt('--eval_average_precision', action='store_true', help='0: donot use this data set.')
 agt('--iou_thresh', default='0.1,0.2,0.3', help='0: donot use this data set.')
@@ -170,31 +172,35 @@ agt('--eval_data_type', default='kps',  help='if , kps iou_thresh mean the recip
 # dataset
 agt('--batch_size_coco', default=1, type=int,  help='0: donot use this data set.')
 agt('--batch_size_lsp',  default=0, type=int, help='0: donot use this data set.')
-agt('--batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
+agt('--batch_size_smpl', default=0, type=int,  help='0: donot use this data set.')
 agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single-thread.')
+
 
 agt('--min_vis_kps', default=6, type=int, help='minimum number of oringinal visible points of kp2d to train.')
 agt('--keep_truncation_kps', action='store_true', help='keep points of kp2d out of image when trunction.')
-agt('--min_truncation_kps', default=10, type=int, help='total points of trunction people.')
+agt('--min_truncation_kps', default=10, type=int, help='total key points of trunction people.')
 agt('--min_truncation_kps_in_image', default=6, type=int, help='minimum number of visible points of kp2d in image when trunction.')
+agt('--keep_truncation_dp', action='store_true',  help='keep points of densepose out of image when trunction.')
+agt('--min_trunction_vis_dp_ratio',  default=0.5, type=int,  help='when dense points ratio in image less than this value, '
+                                                                  'donot keep this label.')
 
 
 agt('--coco_data_set', default='coco2014,coco2017',  help='0: donot use this data set.')
 agt('--lsp_data_set',  default='lsp,lsp_ext', help='0: donot use this data set.')
-agt('--hum36m_data_set', default='hum36m',  help='0: donot use this data set.')
+agt('--smpl_data_set', default='hum36m,3dpw',  help='0: donot use this data set.')
 agt('--coco_val_data_set', default='coco2017',  help='0: donot use this data set.')
-agt('--hum36m_val_data_set', default='hum36m',  help='0: donot use this data set.')
+agt('--smpl_val_data_set', default='hum36m,3dpw',  help='0: donot use this data set.')
+
 
 ## dataset coco
 agt('--load_min_vis_kps', default=6, type=int, help='every coco picture shuold have one number of visible points at least.')
 
 ## dataset hum36m
-agt('--hum36m_rot_prob', default=-1, type=float, help='.')
-agt('--hum36m_rot_degree', default=25, type=float, help='.')
+agt('--smpl_rot_prob', default=-1, type=float, help='.')
+agt('--smpl_rot_degree', default=25, type=float, help='.')
 
 
 opt = parser.parse_args()
-
 
 
 ################ network ################
@@ -211,7 +217,7 @@ opt.down_ratio = 4
 # opt.hum36m_data_set=['hum36m']
 
 # opt.coco_val_data_set=['coco2017']
-# opt.hum36m_val_data_set=['hum36m']
+# opt.smpl_val_data_set=['hum36m']
 
 # opt.train_adv_set = ['mosh']
 # opt.eval_set = ['up3d']
@@ -225,8 +231,8 @@ opt.data_set_path = {
     # 'ai-ch':'E:/HMR/data/ai_challenger_keypoint_train_20170902',
     # 'mpi-inf-3dhp':'E:/HMR/data/mpi_inf_3dhp',
     'hum36m': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/hum36m-toy',
-    'mosh': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/mosh/neutrMosh',
-    'up3d': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/up-3d'
+    '3dpw': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/3DPW/',
+    'mosh': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/mosh/neutrMosh'
 }
 
 pre_process(opt)

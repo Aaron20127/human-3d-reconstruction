@@ -169,7 +169,8 @@ class COCO2017(Dataset):
 
         # normalize, color augment and standardize image
         inp = (inp.astype(np.float32) / 255.)
-        if self.color_aug:  # color augment
+        if self.split == 'train' and \
+           self.color_aug:  # color augment
             color_aug(inp)
 
         if self.normalize:

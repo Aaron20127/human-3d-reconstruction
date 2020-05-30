@@ -90,6 +90,7 @@ class SMPL(nn.Module):
             for f in self.faces:  # Faces are 1-based, not 0-based in obj files
                 fp.write('f %d %d %d\n' % (f[0] + 1, f[1] + 1, f[2] + 1))
 
+
     def forward(self, beta, theta):
         if not self.cur_device:
             device = beta.device

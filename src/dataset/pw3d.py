@@ -23,7 +23,7 @@ from utils.image   import gaussian_radius, draw_umich_gaussian
 from utils.image   import draw_dense_reg
 from utils.image  import addCocoAnns
 
-
+np.random.seed(opt.data_aug_seed)
 
 class PW3D(Dataset):
     def __init__(self,
@@ -39,8 +39,11 @@ class PW3D(Dataset):
                 max_objs = 32,
                 split = 'train', # train, val, test
                 min_vis_kps = 6,
+                keep_truncation_kps=False,
+                min_truncation_kps=12,
+                min_truncation_kps_in_image=6,
                 normalize = True,
-                box_stretch = 10,
+                box_stretch = 20,
                 max_data_len = -1):
 
         self.data_path = data_path
@@ -59,16 +62,17 @@ class PW3D(Dataset):
         self.box_stretch = box_stretch
         self.down_ratio = input_res / output_res
         self.max_data_len = max_data_len
+        self.keep_truncation_kps = keep_truncation_kps
+        self.min_truncation_kps_in_image = min_truncation_kps_in_image
+        self.min_truncation_kps = min_truncation_kps
 
         # defaut parameters
         # key points
         self.num_joints = 19
-        self.kps_map = [0, 1, 2, 3, 4, 5, 6, 7, 8,
-                        9, 10, 11, 12, 13, 0, 0, 0, 0, 0]  # key points map lsp to smpl cocoplus key points
-        self.not_exist_kps = [14, 15, 16, 17, 18]
+        self.kps_map = [10,9,8,11,12,13,4,3,2,5,6,7,1,0,0,15,14,17,16]  # key points map lsp to smpl cocoplus key points
+        self.not_exist_kps = [13]
         self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
                          [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
-
 
         # load data set
         self._load_data_set()
@@ -80,15 +84,16 @@ class PW3D(Dataset):
         self.images = []
 
         if self.split == 'train':
-            anno_file_path = os.path.join(self.data_path, 'train.h5')
+            anno_file_path = os.path.join(self.data_path, 'annotations', 'train.h5')
         if self.split == 'val':
-            anno_file_path = os.path.join(self.data_path, 'val.h5')
+            anno_file_path = os.path.join(self.data_path, 'annotations', 'validation.h5')
 
         with h5py.File(anno_file_path, 'r') as fp:
-            self.kp2ds = np.array(fp['gt2d']).reshape(-1,19,3)
-            self.kp3ds = np.array(fp['gt3d']).reshape(-1,19,3)
+            self.kp2ds = np.array(fp['gt2d'])
             self.shape = np.array(fp['shape'])
             self.pose = np.array(fp['pose'])
+
+            self.kp2ds[..., 2] = (self.kp2ds[..., 2] > 0).astype(np.float32)
 
             for img_name in np.array(fp['imagename']):
                 self.images.append(img_name.decode())
@@ -97,13 +102,14 @@ class PW3D(Dataset):
                    self.max_data_len <= len(self.images):
                     break
 
-            self.img_dir = os.path.join(self.data_path, 'imageFiles')
+            self.img_dir = os.path.join(self.data_path)
 
         print('loaded {} samples (t={:.2f}s)'.format(len(self.images), clk.elapsed()))
 
 
     def __len__(self):
         return len(self.images)
+
 
     def _get_image(self, index):
         img_name = self.images[index]
@@ -112,6 +118,7 @@ class PW3D(Dataset):
         # img = jpeg.JPEG(img_path).decode() # accelerate jpeg image read speed
 
         return img
+
 
     def _get_input(self, img):
         h, w = img.shape[0], img.shape[1]
@@ -153,7 +160,8 @@ class PW3D(Dataset):
 
         # normalize, color augment and standardize image
         inp = (inp.astype(np.float32) / 255.)
-        if self.color_aug:  # color augment
+        if self.split == 'train' and \
+           self.color_aug:  # color augment
             color_aug(inp)
 
         if self.normalize:
@@ -164,6 +172,7 @@ class PW3D(Dataset):
         inp = inp.transpose(2, 0, 1)  # change channel (3, 512, 512)
 
         return inp, trans_mat, flip, rand_scale
+
 
     def _convert_kp2d_to_smpl(self, pts):
         """
@@ -188,6 +197,7 @@ class PW3D(Dataset):
         kps = pts[self.kps_map].copy()
         kps[self.not_exist_kps] = 0
         return kps
+
 
     def _generate_bbox(self, kp, flip, affine_mat, rand_scale):  # TODO use object detection to get bbox
         kp = self._get_kp_2d(kp, flip, affine_mat)
@@ -279,7 +289,7 @@ class PW3D(Dataset):
 
         kp3d_mask = np.zeros((self.max_objs), dtype=np.uint8)
         kp3d = np.zeros((self.max_objs, self.num_joints, 3), dtype=np.float32)
-        has_kp3d = np.array([1], dtype=np.uint8)
+        has_kp3d = np.array([0], dtype=np.uint8)
 
         has_theta = np.array([1], dtype=np.uint8)
         theta_mask = np.zeros((self.max_objs), dtype=np.uint8)
@@ -316,20 +326,29 @@ class PW3D(Dataset):
                 ### 2.handle 2d key points
                 kps = self._get_kp_2d(ann['kp2d'], flip, trans_mat)
 
-                vis_kps = 0
-                for j in range(self.num_joints):
-                    if kps[j, 2] > 0:  # key points is visible
-                        if kps[j, 0] >= 0 and kps[j, 0] < self.input_res and \
-                                kps[j, 1] >= 0 and kps[j, 1] < self.input_res:  # key points in output feature map
-                            vis_kps += 1
-                            kp2d[k, j] = kps[j]
-                if vis_kps > 0:
-                    kp2d_mask[k] = 1
+                total_kps = kps[:, 2].sum()
+                if total_kps >= self.min_vis_kps:
+                    vis_kps = 0
+                    for j in range(self.num_joints):
+                        if kps[j, 2] > 0:  # key points is visible
+                            if kps[j, 0] >= 0 and kps[j, 0] < self.input_res and \
+                                    kps[j, 1] >= 0 and kps[j, 1] < self.input_res:  # key points in output feature map
+                                vis_kps += 1
+                                kp2d[k, j] = kps[j]
+
+                    if vis_kps >= self.min_vis_kps:
+                        if total_kps != vis_kps:
+                            if self.keep_truncation_kps == True and \
+                                    self.min_truncation_kps <= total_kps and \
+                                    self.min_truncation_kps_in_image <= vis_kps:
+                                kp2d[k] = kps
+
+                        kp2d_mask[k] = 1
 
 
                 ### 3. handle 3d key points
-                kp3d[k] = self._get_kp_3d(ann['kp3d'], flip)
-                kp3d_mask[k] = 1
+                # kp3d[k] = self._get_kp_3d(ann['kp3d'], flip)
+                # kp3d_mask[k] = 1
 
 
                 ### 4. handle pose and shape
@@ -350,6 +369,8 @@ class PW3D(Dataset):
         return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, \
                theta_mask, pose, shape, has_theta, kp3d, kp3d_mask, has_kp3d, gt
 
+
+
     def __getitem__(self, index):
 
         ## 1.get img and anns
@@ -359,15 +380,18 @@ class PW3D(Dataset):
         inp, trans_mat, flip, rand_scale = self._get_input(img)
 
         ## 3. handle output of network, namely label
-        kp2d = self.kp2ds[index]
-        coco_bbox = self._generate_bbox(kp2d, flip, trans_mat, rand_scale)
-        anns = [{
-            'bbox': coco_bbox,
-            'kp2d': kp2d,
-            'kp3d':  self.kp3ds[index],
-            'shape': self.shape[index],
-            'pose':  self.pose[index]
-        }]
+        anns = []
+        for i, kp2d in enumerate(self.kp2ds[index]):
+            if kp2d[:,2].sum() <= 0:
+                continue
+
+            coco_bbox = self._generate_bbox(kp2d, flip, trans_mat, rand_scale)
+            anns.append({
+                'bbox': coco_bbox,
+                'kp2d': kp2d,
+                'shape': self.shape[index][i],
+                'pose':  self.pose[index][i]
+            })
 
         box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, \
         theta_mask, pose, shape, has_theta, kp3d, kp3d_mask, has_kp3d, gt = \
@@ -391,21 +415,25 @@ class PW3D(Dataset):
             'theta_mask': theta_mask,
             'has_theta': has_theta,
             'gt': gt,
-            'dataset': 'hum36m'
+            'dataset': '3dpw'
         }
 
 
 if __name__ == '__main__':
-    data = PW3D('D:/paper/human_body_reconstruction/datasets/human_reconstruction/3DPW',
-               split='train',
-                image_scale_range=(1.0, 1.01),
-                trans_scale=0,
-                flip_prob=-1,
+    data = PW3D('D:/paper/human_body_reconstruction/datasets/human_reconstruction/3DPW/',
+                split='train',
+                image_scale_range=(0.2, 1.11),
+                trans_scale=0.6,
+                flip_prob=0.5,
                 rot_prob=-1,
                 rot_degree=45,
-                box_stretch=20,
+                box_stretch=28,
+                keep_truncation_kps=True,
+                min_truncation_kps_in_image=8,
+                min_truncation_kps=12,
+                min_vis_kps=6,
                 max_data_len=-1)
-    data_loader = DataLoader(data, batch_size=1, shuffle=False)
+    data_loader = DataLoader(data, batch_size=1, shuffle=True)
 
     for batch in data_loader:
 
@@ -441,8 +469,8 @@ if __name__ == '__main__':
         gt_id = 'smpl'
         debugger.add_img(img, img_id=gt_id)
         for obj in batch['gt']:
-            camera = get_camera_from_batch(obj['bbox'][0])
-            debugger.add_smpl(obj['pose'][0], obj['shape'][0], kp3d=obj['kp3d'][0], camera=camera, img_id=gt_id)
+            camera = get_camera_from_batch(obj['bbox'][0], opt.camera_pose_z)
+            debugger.add_smpl(obj['pose'][0], obj['shape'][0], camera=camera, img_id=gt_id)
 
 
         debugger.show_all_imgs(pause=True)

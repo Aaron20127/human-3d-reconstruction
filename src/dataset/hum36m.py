@@ -158,7 +158,8 @@ class Hum36m(Dataset):
 
         # normalize, color augment and standardize image
         inp = (inp.astype(np.float32) / 255.)
-        if self.color_aug:  # color augment
+        if self.split == 'train' and \
+           self.color_aug:  # color augment
             color_aug(inp)
 
         if self.normalize:
@@ -413,7 +414,7 @@ if __name__ == '__main__':
     data = Hum36m('D:/paper/human_body_reconstruction/datasets/human_reconstruction/hum36m-toy',
                split='train',
                 image_scale_range=(0.3, 1.11),
-                trans_scale=0.5,
+                trans_scale=0.6,
                 flip_prob=0.5,
                 rot_prob=-1,
                 rot_degree=45,

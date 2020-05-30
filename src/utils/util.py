@@ -25,11 +25,11 @@ def pre_process(opt):
     opt.gpus_list = [int(i) for i in opt.gpus.split(',')]
     opt.coco_data_set=[i for i in opt.coco_data_set.split(',')]
     opt.lsp_data_set=[i for i in opt.lsp_data_set.split(',')]
-    opt.hum36m_data_set=[i for i in opt.hum36m_data_set.split(',')]
+    opt.smpl_data_set=[i for i in opt.smpl_data_set.split(',')]
     opt.coco_val_data_set=[i for i in opt.coco_val_data_set.split(',')]
-    opt.hum36m_val_data_set=[i for i in opt.hum36m_val_data_set.split(',')]
+    opt.smpl_val_data_set=[i for i in opt.smpl_val_data_set.split(',')]
 
-    if opt.hum36m_rot_prob > 0:
+    if opt.smpl_rot_prob > 0:
         opt.kp3d_weight = 0
 
     """model"""
@@ -38,10 +38,10 @@ def pre_process(opt):
 
     """debug"""
     if opt.debug > 0:
-        if opt.batch_size_coco + opt.batch_size_lsp + opt.batch_size_hum36m > 1:
+        if opt.batch_size_coco + opt.batch_size_lsp + opt.batch_size_smpl > 1:
             assert 0, 'needed one batch size to debug.'
 
-        if opt.val_batch_size_coco + opt.val_batch_size_hum36m > 1:
+        if opt.val_batch_size_coco + opt.val_batch_size_smpl > 1:
             assert 0, 'needed one batch size to debug.'
 
 
@@ -374,6 +374,18 @@ def decode_label_kp2d(mask, kp2d):
 
     return kp2ds
 
+
+def decode_label_densepose(mask, dp_2d, dp_ind, dp_rat):
+    mask = np.array(mask)
+    dp_2d = np.array(dp_2d)
+    dp_ind = np.array(dp_ind)
+    dp_rat = np.array(dp_rat)
+
+    dp_2d = dp_2d[mask == 1]
+    dp_ind = dp_ind[mask == 1]
+    dp_rat = dp_rat[mask == 1]
+
+    return dp_2d, dp_ind, dp_rat
 
 
 def get_camera_from_batch(bbox, camera_pose_z):

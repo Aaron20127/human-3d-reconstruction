@@ -15,6 +15,7 @@ from .coco2014 import COCO2014
 from .lsp import Lsp
 from .lsp_ext import LspExt
 from .hum36m import Hum36m
+from .pw3d import PW3D
 
 
 
@@ -126,7 +127,7 @@ def lsp_data_loader():
 
 def hum36m_data_loader():
     datasets = []
-    for name in opt.hum36m_data_set:
+    for name in opt.smpl_data_set:
         path = opt.data_set_path[name]
         if name == 'hum36m':
             dataset = Hum36m(
@@ -135,13 +136,28 @@ def hum36m_data_loader():
                 image_scale_range=(0.4, 1.11),
                 trans_scale=0.5,
                 flip_prob=0.5,
-                rot_prob=opt.hum36m_rot_prob,
-                rot_degree=opt.hum36m_rot_degree,
+                rot_prob=opt.smpl_rot_prob,
+                rot_degree=opt.smpl_rot_degree,
                 box_stretch=20,
                 max_data_len=-1,
                 keep_truncation_kps = opt.keep_truncation_kps,
                 min_truncation_kps_in_image = opt.min_truncation_kps_in_image,
                 min_truncation_kps = opt.min_truncation_kps
+            )
+        elif name == '3dpw':
+            dataset = PW3D(
+                data_path=path,
+                split='train',
+                image_scale_range=(0.2, 1.11),
+                trans_scale=0.6,
+                flip_prob=0.5,
+                rot_prob=opt.smpl_rot_prob,
+                rot_degree=opt.smpl_rot_degree,
+                box_stretch=28,
+                max_data_len=-1,
+                keep_truncation_kps=opt.keep_truncation_kps,
+                min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
+                min_truncation_kps=opt.min_truncation_kps
             )
         else:
             msg = 'invalid dataset {}.'.format(name)
@@ -153,7 +169,7 @@ def hum36m_data_loader():
 
     return DataLoader(
         dataset=new_datasets,
-        batch_size=opt.batch_size_hum36m,
+        batch_size=opt.batch_size_smpl,
         shuffle=True,
         drop_last=True,
         pin_memory=True,
@@ -171,7 +187,7 @@ def val_coco_data_loader():
                 split='val',
                 image_scale_range=(1.0, 1.01),
                 trans_scale=0,
-                flip_prob=0.5,
+                flip_prob=-1,
                 rot_prob=-1,
                 rot_degree=30,
                 min_vis_kps=0,
@@ -184,7 +200,7 @@ def val_coco_data_loader():
                 split='val',
                 image_scale_range=(1.0, 1.01),
                 trans_scale=0,
-                flip_prob=0.5,
+                flip_prob=-1,
                 rot_prob=-1,
                 rot_degree=30,
                 min_vis_kps=0,
@@ -210,7 +226,7 @@ def val_coco_data_loader():
 
 def val_hum36m_data_loader():
     datasets = []
-    for name in opt.hum36m_val_data_set:
+    for name in opt.smpl_val_data_set:
         path = opt.data_set_path[name]
         if name == 'hum36m':
             dataset = Hum36m(
@@ -218,10 +234,22 @@ def val_hum36m_data_loader():
                 split='val',
                 image_scale_range=(1.0, 1.01),
                 trans_scale=0,
-                flip_prob=0.5,
+                flip_prob=-1,
                 rot_prob=-1,
                 rot_degree=45,
                 box_stretch=20,
+                max_data_len=-1
+            )
+        elif name == '3dpw':
+            dataset = PW3D(
+                data_path=path,
+                split='val',
+                image_scale_range=(1.0, 1.01),
+                trans_scale=0,
+                flip_prob=-1,
+                rot_prob=-1,
+                rot_degree=45,
+                box_stretch=28,
                 max_data_len=-1
             )
         else:
@@ -234,7 +262,7 @@ def val_hum36m_data_loader():
 
     return DataLoader(
         dataset=new_datasets,
-        batch_size=opt.val_batch_size_hum36m,
+        batch_size=opt.val_batch_size_smpl,
         shuffle=False,
         drop_last=False,
         pin_memory=True,

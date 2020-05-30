@@ -70,7 +70,7 @@ class HMRTrainer(object):
                 loaders.append(coco_data_loader())
             if opt.batch_size_lsp > 0:
                 loaders.append(lsp_data_loader())
-            if opt.batch_size_hum36m > 0:
+            if opt.batch_size_smpl > 0:
                 loaders.append(hum36m_data_loader())
 
             if not loaders:
@@ -82,7 +82,7 @@ class HMRTrainer(object):
         loaders = []
         if opt.val_batch_size_coco > 0:
             loaders.append(val_coco_data_loader())
-        if opt.val_batch_size_hum36m > 0:
+        if opt.val_batch_size_smpl > 0:
             loaders.append(val_hum36m_data_loader())
 
         if len(loaders) == 0:
