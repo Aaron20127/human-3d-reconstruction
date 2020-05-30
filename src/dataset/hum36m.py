@@ -85,8 +85,8 @@ class Hum36m(Dataset):
         self.images = []
 
         if self.split == 'train':
-            # anno_file_path = os.path.join(self.data_path, 'train.h5')
-            anno_file_path = os.path.join(self.data_path, 'annot_cocoplus_19_3dkp.h5')
+            anno_file_path = os.path.join(self.data_path, 'train.h5')
+            # anno_file_path = os.path.join(self.data_path, 'annot_cocoplus_19_3dkp.h5')
         if self.split == 'val':
             anno_file_path = os.path.join(self.data_path, 'val.h5')
         with h5py.File(anno_file_path, 'r') as fp:
