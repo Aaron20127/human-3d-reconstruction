@@ -4,6 +4,13 @@ import torch
 import os
 import sys
 import math
+from scipy.io  import loadmat
+import scipy.spatial.distance
+import json
+import copy
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import axes3d, Axes3D
+import pickle
 
 abspath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, abspath + '/../')
@@ -55,6 +62,7 @@ class Debugger(object):
 
     self.camera = self.default_camera()
 
+
   def default_camera(self):
       k = np.eye(3, 3)
       k[0, 0] = 1000
@@ -68,6 +76,7 @@ class Debugger(object):
           'k': k,
           't': t
       }
+
 
   def add_blend_smpl(self, pyrender_color, img_id):
       gray = cv2.cvtColor(pyrender_color, cv2.COLOR_BGR2GRAY)
@@ -135,6 +144,13 @@ class Debugger(object):
     color_map = cv2.resize(color_map, (output_res[0], output_res[1]))
     return color_map
 
+
+  def add_densepose_2d(self, dp_2d, img_id='default'):
+      for j in range(len(dp_2d)):
+          cv2.circle(self.imgs[img_id],
+             (dp_2d[j, 0], dp_2d[j, 1]), 2, (0,255,255), -1)
+
+
   def add_bbox(self, bbox, cat=0, conf=1, show_txt=True, img_id='default'):
     bbox = np.array(bbox, dtype=np.int32)
     # cat = (int(cat) + 1) % 80
@@ -154,6 +170,7 @@ class Debugger(object):
                     (bbox[0] + cat_size[0], bbox[1] - 2), c, -1)
       cv2.putText(self.imgs[img_id], txt, (bbox[0], bbox[1] - 2), 
                   font, 0.5, (0, 0, 0), thickness=1, lineType=cv2.LINE_AA)
+
 
   def add_kp2d(self, points, img_id='default'):
     points = np.array(points, dtype=np.int32)
@@ -298,6 +315,95 @@ class Debugger(object):
          path = os.path.join(obj_dir, str(i) + '.obj')
          self.smpl.save_obj(verts + np.random.random() * 10, path)
 
+
+  def show_densepose_smpl(self, dp_2d, dp_ind, dp_rat, img_id):
+    def smpl_view_set_axis_full_body(ax, azimuth=0):
+        ## Manually set axis
+        ax.view_init(0, azimuth)
+        max_range = 0.55
+        ax.set_xlim(- max_range, max_range)
+        ax.set_ylim(- max_range, max_range)
+        ax.set_zlim(-0.2 - max_range, -0.2 + max_range)
+        ax.axis('off')
+
+    def smpl_view_set_axis_face(ax, azimuth=0):
+        ## Manually set axis
+        ax.view_init(0, azimuth)
+        max_range = 0.1
+        ax.set_xlim(- max_range, max_range)
+        ax.set_ylim(- max_range, max_range)
+        ax.set_zlim(0.45 - max_range, 0.45 + max_range)
+        ax.axis('off')
+
+
+    with open(abspath + '/../../data/neutral_smpl_with_cocoplus_reg.pkl', 'rb') as f:
+        data = pickle.load(f, encoding='iso-8859-1')
+        Vertices = data['v_template']  ##  Loaded vertices of size (6890, 3)
+        X, Y, Z = [Vertices[:, 0], Vertices[:, 1], Vertices[:, 2]]
+        ## Now let's rotate around the model and zoom into the face.
+
+
+    # fig = plt.figure(1, figsize=[16, 4])
+    #
+    # ax = fig.add_subplot(141, projection='3d')
+    # ax.scatter(Z, X, Y, s=0.02, c='k')
+    # smpl_view_set_axis_full_body(ax)
+    #
+    # ax = fig.add_subplot(142, projection='3d')
+    # ax.scatter(Z, X, Y, s=0.02, c='k')
+    # smpl_view_set_axis_full_body(ax, 45)
+    #
+    # ax = fig.add_subplot(143, projection='3d')
+    # ax.scatter(Z, X, Y, s=0.02, c='k')
+    # smpl_view_set_axis_full_body(ax, 90)
+    #
+    # ax = fig.add_subplot(144, projection='3d')
+    # ax.scatter(Z, X, Y, s=0.2, c='k')
+    # smpl_view_set_axis_face(ax, -40)
+
+    mask = dp_2d[:, 2]
+    dp_ind = dp_ind[mask==1]
+    dp_rat = dp_rat[mask==1]
+    dp_2d = dp_2d[mask==1]
+
+    collected_x = np.zeros(dp_2d.shape[0])
+    collected_y = np.zeros(dp_2d.shape[0])
+    collected_z = np.zeros(dp_2d.shape[0])
+
+
+    for i in range(len(dp_2d)):
+        ## 3个顶点值求和，得到最后的顶点值,bc1+bc2+bc3=1
+        p = Vertices[dp_ind[i][0], :] * dp_rat[i][0] + \
+            Vertices[dp_ind[i][1], :] * dp_rat[i][1] + \
+            Vertices[dp_ind[i][2], :] * dp_rat[i][2]
+
+        collected_x[i] = p[0]
+        collected_y[i] = p[1]
+        collected_z[i] = p[2]
+
+    fig = plt.figure(figsize=[11, 6])
+    # Visualize the image and collected points.
+    ax = fig.add_subplot(121)
+    ax.imshow(self.imgs[img_id])
+    ax.scatter(dp_2d[:, 0], dp_2d[:, 1], 11, np.arange(len(dp_2d)))
+    plt.title('Points on the image')
+    ax.axis('off'),
+
+    ## Visualize the full body smpl male template model and collected points
+    ax = fig.add_subplot(122, projection='3d')
+    ax.scatter(Z, X, Y, s=0.02, c='k')
+    ax.scatter(collected_z, collected_x, collected_y, s=25, c=np.arange(len(dp_2d)))
+    smpl_view_set_axis_full_body(ax)
+    plt.title('Points on the SMPL model')
+
+    ## Now zoom into the face.
+    # ax = fig.add_subplot(133, projection='3d')
+    # ax.scatter(Z, X, Y, s=0.2, c='k')
+    # ax.scatter(collected_z, collected_x, collected_y, s=55, c=np.arange(len(dp_2d)))
+    # smpl_view_set_axis_face(ax)
+    # plt.title('Points on the SMPL model')
+    #
+    # plt.show()
 
 color_list = np.array(
         [

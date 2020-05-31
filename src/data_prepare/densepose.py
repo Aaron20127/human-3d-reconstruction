@@ -148,6 +148,13 @@ class DensePoseMethods:
         Vert_indices = self.All_vertices[self.FacesDensePose[FaceIndex]] - 1
         return Vert_indices
 
+    def GetDensePoseMask(self, Polys):
+        MaskGen = np.zeros([256,256])
+        for i in range(1,15):
+            if(Polys[i-1]):
+                current_mask = mask_util.decode(Polys[i-1])
+                MaskGen[current_mask>0] = i
+        return MaskGen
 
 
 def demo_visualize_densepose_label():
@@ -365,23 +372,23 @@ def test_dense_points(img, dense_points):
         X, Y, Z = [Vertices[:, 0], Vertices[:, 1], Vertices[:, 2]]
         ## Now let's rotate around the model and zoom into the face.
 
-    fig = plt.figure(1, figsize=[16, 4])
+    # fig = plt.figure(1, figsize=[16, 4])
 
-    ax = fig.add_subplot(141, projection='3d')
-    ax.scatter(Z, X, Y, s=0.02, c='k')
-    smpl_view_set_axis_full_body(ax)
-
-    ax = fig.add_subplot(142, projection='3d')
-    ax.scatter(Z, X, Y, s=0.02, c='k')
-    smpl_view_set_axis_full_body(ax, 45)
-
-    ax = fig.add_subplot(143, projection='3d')
-    ax.scatter(Z, X, Y, s=0.02, c='k')
-    smpl_view_set_axis_full_body(ax, 90)
-
-    ax = fig.add_subplot(144, projection='3d')
-    ax.scatter(Z, X, Y, s=0.2, c='k')
-    smpl_view_set_axis_face(ax, -40)
+    # ax = fig.add_subplot(141, projection='3d')
+    # ax.scatter(Z, X, Y, s=0.02, c='k')
+    # smpl_view_set_axis_full_body(ax)
+    #
+    # ax = fig.add_subplot(142, projection='3d')
+    # ax.scatter(Z, X, Y, s=0.02, c='k')
+    # smpl_view_set_axis_full_body(ax, 45)
+    #
+    # ax = fig.add_subplot(143, projection='3d')
+    # ax.scatter(Z, X, Y, s=0.02, c='k')
+    # smpl_view_set_axis_full_body(ax, 90)
+    #
+    # ax = fig.add_subplot(144, projection='3d')
+    # ax.scatter(Z, X, Y, s=0.2, c='k')
+    # smpl_view_set_axis_face(ax, -40)
 
     # plt.show()
 
@@ -392,11 +399,22 @@ def test_dense_points(img, dense_points):
     #     'rb')
     # Demo = pickle.load(pkl_file, encoding='iso-8859-1')
 
-    collected_x = np.zeros(dense_points['pts_2d'][0].shape)
-    collected_y = np.zeros(dense_points['pts_2d'][0].shape)
-    collected_z = np.zeros(dense_points['pts_2d'][0].shape)
+    pts_2d = np.array(dense_points['pts_2d']).reshape(-1, 2)
+    v_ind = np.array(dense_points['v_ind']).reshape(-1, 3)
+    v_rat = np.array(dense_points['v_rat']).reshape(-1, 3)
+    v_ind_fp = np.array(dense_points['v_ind_fp']).reshape(-1, 3)
+    v_rat_fp = np.array(dense_points['v_rat_fp']).reshape(-1, 3)
 
-    for i in range(len(dense_points['pts_2d'][0])):
+    collected_x = np.zeros(pts_2d.shape[0])
+    collected_y = np.zeros(pts_2d.shape[0])
+    collected_z = np.zeros(pts_2d.shape[0])
+
+    collected_x_flip = np.zeros(pts_2d.shape[0])
+    collected_y_flip = np.zeros(pts_2d.shape[0])
+    collected_z_flip = np.zeros(pts_2d.shape[0])
+
+
+    for i in range(len(pts_2d)):
         # Convert IUV to FBC (faceIndex and barycentric coordinates.)
         # FaceIndex, bc1, bc2, bc3 = DP.IUV2FBC(ii, uu, vv)
         # Use FBC to get 3D coordinates on the surface.
@@ -404,38 +422,48 @@ def test_dense_points(img, dense_points):
         #
 
         ## 3个顶点值求和，得到最后的顶点值,bc1+bc2+bc3=1
-        p = Vertices[dense_points['v_ind'][i][0], :] * dense_points['v_rat'][i][0] + \
-            Vertices[dense_points['v_ind'][i][1], :] * dense_points['v_rat'][i][1] + \
-            Vertices[dense_points['v_ind'][i][2], :] * dense_points['v_rat'][i][2]
+        p = Vertices[v_ind[i][0], :] * v_rat[i][0] + \
+            Vertices[v_ind[i][1], :] * v_rat[i][1] + \
+            Vertices[v_ind[i][2], :] * v_rat[i][2]
 
         collected_x[i] = p[0]
         collected_y[i] = p[1]
         collected_z[i] = p[2]
 
-    fig = plt.figure(2, figsize=[15, 5])
+        p = Vertices[v_ind_fp[i][0], :] * v_rat_fp[i][0] + \
+            Vertices[v_ind_fp[i][1], :] * v_rat_fp[i][1] + \
+            Vertices[v_ind_fp[i][2], :] * v_rat_fp[i][2]
+
+        collected_x_flip[i] = p[0]
+        collected_y_flip[i] = p[1]
+        collected_z_flip[i] = p[2]
+
+
+    fig = plt.figure(2, figsize=[17, 5])
 
     # Visualize the image and collected points.
     ax = fig.add_subplot(131)
     ax.imshow(img)
-    ax.scatter(dense_points['pts_2d'][0], dense_points['pts_2d'][1], 11, np.arange(len(dense_points['pts_2d'][0])))
+    ax.scatter(pts_2d[:,0], pts_2d[:, 1], 11, np.arange(len(pts_2d)))
     plt.title('Points on the image')
-    ax.axis('off'),
+    ax.axis('off')
 
     ## Visualize the full body smpl male template model and collected points
     ax = fig.add_subplot(132, projection='3d')
     ax.scatter(Z, X, Y, s=0.02, c='k')
-    ax.scatter(collected_z, collected_x, collected_y, s=25, c=np.arange(len(dense_points['pts_2d'][0])))
+    ax.scatter(collected_z, collected_x, collected_y, s=25, c=np.arange(len(pts_2d)))
     smpl_view_set_axis_full_body(ax)
     plt.title('Points on the SMPL model')
 
     ## Now zoom into the face.
     ax = fig.add_subplot(133, projection='3d')
-    ax.scatter(Z, X, Y, s=0.2, c='k')
-    ax.scatter(collected_z, collected_x, collected_y, s=55, c=np.arange(len(dense_points['pts_2d'][0])))
-    smpl_view_set_axis_face(ax)
-    plt.title('Points on the SMPL model')
+    ax.scatter(Z, X, Y, s=0.02, c='k')
+    ax.scatter(collected_z_flip, collected_x_flip, collected_y_flip, s=25, c=np.arange(len(pts_2d)))
+    smpl_view_set_axis_full_body(ax)
+    plt.title('flip Points on the SMPL model')
     #
     plt.show()
+
 
 def pack_dense_points(ann):
     bbr = np.round(ann['bbox'])
@@ -459,6 +487,9 @@ def pack_dense_points(ann):
         v_ind = np.zeros([len(ann['dp_I']), 3], dtype=np.int64)
         v_rat = np.zeros([len(ann['dp_I']), 3])
 
+        v_ind_flip = np.zeros([len(ann['dp_I']), 3], dtype=np.int64)
+        v_rat_flip = np.zeros([len(ann['dp_I']), 3])
+
         for i, (ii, uu, vv) in enumerate(zip(ann['dp_I'], ann['dp_U'], ann['dp_V'])):
             # Convert IUV to FBC (faceIndex and barycentric coordinates.)
             FaceIndex, bc1, bc2, bc3 = DP.IUV2FBC(ii, uu, vv)
@@ -467,8 +498,19 @@ def pack_dense_points(ann):
             v_ind[i] = verts_index
             v_rat[i] = [bc1, bc2, bc3]
 
+            # flip index
+            ii_f, u_f, v_f, x_f, y_f, Mask_flipped = \
+                DP.get_symmetric_densepose(np.array([ii]), np.array([uu]), np.array([vv]), Point_x[i], Point_y[i], DP.GetDensePoseMask(ann['dp_masks']))
+            FaceIndex, bc1, bc2, bc3 = DP.IUV2FBC(ii_f[0], u_f[0], v_f[0])
+            verts_index = DP.get_smpl_verts_indices(FaceIndex)
+            v_ind_flip[i] = verts_index
+            v_rat_flip[i] = [bc1, bc2, bc3]
+
+
         gt['v_ind'] = v_ind.flatten().tolist() # nx3
         gt['v_rat'] = v_rat.flatten().tolist()  # nx3
+        gt['v_ind_fp'] = v_ind_flip.flatten().tolist() # nx3
+        gt['v_rat_fp'] = v_rat_flip.flatten().tolist()  # nx3
 
         return gt
 
@@ -515,11 +557,11 @@ def data_prepare():
 
                         ann[0]['dense_points'] = pack_dense_points(ann_dp[0])
 
-                        # im = coco_2014_dp.loadImgs(im_id)[0]
-                        # im_name = os.path.join(coco_folder + '/train2014', im['file_name'])
-                        # I = cv2.imread(im_name)
-                        #
-                        # test_dense_points(I, ann[0]['dense_points'])
+                        im = coco_2014_dp.loadImgs(im_id)[0]
+                        im_name = os.path.join(coco_folder + '/train2014', im['file_name'])
+                        I = cv2.imread(im_name)
+                        test_dense_points(I, ann[0]['dense_points'])
+
                         break
                     # dense_points = get_dens_points(ann_dp)
 

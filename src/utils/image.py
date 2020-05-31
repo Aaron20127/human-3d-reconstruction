@@ -120,9 +120,9 @@ def affine_transform_kps(pt, M):
         M (array,(3,3)): matrix of affine transform
     """
     new_pt = np.hstack((pt[:,:2], np.ones((pt.shape[0],1)))).T
-    new_pt = np.dot(M, new_pt)
-    new_pt = np.hstack((new_pt.T, pt[:, 2:].reshape(-1,1)))
-    return new_pt
+    pt[:, :2] = np.dot(M, new_pt).T
+    # new_pt = np.hstack((new_pt.T, pt[:, 2:].reshape(-1,1)))
+    return pt
 
 
 def affine_transform_bbox(bbox, t):
