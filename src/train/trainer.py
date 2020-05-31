@@ -111,8 +111,7 @@ class HMRTrainer(object):
     def run_val(self, phase, epoch, total_iters=0, train_num_iters=0):
         opt = self.opt
         """ val """
-        with torch.no_grad():
-          loss_states = self.run_val_epoch(epoch, train_num_iters, self.val_loader)
+        loss_states = self.run_val_epoch(epoch, train_num_iters, self.val_loader)
 
         ## train
         if phase == 'train':
@@ -142,7 +141,7 @@ class HMRTrainer(object):
             data_time, batch_time = AverageMeter(), AverageMeter()
             avg_loss_stats = {l: AverageMeter() for l in self.loss_stats}
             num_iters = len(data_loader)
-            # num_iters = 10
+            # num_iters = 20
 
             # get mAP
             eval_data = {
@@ -264,6 +263,7 @@ class HMRTrainer(object):
             if opt.val_iter_interval > 0 and \
                 iter_id % opt.val_iter_interval == 0:
                     self.run_val('train', epoch, (epoch-1) *num_iters + iter_id, iter_id)
+                    model_with_loss.train()
 
             ## log
             if opt.log_iters > 0 and \
