@@ -370,7 +370,7 @@ class HMRTrainer(object):
 
 
     def load_model(self, model, model_path, device, optimizer=None, resume=False,
-                 lr=None, lr_step=None):
+                    lr=0, lr_step=None):
         start_epoch = 0
         checkpoint = torch.load(model_path, map_location=lambda storage, loc: storage)
         print('loaded {}, epoch {}'.format(model_path, checkpoint['epoch']))
@@ -410,11 +410,16 @@ class HMRTrainer(object):
             if 'optimizer' in checkpoint:
                 optimizer.load_state_dict(checkpoint['optimizer'])
                 start_epoch = checkpoint['epoch']
-                start_lr = lr
 
-                for param_group in optimizer.param_groups:
-                    param_group['lr'] = start_lr
-                print('Resumed optimizer with start lr', start_lr)
+                if lr > 0:
+                    for param_group in optimizer.param_groups:
+                        param_group['lr'] = lr
+                        print('New start lr', lr)
+                else:
+                    for param_group in optimizer.param_groups:
+                        if 'lr' in param_group.keys():
+                            print('Resume start lr', param_group['lr'])
+
 
                 for state in optimizer.state.values():
                     for k, v in state.items():
