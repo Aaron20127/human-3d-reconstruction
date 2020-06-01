@@ -44,6 +44,7 @@ class PW3D(Dataset):
                 min_truncation_kps_in_image=6,
                 normalize = True,
                 box_stretch = 20,
+                min_bbox_area = 16*16,
                 max_data_len = -1):
 
         self.data_path = data_path
@@ -65,6 +66,7 @@ class PW3D(Dataset):
         self.keep_truncation_kps = keep_truncation_kps
         self.min_truncation_kps_in_image = min_truncation_kps_in_image
         self.min_truncation_kps = min_truncation_kps
+        self.min_bbox_area = min_bbox_area
 
         # defaut parameters
         # key points
@@ -310,6 +312,10 @@ class PW3D(Dataset):
             h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
 
             if (h > 0 and w > 0):  # if outside the image, discard
+                if h*w*self.down_ratio <= self.min_bbox_area:
+                    # print( h*w*self.down_ratio, self.min_bbox_area)
+                    continue
+
                 ### 1. handle bbox
                 ct = np.array([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]) # down ratio
                 ct_int = ct.astype(np.int32)

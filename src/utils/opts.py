@@ -177,7 +177,7 @@ agt('--batch_size_hum36m', default=0, type=int,  help='0: donot use this data se
 agt('--batch_size_3dpw', default=0, type=int,  help='0: donot use this data set.')
 agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single-thread.')
 
-
+agt('--min_bbox_area', default=256, type=float, help='minimum number of oringinal visible points of kp2d to train.')
 agt('--min_vis_kps', default=6, type=int, help='minimum number of oringinal visible points of kp2d to train.')
 agt('--keep_truncation_kps', action='store_true', help='keep points of kp2d out of image when trunction.')
 agt('--min_truncation_kps', default=10, type=int, help='total key points of trunction people.')

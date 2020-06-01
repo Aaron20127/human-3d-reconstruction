@@ -44,7 +44,8 @@ class Lsp(Dataset):
                 keep_truncation_kps = False,
                 min_truncation_kps = 12,
                 min_truncation_kps_in_image=6,
-                max_data_len = -1,):
+                 min_bbox_area=16 * 16,
+                 max_data_len = -1):
 
         self.data_path = data_path
         self.image_scale_range = image_scale_range
@@ -65,6 +66,7 @@ class Lsp(Dataset):
         self.keep_truncation_kps = keep_truncation_kps
         self.min_truncation_kps_in_image = min_truncation_kps_in_image
         self.min_truncation_kps = min_truncation_kps
+        self.min_bbox_area = min_bbox_area
 
         # defaut parameters
         # key points
@@ -301,6 +303,10 @@ class Lsp(Dataset):
             h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
 
             if (h > 0 and w > 0):
+                if h*w*self.down_ratio <= self.min_bbox_area:
+                    # print( h*w*self.down_ratio, self.min_bbox_area)
+                    continue
+
                 ### 1. handle bbox
                 ct = np.array([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2])  # down ratio
                 ct_int = ct.astype(np.int32)
@@ -395,7 +401,7 @@ if __name__ == '__main__':
     torch.manual_seed(opt.seed)
     data = Lsp('D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp',
                   split='train',
-                  image_scale_range=(0.3, 1.01),
+                  image_scale_range=(0.2, 0.21),
                   trans_scale=0.5,
                   flip_prob=0.5,
                   rot_prob=0.5,
@@ -438,4 +444,7 @@ if __name__ == '__main__':
             debugger.add_kp2d(obj['kp2d'][0], img_id=gt_id)
 
 
+        print('------bbox--------')
+        for box in bbox:
+            print((box[2]-box[0]) * (box[3]-box[1]))
         debugger.show_all_imgs(pause=True)

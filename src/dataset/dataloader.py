@@ -37,7 +37,8 @@ def coco_data_loader():
                 max_data_len=-1,
                 keep_truncation_kps = opt.keep_truncation_kps,
                 min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
-                min_truncation_kps=opt.min_truncation_kps
+                min_truncation_kps=opt.min_truncation_kps,
+                min_bbox_area = opt.min_bbox_area
             )
         elif name == 'coco2017':
             dataset = COCO2017(
@@ -53,7 +54,8 @@ def coco_data_loader():
                 max_data_len=-1,
                 keep_truncation_kps=opt.keep_truncation_kps,
                 min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
-                min_truncation_kps=opt.min_truncation_kps
+                min_truncation_kps=opt.min_truncation_kps,
+                min_bbox_area=opt.min_bbox_area
             )
         else:
             msg = 'invalid dataset {}.'.format(name)
@@ -81,7 +83,7 @@ def lsp_data_loader():
             dataset = Lsp(
                 data_path=path,
                 split='train',
-                image_scale_range=(0.3, 1.01),
+                image_scale_range=(0.2, 1.01),
                 trans_scale=0.5,
                 flip_prob=0.5,
                 rot_prob=0.5,
@@ -90,13 +92,14 @@ def lsp_data_loader():
                 max_data_len=-1,
                 keep_truncation_kps=opt.keep_truncation_kps,
                 min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
-                min_truncation_kps=opt.min_truncation_kps
+                min_truncation_kps=opt.min_truncation_kps,
+                min_bbox_area=opt.min_bbox_area
             )
         elif name == 'lsp_ext':
             dataset = LspExt(
                 data_path=path,
                 split='train',
-                image_scale_range=(0.3, 1.01),
+                image_scale_range=(0.2, 1.01),
                 trans_scale=0.5,
                 flip_prob=0.5,
                 rot_prob=0.5,
@@ -105,7 +108,8 @@ def lsp_data_loader():
                 max_data_len=-1,
                 keep_truncation_kps = opt.keep_truncation_kps,
                 min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
-                min_truncation_kps=opt.min_truncation_kps
+                min_truncation_kps=opt.min_truncation_kps,
+                min_bbox_area=opt.min_bbox_area
             )
         else:
             msg = 'invalid dataset {}.'.format(name)
@@ -142,7 +146,8 @@ def hum36m_data_loader():
                 max_data_len=-1,
                 keep_truncation_kps = opt.keep_truncation_kps,
                 min_truncation_kps_in_image = opt.min_truncation_kps_in_image,
-                min_truncation_kps = opt.min_truncation_kps
+                min_truncation_kps = opt.min_truncation_kps,
+                min_bbox_area=opt.min_bbox_area
             )
         else:
             msg = 'invalid dataset {}.'.format(name)
@@ -179,7 +184,8 @@ def pw3d_data_loader():
                 max_data_len=-1,
                 keep_truncation_kps=opt.keep_truncation_kps,
                 min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
-                min_truncation_kps=opt.min_truncation_kps
+                min_truncation_kps=opt.min_truncation_kps,
+                min_bbox_area=opt.min_bbox_area
             )
         else:
             msg = 'invalid dataset {}.'.format(name)

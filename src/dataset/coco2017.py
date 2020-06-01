@@ -44,7 +44,7 @@ class COCO2017(Dataset):
                  keep_truncation_kps=False,
                  min_truncation_kps_in_image=6,
                  normalize=True,
-                 box_stretch=10,
+                 min_bbox_area = 16*16,
                  max_data_len=-1):
 
         self.data_path = data_path
@@ -61,12 +61,12 @@ class COCO2017(Dataset):
         self.min_vis_kps = min_vis_kps
         self.load_min_vis_kps = load_min_vis_kps
         self.normalize = normalize
-        self.box_stretch = box_stretch
         self.down_ratio = input_res / output_res
         self.max_data_len = max_data_len
         self.keep_truncation_kps = keep_truncation_kps
         self.min_truncation_kps_in_image = min_truncation_kps_in_image
         self.min_truncation_kps = min_truncation_kps
+        self.min_bbox_area = min_bbox_area
 
         # defaut parameters
         self.num_joints = 19
@@ -267,6 +267,12 @@ class COCO2017(Dataset):
 
         has_theta = np.array([0], dtype=np.uint8)
         has_kp3d = np.array([0], dtype=np.uint8)
+
+        # densepose
+        dp_ind = np.zeros((self.max_objs, 184, 3), dtype=np.int64)
+        dp_rat = np.zeros((self.max_objs, 184, 3), dtype=np.float32)
+        dp2d = np.zeros((self.max_objs, 184, 3), dtype=np.float32)
+        dp_mask = np.zeros((self.max_objs), dtype=np.uint8)
         has_dp = np.array([0], dtype=np.uint8)
 
         gt = []
@@ -281,6 +287,10 @@ class COCO2017(Dataset):
             h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
 
             if (h > 0 and w > 0):  # if outside the image, discard
+                if h*w*self.down_ratio <= self.min_bbox_area:
+                    # print( h*w*self.down_ratio, self.min_bbox_area)
+                    continue
+
                 ### 1. handle bbox
                 ct = np.array([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2])  # down ratio
                 ct_int = ct.astype(np.int32)
@@ -320,10 +330,13 @@ class COCO2017(Dataset):
                 ### groud truth
                 gt.append({
                     'bbox': bbox * self.down_ratio,
-                    'kp2d': kp2d[k]
+                    'kp2d': kp2d[k],
+                    'dp_ind': dp_ind[k],
+                    'dp_rat': dp_rat[k],
+                    'dp2d': dp2d[k]
                 })
 
-        return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, has_kp3d, has_dp, gt
+        return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, has_kp3d, dp2d, dp_ind, dp_rat, dp_mask, has_dp, gt
 
 
     def __getitem__(self, index):
@@ -338,7 +351,8 @@ class COCO2017(Dataset):
         anns = [{'bbox': ann['bbox'],'kp2d': np.array(ann['keypoints']).reshape(-1,3)} \
                 for ann in anns_coco]
 
-        box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, has_kp3d, has_dp, gt = \
+        box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, has_kp3d, \
+        dp2d, dp_ind, dp_rat, dp_mask, has_dp, gt = \
             self._get_label(trans_mat, flip, anns)
 
         return {
@@ -352,6 +366,10 @@ class COCO2017(Dataset):
             'kp2d_mask': kp2d_mask,
             'has_kp3d': has_kp3d,
             'has_theta': has_theta,
+            'dp2d':dp2d,
+            'dp_ind': dp_ind,
+            'dp_rat': dp_rat,
+            'dp_mask': dp_mask,
             'has_dp': has_dp,
             'gt': gt,
             'dataset': 'COCO2017'
@@ -360,8 +378,8 @@ class COCO2017(Dataset):
 if __name__ == '__main__':
     data = COCO2017('D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2017',
                split='train',
-               image_scale_range=(0.3, 1.21),
-               trans_scale=0.65,
+               image_scale_range=(0.4, 1.11),
+               trans_scale=0.5,
                flip_prob=0.5,
                rot_prob=-1,
                rot_degree=20,
@@ -403,6 +421,8 @@ if __name__ == '__main__':
             debugger.add_bbox(obj['bbox'][0], img_id=gt_id)
             debugger.add_kp2d(obj['kp2d'][0], img_id=gt_id)
 
-
+        # print('------bbox--------')
+        # for box in bbox:
+        #     print((box[2]-box[0]) * (box[3]-box[1]))
         debugger.show_all_imgs(pause=True)
 

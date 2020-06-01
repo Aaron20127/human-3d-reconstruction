@@ -49,7 +49,7 @@ class COCO2014(Dataset):
                  keep_truncation_dp=False,
                  min_trunction_vis_dp_ratio=0.5,
                  normalize=True,
-                 box_stretch=10,
+                 min_bbox_area=16 * 16,
                  max_data_len=-1):
 
         self.min_dense_pts = 184
@@ -67,7 +67,6 @@ class COCO2014(Dataset):
         self.min_vis_kps = min_vis_kps
         self.load_min_vis_kps = load_min_vis_kps
         self.normalize = normalize
-        self.box_stretch = box_stretch
         self.down_ratio = input_res / output_res
         self.max_data_len = max_data_len
         self.keep_truncation_kps = keep_truncation_kps
@@ -75,6 +74,7 @@ class COCO2014(Dataset):
         self.min_truncation_kps = min_truncation_kps
         self.keep_truncation_dp = keep_truncation_dp
         self.min_trunction_vis_dp_ratio = min_trunction_vis_dp_ratio
+        self.min_bbox_area = min_bbox_area
 
         # defaut parameters
         self.num_joints = 19
@@ -303,6 +303,10 @@ class COCO2014(Dataset):
             h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
 
             if (h > 0 and w > 0):  # if outside the image, discard
+                if h*w*self.down_ratio <= self.min_bbox_area:
+                    # print( h*w*self.down_ratio, self.min_bbox_area)
+                    continue
+
                 ### 1. handle bbox
                 ct = np.array([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2])  # down ratio
                 ct_int = ct.astype(np.int32)
