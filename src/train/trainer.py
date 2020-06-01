@@ -22,8 +22,8 @@ from utils.evaluate import covert_eval_data, eval
 class HMRTrainer(object):
     def __init__(self, opt):
         self.opt = opt
-        self.loss_stats = ['loss', 'hm', 'wh', 'cd',
-                            'pose', 'shape', 'kp2d', 'kp3d']
+        self.loss_stats = ['loss', 'hm', 'wh', 'dp2d',
+                            'pose', 'shape', 'kp2d', 'kp3d', 'cd']
         self.start_epoch = 0
         self.min_val_loss = 1e10  # for save best val model
 
@@ -333,19 +333,20 @@ class HMRTrainer(object):
             # debugger.add_blend_img(img, gt_box_hm, 'gt_box_hm')
 
             # gt bbox, key points
-            gt_id = 'gt_bbox_kp2d'
+            gt_id = 'gt_bbox_kp2d_dp2d'
             debugger.add_img(img, img_id=gt_id)
             for b_gt in batch['gt']['gt']:
                 for obj in b_gt:
                     debugger.add_bbox(obj['bbox'][0].detach().cpu().numpy(), img_id=gt_id)
                     debugger.add_kp2d(obj['kp2d'][0].detach().cpu().numpy(), img_id=gt_id)
+                    debugger.add_densepose_2d(obj['dp2d'][0].detach().cpu().numpy(), img_id=gt_id)
 
             # pred heat map
             # pred_box_hm = debugger.gen_colormap(output['box_hm'][i].detach().cpu().numpy())
             # debugger.add_blend_img(img, pred_box_hm, 'pred_box_hm')
 
             # pred bbox, key points
-            bbox_kp2d_id = 'pred_bbox_kp2d'
+            bbox_kp2d_id = 'pred_bbox_kp2d_dp2d'
             smpl_id = 'pred_smpl'
             debugger.add_img(img, img_id=bbox_kp2d_id)
             debugger.add_img(img, img_id=smpl_id)

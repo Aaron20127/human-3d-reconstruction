@@ -296,6 +296,8 @@ class PW3D(Dataset):
         shape = np.zeros((self.max_objs, 10), dtype=np.float32)
         pose = np.zeros((self.max_objs, 72), dtype=np.float32)
 
+        has_dp = np.array([0], dtype=np.uint8)
+
         gt = []
 
         # draw heap map function
@@ -367,7 +369,7 @@ class PW3D(Dataset):
                 })
 
         return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, \
-               theta_mask, pose, shape, has_theta, kp3d, kp3d_mask, has_kp3d, gt
+               theta_mask, pose, shape, has_theta, kp3d, kp3d_mask, has_kp3d, has_dp, gt
 
 
 
@@ -394,7 +396,7 @@ class PW3D(Dataset):
             })
 
         box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, \
-        theta_mask, pose, shape, has_theta, kp3d, kp3d_mask, has_kp3d, gt = \
+        theta_mask, pose, shape, has_theta, kp3d, kp3d_mask, has_kp3d, has_dp, gt = \
             self._get_label(trans_mat, flip, anns)
 
 
@@ -414,6 +416,7 @@ class PW3D(Dataset):
             'shape': shape,
             'theta_mask': theta_mask,
             'has_theta': has_theta,
+            'has_dp': has_dp,
             'gt': gt,
             'dataset': '3dpw'
         }

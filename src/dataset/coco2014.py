@@ -4,6 +4,8 @@ import sys
 abspath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, abspath + '/../')
 
+import matplotlib.pyplot as plt
+
 import json
 import cv2
 import pycocotools.coco as coco
@@ -13,7 +15,7 @@ import math
 
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 
-from utils.util import Clock, decode_label_bbox, decode_label_kp2d
+from utils.util import Clock, decode_label_bbox, decode_label_kp2d, decode_label_densepose
 from utils.opts import opt
 from utils.debugger import Debugger
 
@@ -44,10 +46,13 @@ class COCO2014(Dataset):
                  keep_truncation_kps=False,
                  min_truncation_kps=12,
                  min_truncation_kps_in_image=6,
+                 keep_truncation_dp=False,
+                 min_trunction_vis_dp_ratio=0.5,
                  normalize=True,
                  box_stretch=10,
                  max_data_len=-1):
 
+        self.min_dense_pts = 184
         self.data_path = data_path
         self.image_scale_range = image_scale_range
         self.trans_scale = trans_scale
@@ -68,6 +73,8 @@ class COCO2014(Dataset):
         self.keep_truncation_kps = keep_truncation_kps
         self.min_truncation_kps_in_image = min_truncation_kps_in_image
         self.min_truncation_kps = min_truncation_kps
+        self.keep_truncation_dp = keep_truncation_dp
+        self.min_trunction_vis_dp_ratio = min_trunction_vis_dp_ratio
 
         # defaut parameters
         self.num_joints = 19
@@ -93,7 +100,8 @@ class COCO2014(Dataset):
         else: # train or val
             self.annot_path = os.path.join(
                 self.data_path, 'annotations',
-                'person_keypoints_{}2014.json').format(self.split)
+                # 'person_keypoints_{}2014.json').format(self.split)
+                'densepose_person_keypoints_{}2014.json').format(self.split)
         self.coco = coco.COCO(self.annot_path)
         image_ids = self.coco.getImgIds()
 
@@ -170,7 +178,8 @@ class COCO2014(Dataset):
 
         # normalize, color augment and standardize image
         inp = (inp.astype(np.float32) / 255.)
-        if self.color_aug:  # color augment
+        if self.split == 'train' and \
+           self.color_aug:  # color augment
             color_aug(inp)
 
         if self.normalize:
@@ -242,6 +251,13 @@ class COCO2014(Dataset):
         return kps
 
 
+    def _get_dense_2d(self, dp2d, affine_mat):
+        # affine transform
+        dp2d = affine_transform_kps(dp2d, affine_mat)
+
+        return dp2d
+
+
     def _get_kp_3d(self, kps, flipped):
         # convert key points serial number
         kps = self._convert_kp3d_to_smpl(kps)
@@ -267,6 +283,13 @@ class COCO2014(Dataset):
 
         has_theta = np.array([0], dtype=np.uint8)
         has_kp3d = np.array([0], dtype=np.uint8)
+
+        # densepose
+        dp_ind = np.zeros((self.max_objs, self.min_dense_pts, 3), dtype=np.int64)
+        dp_rat = np.zeros((self.max_objs, self.min_dense_pts, 3), dtype=np.float32)
+        dp2d = np.zeros((self.max_objs, self.min_dense_pts, 3), dtype=np.float32)
+        dp_mask = np.zeros((self.max_objs), dtype=np.uint8)
+        has_dp = np.array([1], dtype=np.uint8)
 
         gt = []
 
@@ -307,6 +330,11 @@ class COCO2014(Dataset):
                                 vis_kps += 1
                                 kp2d[k, j] = kps[j]
 
+                    # inner = (kps[:, :2] < 0).astype(np.float32) + (kps[:, :2] > self.input_res).astype(np.float32)
+                    # inner = (inner[:, 0] + inner[:, 1] + kps[:, 2]) == 1
+                    # kp2d[k, inner] = kps[inner]
+                    # vis_kps = inner.sum()
+
                     if vis_kps >= self.min_vis_kps:
                         if total_kps != vis_kps:
                             if self.keep_truncation_kps == True and \
@@ -316,13 +344,49 @@ class COCO2014(Dataset):
 
                         kp2d_mask[k] = 1
 
+
+                ###3. handle denspose points
+                if 'dp2d' in ann.keys():
+                    pts = self._get_dense_2d(ann['dp2d']['pts_2d'],  trans_mat)
+                    if flip:
+                        v_ind = ann['dp2d']['v_ind_fp']
+                        v_rat = ann['dp2d']['v_rat_fp']
+                    else:
+                        v_ind = ann['dp2d']['v_ind']
+                        v_rat = ann['dp2d']['v_rat']
+
+
+                    inner = (pts[:, :2] < 0).astype(np.float32) + (pts[:, :2] > self.input_res).astype(np.float32)
+                    inner = (inner[:, 0] + inner[:, 1] ) == 0
+
+                    dp2d[k, :len(inner), :2][inner] = pts[inner]
+                    dp2d[k, :len(inner), 2][inner]  = 1
+                    dp_ind[k, :len(inner)][inner] = v_ind[inner]
+                    dp_rat[k, :len(inner)][inner] = v_rat[inner]
+
+                    vis_dense_ratio = inner.sum() / pts.shape[0]
+
+                    if vis_dense_ratio >= self.min_trunction_vis_dp_ratio:
+                        dp_mask[k] = 1
+
+                        if self.keep_truncation_dp:
+                            dp2d[k, :len(pts), :2] = pts
+                            dp2d[k, :len(pts), 2] = 1
+                            dp_ind[k, :len(pts)] = v_ind
+                            dp_rat[k, :len(pts)] = v_rat
+
+
                 ### groud truth
                 gt.append({
                     'bbox': bbox * self.down_ratio,
-                    'kp2d': kp2d[k]
+                    'kp2d': kp2d[k],
+                    'dp2d':  dp2d[k],
+                    'dp_ind': dp_ind[k],
+                    'dp_rat': dp_rat[k]
                 })
 
-        return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, has_kp3d, gt
+        return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, has_kp3d, \
+               dp2d, dp_ind, dp_rat, dp_mask, has_dp, gt
 
 
     def __getitem__(self, index):
@@ -334,10 +398,26 @@ class COCO2014(Dataset):
         inp, trans_mat, flip = self._get_input(img)
 
         ## 3. handle output of network, namely label
-        anns = [{'bbox': ann['bbox'],'kp2d': np.array(ann['keypoints']).reshape(-1,3)} \
-                for ann in anns_coco]
+        anns = []
+        for ann in anns_coco:
+            if 'dense_points' in ann.keys():
+                anns.append({
+                    'dp2d': {
+                        'pts_2d': np.array(ann['dense_points']['pts_2d']).reshape(-1,2),
+                        'v_ind': np.array(ann['dense_points']['v_ind']).reshape(-1,3),
+                        'v_rat': np.array(ann['dense_points']['v_rat']).reshape(-1,3),
+                    },
+                    'bbox': ann['bbox'],
+                    'kp2d': np.array(ann['keypoints']).reshape(-1,3)}
+                )
+            else:
+                anns.append({
+                    'bbox': ann['bbox'],
+                    'kp2d': np.array(ann['keypoints']).reshape(-1,3)}
+                )
 
-        box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, has_kp3d, gt = \
+        box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, has_kp3d, \
+        dp2d, dp_ind, dp_rat, dp_mask, has_dp, gt = \
             self._get_label(trans_mat, flip, anns)
 
         return {
@@ -351,6 +431,11 @@ class COCO2014(Dataset):
             'kp2d_mask': kp2d_mask,
             'has_kp3d': has_kp3d,
             'has_theta': has_theta,
+            'dp2d': dp2d,
+            'dp_ind': dp_ind,
+            'dp_rat': dp_rat,
+            'dp_mask': dp_mask,
+            'has_dp': has_dp,
             'gt': gt,
             'dataset': 'COCO2014'
         }
@@ -358,14 +443,16 @@ class COCO2014(Dataset):
 if __name__ == '__main__':
     data = COCO2014('D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2014',
                split='train',
-               image_scale_range=(0.3, 1.21),
-               trans_scale=0.65,
-               flip_prob=0.5,
+               image_scale_range=(0.4, 1.11),
+               trans_scale=0.5,
+               flip_prob=0,
                rot_prob=-1,
                rot_degree=20,
                 keep_truncation_kps=True,
                 min_truncation_kps_in_image=8,
                 min_truncation_kps=12,
+                min_trunction_vis_dp_ratio=0.5,
+                keep_truncation_dp=True,
                 min_vis_kps=6,
                 max_data_len=-1)
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
@@ -383,14 +470,24 @@ if __name__ == '__main__':
 
 
         # decode bbox, key points
-        decode_id = 'decode'
-        debugger.add_img(img, img_id=decode_id)
+        decode_box_kp2d_dp2d = 'decode_box_kp2d_dp2d'
+        debugger.add_img(img, img_id=decode_box_kp2d_dp2d)
         bbox = decode_label_bbox(batch['box_mask'][0], batch['box_ind'][0], batch['box_cd'][0], batch['box_wh'][0])
         kp2d = decode_label_kp2d(batch['kp2d_mask'][0], batch['kp2d'][0])
+        dp2d, dp_ind, dp_rat = decode_label_densepose(batch['dp_mask'][0], batch['dp2d'][0], batch['dp_ind'][0], batch['dp_rat'][0])
+
         for box in bbox:
-            debugger.add_bbox(box, img_id=decode_id)
+            debugger.add_bbox(box, img_id=decode_box_kp2d_dp2d)
+
         for kp in kp2d:
-            debugger.add_kp2d(kp, img_id=decode_id)
+            debugger.add_kp2d(kp, img_id=decode_box_kp2d_dp2d)
+
+        for i in range(len(dp2d)):
+            debugger.add_densepose_2d(dp2d[i], img_id=decode_box_kp2d_dp2d)
+
+        # for show smpl
+        for i in range(len(dp2d)):
+            debugger.show_densepose_smpl(dp2d[i], dp_ind[i], dp_rat[i], img_id=decode_box_kp2d_dp2d)
 
 
         # gt bbox, key points
@@ -399,7 +496,8 @@ if __name__ == '__main__':
         for obj in batch['gt']:
             debugger.add_bbox(obj['bbox'][0], img_id=gt_id)
             debugger.add_kp2d(obj['kp2d'][0], img_id=gt_id)
+            debugger.add_densepose_2d(obj['dp2d'][0], img_id=gt_id)
 
 
-        debugger.show_all_imgs(pause=True)
-
+        debugger.show_all_imgs()
+        plt.show()

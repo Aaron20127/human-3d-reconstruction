@@ -7,7 +7,7 @@ sys.path.insert(0, abspath + '/../')
 import torch
 from torch import nn
 
-from losses import FocalLoss, L1loss, L2loss, pose_l2_loss, shape_l2_loss, kp2d_l1_loss, kp3d_l2_loss
+from losses import FocalLoss, L1loss, L2loss, pose_l2_loss, shape_l2_loss, kp2d_l1_loss, kp3d_l2_loss, dp2d_l1_loss
 from utils.util import batch_orth_proj, Rx_mat, Ry_mat, Rz_mat, transpose_and_gather_feat, sigmoid
 from utils.opts import opt
 from network.dla import DlaSeg
@@ -18,13 +18,13 @@ class HmrLoss(nn.Module):
     def __init__(self):
         super(HmrLoss, self).__init__()
         self.smpl = SMPL(opt.smpl_path)
-        self.Rx = Rx_mat(torch.tensor([np.pi])).to(opt.device)[0].T
+        # self.Rx = Rx_mat(torch.tensor([np.pi])).to(opt.device)[0].T
         print('finished create smpl module.')
 
 
     def forward(self, output, batch):
         hm_loss, wh_loss, cd_loss, pose_loss, \
-            shape_loss, kp2d_loss, kp3d_loss = torch.zeros(7).to(opt.device)
+            shape_loss, kp2d_loss, kp3d_loss, dp2d_loss = torch.zeros(8).to(opt.device)
 
         ## 1.loss of object bbox
         # heat map loss of objects center
@@ -70,6 +70,16 @@ class HmrLoss(nn.Module):
                 kp3d_loss = kp3d_l2_loss(kp3d, batch['kp3d_mask'], batch['kp3d'])
 
 
+        ## 4. loss of dense pose 2d
+        if opt.dp2d_weight > 0 and 'dp2d' in batch:
+            if batch['dp_mask'].sum() > 0:
+                dp2d = self._get_pred_dp2d(output['pose'], output['shape'], output['camera'],
+                                             output['box_cd'], output['box_wh'],
+                                             batch['box_ind'], batch['dp_mask'],
+                                             batch['dp_ind'], batch['dp_rat'], batch['has_dp'])
+                dp2d_loss = dp2d_l1_loss(dp2d, batch['dp_mask'], batch['dp2d'])
+
+
         ## total loss
         loss = opt.hm_weight * hm_loss + \
                opt.wh_weight * wh_loss + \
@@ -77,17 +87,19 @@ class HmrLoss(nn.Module):
                opt.pose_weight * pose_loss + \
                opt.shape_weight * shape_loss + \
                opt.kp2d_weight * kp2d_loss + \
-               opt.kp3d_weight * kp3d_loss
+               opt.kp3d_weight * kp3d_loss + \
+               opt.dp2d_weight * dp2d_loss
 
 
         loss_stats = {'loss': loss,
                       'hm': hm_loss,
                       'wh': wh_loss,
-                      'cd': cd_loss,
                       'pose': pose_loss,
                       'shape': shape_loss,
                       'kp2d': kp2d_loss,
-                      'kp3d': kp3d_loss}
+                      'kp3d': kp3d_loss,
+                      'dp2d': dp2d_loss,
+                      'cd': cd_loss}
 
         return loss, loss_stats
 
@@ -148,7 +160,6 @@ class HmrLoss(nn.Module):
         shape = shape[(has_kp3d==1).flatten(), ...]
         ind = ind[(has_kp3d==1).flatten(), ...]
 
-
         pred = transpose_and_gather_feat(pose, ind)
         mask_pre = mask.unsqueeze(2).expand_as(pred)
         pose = pred[mask_pre == 1].view(-1, 72)
@@ -164,6 +175,66 @@ class HmrLoss(nn.Module):
         return kp3d
 
 
+    def _get_pred_dp2d(self, pose, shape, camera, cd, wh, ind, mask, dp_ind, dp_rat, has_dp):
+        pose = pose[has_dp.flatten()==1, ...]
+        shape = shape[has_dp.flatten()==1, ...]
+        camera = camera[has_dp.flatten()==1, ...]
+        cd = cd[has_dp.flatten()==1, ...]
+        wh = wh[has_dp.flatten()==1, ...]
+        ind = ind[has_dp.flatten() == 1, ...]
+
+
+        pred = transpose_and_gather_feat(pose, ind)
+        mask_pre = mask.unsqueeze(2).expand_as(pred)
+        pose = pred[mask_pre == 1].view(-1, 72)
+
+        pred = transpose_and_gather_feat(shape, ind)
+        mask_pre = mask.unsqueeze(2).expand_as(pred)
+        shape = pred[mask_pre == 1].view(-1, 10)
+
+
+        ## smpl
+        verts, _, _, _ = self.smpl(beta=shape, theta=pose)
+
+        ## get verts of dense pose
+        dp_ind = dp_ind[mask == 1]
+        dp_rat = dp_rat[mask == 1]
+
+        dp_ind = dp_ind.view(dp_ind.size(0), -1).unsqueeze(2)
+        dp_ind = dp_ind.expand(dp_ind.size(0), dp_ind.size(1), 3)
+        verts = verts.gather(1, dp_ind).view(dp_ind.size(0), -1, 3, 3)
+        dp_rat = dp_rat.unsqueeze(2).expand(dp_rat.size(0), dp_rat.size(1), 3, 3)
+        verts = torch.sum(verts * dp_rat, 2)
+
+        ## dp2d
+        ind_ = ind[mask == 1].view(-1, 1)
+        box_center = torch.cat((ind_ % opt.output_res, ind_ // opt.output_res), 1).type(torch.float32)
+
+        pred = transpose_and_gather_feat(wh, ind)
+        mask_pre = mask.unsqueeze(2).expand_as(pred)
+        box_wh = pred[mask_pre == 1].view(-1, 2)
+
+        pred = transpose_and_gather_feat(cd, ind)
+        mask_pre = mask.unsqueeze(2).expand_as(pred)
+        box_cd = pred[mask_pre == 1].view(-1, 2)
+
+        pred = transpose_and_gather_feat(camera, ind)
+        mask_pre = mask.unsqueeze(2).expand_as(pred)
+        camera = pred[mask_pre == 1].view(-1, 3)
+
+        c = (box_center + box_cd + camera[:, 1:]) * opt.down_ratio
+        f = (camera[:, 0].abs() * torch.sqrt(box_wh[:,0].abs() * box_wh[:,1].abs()) * opt.down_ratio * opt.camera_pose_z).view(-1,1) # TODO give camera off bias a initial value
+
+        # kp3d = torch.matmul(kp3d, self.Rx) # global rotation
+        verts[:,:, 2] = verts[:,:, 2] + opt.camera_pose_z # let z be positive
+
+        verts = verts / torch.unsqueeze(verts[:,:,2], 2) # homogeneous vector
+        dp2d = verts[:,:,:2] * f.view(-1,1,1) + c.view(-1,1,2) # camera transformation
+
+        return dp2d
+
+
+
 class ModelWithLoss(nn.Module):
     def __init__(self, model, loss):
         super(ModelWithLoss, self).__init__()
@@ -175,6 +246,7 @@ class ModelWithLoss(nn.Module):
         outputs = self.model(batch['input'])
         loss, loss_states = self.loss(outputs, batch)
         return outputs, loss, loss_states
+
 
 
 class HmrNetBase(nn.Module):

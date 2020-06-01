@@ -145,10 +145,10 @@ class Debugger(object):
     return color_map
 
 
-  def add_densepose_2d(self, dp_2d, img_id='default'):
-      for j in range(len(dp_2d)):
+  def add_densepose_2d(self, dp2d, img_id='default'):
+      for j in range(len(dp2d)):
           cv2.circle(self.imgs[img_id],
-             (dp_2d[j, 0], dp_2d[j, 1]), 2, (0,255,255), -1)
+             (dp2d[j, 0], dp2d[j, 1]), 2, (0,255,255), -1)
 
 
   def add_bbox(self, bbox, cat=0, conf=1, show_txt=True, img_id='default'):
@@ -316,7 +316,7 @@ class Debugger(object):
          self.smpl.save_obj(verts + np.random.random() * 10, path)
 
 
-  def show_densepose_smpl(self, dp_2d, dp_ind, dp_rat, img_id):
+  def show_densepose_smpl(self, dp2d, dp_ind, dp_rat, img_id):
     def smpl_view_set_axis_full_body(ax, azimuth=0):
         ## Manually set axis
         ax.view_init(0, azimuth)
@@ -361,17 +361,17 @@ class Debugger(object):
     # ax.scatter(Z, X, Y, s=0.2, c='k')
     # smpl_view_set_axis_face(ax, -40)
 
-    mask = dp_2d[:, 2]
+    mask = dp2d[:, 2]
     dp_ind = dp_ind[mask==1]
     dp_rat = dp_rat[mask==1]
-    dp_2d = dp_2d[mask==1]
+    dp2d = dp2d[mask==1]
 
-    collected_x = np.zeros(dp_2d.shape[0])
-    collected_y = np.zeros(dp_2d.shape[0])
-    collected_z = np.zeros(dp_2d.shape[0])
+    collected_x = np.zeros(dp2d.shape[0])
+    collected_y = np.zeros(dp2d.shape[0])
+    collected_z = np.zeros(dp2d.shape[0])
 
 
-    for i in range(len(dp_2d)):
+    for i in range(len(dp2d)):
         ## 3个顶点值求和，得到最后的顶点值,bc1+bc2+bc3=1
         p = Vertices[dp_ind[i][0], :] * dp_rat[i][0] + \
             Vertices[dp_ind[i][1], :] * dp_rat[i][1] + \
@@ -385,21 +385,21 @@ class Debugger(object):
     # Visualize the image and collected points.
     ax = fig.add_subplot(121)
     ax.imshow(self.imgs[img_id])
-    ax.scatter(dp_2d[:, 0], dp_2d[:, 1], 11, np.arange(len(dp_2d)))
+    ax.scatter(dp2d[:, 0], dp2d[:, 1], 11, np.arange(len(dp2d)))
     plt.title('Points on the image')
     ax.axis('off'),
 
     ## Visualize the full body smpl male template model and collected points
     ax = fig.add_subplot(122, projection='3d')
     ax.scatter(Z, X, Y, s=0.02, c='k')
-    ax.scatter(collected_z, collected_x, collected_y, s=25, c=np.arange(len(dp_2d)))
+    ax.scatter(collected_z, collected_x, collected_y, s=25, c=np.arange(len(dp2d)))
     smpl_view_set_axis_full_body(ax)
     plt.title('Points on the SMPL model')
 
     ## Now zoom into the face.
     # ax = fig.add_subplot(133, projection='3d')
     # ax.scatter(Z, X, Y, s=0.2, c='k')
-    # ax.scatter(collected_z, collected_x, collected_y, s=55, c=np.arange(len(dp_2d)))
+    # ax.scatter(collected_z, collected_x, collected_y, s=55, c=np.arange(len(dp2d)))
     # smpl_view_set_axis_face(ax)
     # plt.title('Points on the SMPL model')
     #

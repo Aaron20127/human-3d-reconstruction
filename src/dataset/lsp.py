@@ -287,6 +287,7 @@ class Lsp(Dataset):
 
         has_theta = np.array([0], dtype=np.uint8)
         has_kp3d = np.array([0], dtype=np.uint8)
+        has_dp = np.array([0], dtype=np.uint8)
 
         gt = []
 
@@ -353,7 +354,7 @@ class Lsp(Dataset):
                     'kp2d': kp2d[k]
                 })
 
-        return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, has_kp3d, gt
+        return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, has_kp3d, has_dp, gt
 
     def __getitem__(self, index):
 
@@ -371,7 +372,7 @@ class Lsp(Dataset):
             'kp2d': kp2d
         }]
 
-        box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, has_kp3d, gt = \
+        box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, has_kp3d, has_dp, gt = \
             self._get_label(trans_mat, flip, anns)
 
         return {
@@ -385,6 +386,7 @@ class Lsp(Dataset):
             'kp2d_mask': kp2d_mask,
             'has_kp3d': has_kp3d,
             'has_theta': has_theta,
+            'has_dp': has_dp,
             'gt': gt,
             'dataset': 'lsp'
         }

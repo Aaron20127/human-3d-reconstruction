@@ -377,17 +377,17 @@ def decode_label_kp2d(mask, kp2d):
     return kp2ds
 
 
-def decode_label_densepose(mask, dp_2d, dp_ind, dp_rat):
+def decode_label_densepose(mask, dp2d, dp_ind, dp_rat):
     mask = np.array(mask)
-    dp_2d = np.array(dp_2d)
+    dp2d = np.array(dp2d)
     dp_ind = np.array(dp_ind)
     dp_rat = np.array(dp_rat)
 
-    dp_2d = dp_2d[mask == 1]
+    dp2d = dp2d[mask == 1]
     dp_ind = dp_ind[mask == 1]
     dp_rat = dp_rat[mask == 1]
 
-    return dp_2d, dp_ind, dp_rat
+    return dp2d, dp_ind, dp_rat
 
 
 def get_camera_from_batch(bbox, camera_pose_z):

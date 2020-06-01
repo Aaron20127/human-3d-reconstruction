@@ -122,7 +122,7 @@ def kp3d_l2_loss(output, mask, target):
     return loss
 
 
-def dp_2d_l1_loss(output, mask, target):
+def dp2d_l1_loss(output, mask, target):
     output = output.view(-1, 2)
     target = target[mask == 1, ...].view(-1, 3)
 

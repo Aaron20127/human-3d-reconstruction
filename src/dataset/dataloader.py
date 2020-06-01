@@ -29,7 +29,7 @@ def coco_data_loader():
                 split='train',
                 image_scale_range=(0.4, 1.11),
                 trans_scale=0.5,
-                flip_prob=0.5,
+                flip_prob=-1, # TODO debug densepose flip
                 rot_prob=-1,
                 rot_degree=30,
                 min_vis_kps= opt.min_vis_kps,
