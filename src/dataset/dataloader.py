@@ -79,31 +79,31 @@ def lsp_data_loader():
     datasets = []
     for name in opt.lsp_data_set:
         path = opt.data_set_path[name]
-        if name == 'lsp':
+        if name in ['lsp', 'lsp_hr']:
             dataset = Lsp(
                 data_path=path,
                 split='train',
-                image_scale_range=(0.2, 1.01),
+                image_scale_range=(0.3, 1.21),
                 trans_scale=0.5,
                 flip_prob=0.5,
                 rot_prob=0.5,
-                rot_degree=20,
-                box_stretch=30,
+                rot_degree=30,
+                box_stretch_ratio=(0.2,0.1),
                 max_data_len=-1,
                 keep_truncation_kps=opt.keep_truncation_kps,
                 min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
                 min_truncation_kps=opt.min_truncation_kps,
                 min_bbox_area=opt.min_bbox_area
             )
-        elif name == 'lsp_ext':
+        elif name in ['lsp_ext', 'lsp_ext_hr']:
             dataset = LspExt(
                 data_path=path,
                 split='train',
-                image_scale_range=(0.2, 1.01),
+                image_scale_range=(0.2, 1.11),
                 trans_scale=0.5,
                 flip_prob=0.5,
                 rot_prob=0.5,
-                rot_degree=20,
+                rot_degree=30,
                 box_stretch=30,
                 max_data_len=-1,
                 keep_truncation_kps = opt.keep_truncation_kps,

@@ -49,7 +49,7 @@ class HMRTrainer(object):
         self.lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, mode='min', factor=opt.lr_scheduler_factor, patience=opt.lr_scheduler_patience,
             verbose=True, threshold=opt.lr_scheduler_threshold, threshold_mode='rel',
-            cooldown=0, min_lr=0, eps=1e-14)
+            cooldown=0, min_lr=0, eps=1e-10)
 
         self.model = model
         self.optimizer = optimizer
@@ -333,20 +333,21 @@ class HMRTrainer(object):
             # debugger.add_blend_img(img, gt_box_hm, 'gt_box_hm')
 
             # gt bbox, key points
-            gt_id = 'gt_bbox_kp2d_dp2d'
+            gt_id = 'gt_bbox_kp2d'
             debugger.add_img(img, img_id=gt_id)
             for b_gt in batch['gt']['gt']:
                 for obj in b_gt:
                     debugger.add_bbox(obj['bbox'][0].detach().cpu().numpy(), img_id=gt_id)
                     debugger.add_kp2d(obj['kp2d'][0].detach().cpu().numpy(), img_id=gt_id)
-                    debugger.add_densepose_2d(obj['dp2d'][0].detach().cpu().numpy(), img_id=gt_id)
+                    if 'dp2d' in obj:
+                        debugger.add_densepose_2d(obj['dp2d'][0].detach().cpu().numpy(), img_id=gt_id)
 
             # pred heat map
             # pred_box_hm = debugger.gen_colormap(output['box_hm'][i].detach().cpu().numpy())
             # debugger.add_blend_img(img, pred_box_hm, 'pred_box_hm')
 
             # pred bbox, key points
-            bbox_kp2d_id = 'pred_bbox_kp2d_dp2d'
+            bbox_kp2d_id = 'pred_bbox_kp2d'
             smpl_id = 'pred_smpl'
             debugger.add_img(img, img_id=bbox_kp2d_id)
             debugger.add_img(img, img_id=smpl_id)
