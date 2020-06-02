@@ -99,17 +99,19 @@ def shape_l2_loss(output, mask, ind, has_theta, target):
     return loss
 
 
-
-def kp2d_l1_loss(output, mask, target):
+def kp2d_l1_loss(output, mask, target, weight):
+    weight = weight.unsqueeze(1).expand_as(output).reshape(-1, 2)
     output = output.view(-1, 2)
     target = target[mask == 1, ...].view(-1, 3)
 
-    output = output[target[:, 2] == 1]
-    target = target[target[:, 2] == 1]
+    mask = target[:, 2] == 1
 
-    # loss = F.l1_loss(target[:, 0:2], output, reduction='sum')
-    loss = torch.abs(target[:, 0:2] - output).sum()
-    loss = loss / (output.numel() + 1e-16)
+    weight = weight[mask]
+    output = output[mask]
+    target = target[:, 0:2][mask]
+
+    loss = torch.abs(target - output) * weight
+    loss = loss.sum() / (output.numel() + 1e-16)
 
     return loss
 

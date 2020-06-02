@@ -30,6 +30,7 @@ def pre_process(opt):
     opt.coco_val_data_set=[i for i in opt.coco_val_data_set.split(',')]
     opt.hum36m_val_data_set=[i for i in opt.hum36m_val_data_set.split(',')]
     opt.pw3d_val_data_set=[i for i in opt.pw3d_val_data_set.split(',')]
+    opt.kp2d_every_weight=[float(i) for i in opt.kp2d_every_weight.split(',')]
 
     if opt.hum36m_rot_prob or opt.pw3d_rot_prob > 0:
         opt.kp3d_weight = 0

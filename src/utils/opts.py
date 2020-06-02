@@ -136,6 +136,9 @@ agt('--dp2d_weight',  default=1, type=float, help='loss weight for densepose poi
 
 agt('--pose_loss_type',  default=1, type=int, help='1 - rotating vector.'
                                                    '2 - euler angle.')
+# agt('--kp2d_every_weight',  default='4,2,1,1,2,4,4,2,1,1,2,4,1,1,1,1,1,1,1',  help='weight for every 2d point.')
+agt('--kp2d_every_weight',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',  help='weight for every 2d point.')
+
 
 # train
 agt('--val', action='store_true', help='train or eval.')
