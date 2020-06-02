@@ -206,7 +206,6 @@ class LspExt(Dataset):
 
     def _generate_bbox(self, kp, flip, affine_mat, rand_scale):  # TODO use object detection to get bbox
         kp = self._get_kp_2d(kp, flip, affine_mat)
-        box_stretch = rand_scale * self.box_stretch
 
         v_kp = kp[kp[:, 2] > 0]
         x_min = v_kp[:, 0].min()
@@ -214,10 +213,24 @@ class LspExt(Dataset):
         y_min = v_kp[:, 1].min()
         y_max = v_kp[:, 1].max()
 
+        box_stretch = rand_scale * self.box_stretch
         x_l = x_min - box_stretch if x_min - box_stretch > 0 else 0
         y_l = y_min - box_stretch if y_min - box_stretch > 0 else 0  # head special handle
         x_r = x_max + box_stretch if x_max + box_stretch < self.input_res - 1 else self.input_res - 1
         y_r = y_max + box_stretch if y_max + box_stretch < self.input_res - 1 else self.input_res - 1
+
+        ## percentage
+        # box_stretch_ratio = self.box_stretch_ratio
+        #
+        # w = x_max - x_min
+        # h = y_max - y_min
+        # x_stretch = w * box_stretch_ratio[0]
+        # y_stretch = h * box_stretch_ratio[1]
+        #
+        # x_l = x_min - x_stretch if x_min - x_stretch > 0 else 0
+        # y_l = y_min - y_stretch if y_min - y_stretch > 0 else 0  # head special handle
+        # x_r = x_max + x_stretch if x_max + x_stretch < self.input_res - 1 else self.input_res - 1
+        # y_r = y_max + y_stretch if y_max + y_stretch < self.input_res - 1 else self.input_res - 1
 
         coco_bbox = [x_l,
                      y_l,
@@ -396,13 +409,14 @@ class LspExt(Dataset):
         }
 
 if __name__ == '__main__':
-    data = LspExt('D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_extend',
+    data = LspExt('D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_extend_hr',
                   split='train',
-                  image_scale_range=(0.2, 1.01),
+                  image_scale_range=(0.2, 1.11),
+                  # image_scale_range=(1.0, 1.01),
                   trans_scale=0.5,
                   flip_prob=0.5,
                   rot_prob=0.5,
-                  rot_degree=20,
+                  rot_degree=30,
                   box_stretch=30,
                   keep_truncation_kps=True,
                   min_truncation_kps_in_image=8,

@@ -40,12 +40,12 @@ class Lsp(Dataset):
                 split = 'train', # train, val, test
                 min_vis_kps = 6,
                 normalize = True,
-                box_stretch = 30,
+                box_stretch_ratio = (0.2,0.1),
                 keep_truncation_kps = False,
                 min_truncation_kps = 12,
                 min_truncation_kps_in_image=6,
-                 min_bbox_area=16 * 16,
-                 max_data_len = -1):
+                min_bbox_area=16 * 16,
+                max_data_len = -1):
 
         self.data_path = data_path
         self.image_scale_range = image_scale_range
@@ -60,7 +60,7 @@ class Lsp(Dataset):
         self.split = split  # train, val, test
         self.min_vis_kps = min_vis_kps
         self.normalize = normalize
-        self.box_stretch = box_stretch
+        self.box_stretch_ratio = box_stretch_ratio
         self.down_ratio = input_res / output_res
         self.max_data_len = max_data_len
         self.keep_truncation_kps = keep_truncation_kps
@@ -206,7 +206,6 @@ class Lsp(Dataset):
 
     def _generate_bbox(self, kp, flip, affine_mat, rand_scale):  # TODO use object detection to get bbox
         kp = self._get_kp_2d(kp, flip, affine_mat)
-        box_stretch = rand_scale * self.box_stretch
 
         v_kp = kp[kp[:, 2] > 0]
         x_min = v_kp[:, 0].min()
@@ -214,12 +213,24 @@ class Lsp(Dataset):
         y_min = v_kp[:, 1].min()
         y_max = v_kp[:, 1].max()
 
+        # box_stretch_ratio = rand_scale * 30
+        # x_l = x_min - box_stretch_ratio if x_min - box_stretch_ratio > 0 else 0
+        # y_l = y_min - box_stretch_ratio if y_min - box_stretch_ratio > 0 else 0  # head special handle
+        # x_r = x_max + box_stretch_ratio if x_max + box_stretch_ratio < self.input_res - 1 else self.input_res - 1
+        # y_r = y_max + box_stretch_ratio if y_max + box_stretch_ratio < self.input_res - 1 else self.input_res - 1
 
-        x_l = x_min - box_stretch if x_min - box_stretch > 0 else 0
-        y_l = y_min - box_stretch if y_min - box_stretch > 0 else 0  # head special handle
-        x_r = x_max + box_stretch if x_max + box_stretch < self.input_res - 1 else self.input_res - 1
-        y_r = y_max + box_stretch if y_max + box_stretch < self.input_res - 1 else self.input_res - 1
+        ## percentage
+        box_stretch_ratio = self.box_stretch_ratio
 
+        w = x_max - x_min
+        h = y_max - y_min
+        x_stretch = w * box_stretch_ratio[0]
+        y_stretch = h * box_stretch_ratio[1]
+
+        x_l = x_min - x_stretch if x_min - x_stretch > 0 else 0
+        y_l = y_min - y_stretch if y_min - y_stretch > 0 else 0  # head special handle
+        x_r = x_max + x_stretch if x_max + x_stretch < self.input_res - 1 else self.input_res - 1
+        y_r = y_max + y_stretch if y_max + y_stretch < self.input_res - 1 else self.input_res - 1
 
         coco_bbox = [x_l,
                      y_l,
@@ -399,18 +410,19 @@ class Lsp(Dataset):
 
 if __name__ == '__main__':
     torch.manual_seed(opt.seed)
-    data = Lsp('D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp',
+    data = Lsp('D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_hr',
                   split='train',
-                  image_scale_range=(0.2, 0.21),
+                  image_scale_range=(0.3, 1.21),
                   trans_scale=0.5,
                   flip_prob=0.5,
                   rot_prob=0.5,
-                  rot_degree=20,
-                  box_stretch=30,
+                  rot_degree=30,
+                  box_stretch_ratio=(0.2,0.1),
                   keep_truncation_kps=True,
                   min_truncation_kps_in_image=8,
                   min_truncation_kps=12,
                   min_vis_kps=6,
+                  min_bbox_area=100,
                   max_data_len=-1)
     data_loader = DataLoader(data, batch_size=1, shuffle=True)
 

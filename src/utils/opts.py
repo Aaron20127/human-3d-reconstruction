@@ -191,7 +191,7 @@ agt('--min_trunction_vis_dp_ratio',  default=0.5, type=int,  help='when dense po
 
 
 agt('--coco_data_set', default='coco2014,coco2017',  help='0: donot use this data set.')
-agt('--lsp_data_set',  default='lsp,lsp_ext', help='0: donot use this data set.')
+agt('--lsp_data_set',  default='lsp_hr,lsp_ext_hr', help='0: donot use this data set.')
 agt('--hum36m_data_set', default='hum36m',  help='0: donot use this data set.')
 agt('--pw3d_data_set', default='3dpw',  help='0: donot use this data set.')
 agt('--coco_val_data_set', default='coco2017',  help='0: donot use this data set.')
@@ -237,7 +237,9 @@ opt.data_set_path = {
     'coco2014': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2014',
     'coco2017': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2017',
     'lsp': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp/',
+    'lsp_hr': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_hr/',
     'lsp_ext': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_extend',
+    'lsp_ext_hr': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_extend_hr',
     # 'ai-ch':'E:/HMR/data/ai_challenger_keypoint_train_20170902',
     # 'mpi-inf-3dhp':'E:/HMR/data/mpi_inf_3dhp',
     'hum36m': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/hum36m-toy',
