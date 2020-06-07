@@ -60,7 +60,8 @@ class Logger(object):
         # opt.log_dir =
         log_dir = opt.log_dir
         if USE_TENSORBOARD:
-            self.writer = tensorboardX.SummaryWriter(log_dir=log_dir)
+            self.writer = tensorboardX.SummaryWriter(
+                log_dir=log_dir, filename_suffix='_' + opt.subtask)
         else:
             if not os.path.exists(os.path.dirname(log_dir)):
                 os.mkdir(os.path.dirname(log_dir))
