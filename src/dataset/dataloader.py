@@ -14,6 +14,7 @@ from .coco2017 import COCO2017
 from .coco2014 import COCO2014
 from .lsp import Lsp
 from .lsp_ext import LspExt
+from .mpii import MPII
 from .hum36m import Hum36m
 from .pw3d import PW3D
 
@@ -122,6 +123,43 @@ def lsp_data_loader():
     return DataLoader(
         dataset=new_datasets,
         batch_size=opt.batch_size_lsp,
+        shuffle=True,
+        drop_last=True,
+        pin_memory=True,
+        num_workers=opt.num_workers
+    )
+
+def mpii_data_loader():
+    datasets = []
+    for name in opt.mpii_data_set:
+        path = opt.data_set_path[name]
+        if name in ['mpii']:
+            dataset = MPII(
+                data_path=path,
+                split='train',
+                image_scale_range=(0.3, 1.21),
+                trans_scale=0.5,
+                flip_prob=0.5,
+                rot_prob=0.5,
+                rot_degree=30,
+                box_stretch_ratio=(0.2,0.1),
+                max_data_len=-1,
+                keep_truncation_kps=opt.keep_truncation_kps,
+                min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
+                min_truncation_kps=opt.min_truncation_kps,
+                min_bbox_area=opt.min_bbox_area
+            )
+        else:
+            msg = 'invalid dataset {}.'.format(name)
+            sys.exit(msg)
+
+        datasets.append(dataset)
+
+    new_datasets = ConcatDataset(datasets)
+
+    return DataLoader(
+        dataset=new_datasets,
+        batch_size=opt.batch_size_mpii,
         shuffle=True,
         drop_last=True,
         pin_memory=True,

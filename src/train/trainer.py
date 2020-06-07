@@ -9,7 +9,7 @@ import sys
 abspath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, abspath + '/../')
 
-from dataset.dataloader import coco_data_loader, lsp_data_loader, hum36m_data_loader, multi_data_loader, \
+from dataset.dataloader import coco_data_loader, lsp_data_loader, hum36m_data_loader, mpii_data_loader, multi_data_loader, \
                                val_coco_data_loader, val_hum36m_data_loader, pw3d_data_loader, val_3dpw_data_loader
 from models.model import HmrNetBase, ModelWithLoss, HmrLoss
 from utils.debugger import Debugger
@@ -55,6 +55,7 @@ class HMRTrainer(object):
         self.optimizer = optimizer
         self.model_with_loss = \
             nn.DataParallel(ModelWithLoss(model, HmrLoss())).to(opt.device)
+        # self.model_with_loss = ModelWithLoss(model, HmrLoss()).to(opt.device)
 
         show_net_para(model)
         print('finished build model.')
@@ -71,6 +72,8 @@ class HMRTrainer(object):
                 loaders.append(coco_data_loader())
             if opt.batch_size_lsp > 0:
                 loaders.append(lsp_data_loader())
+            if opt.batch_size_mpii > 0:
+                loaders.append(mpii_data_loader())
             if opt.batch_size_hum36m > 0:
                 loaders.append(hum36m_data_loader())
             if opt.batch_size_3dpw > 0:
@@ -141,7 +144,7 @@ class HMRTrainer(object):
             data_time, batch_time = AverageMeter(), AverageMeter()
             avg_loss_stats = {l: AverageMeter() for l in self.loss_stats}
             num_iters = len(data_loader)
-            # num_iters = 20
+            # num_iters = 9
 
             # get mAP
             eval_data = {

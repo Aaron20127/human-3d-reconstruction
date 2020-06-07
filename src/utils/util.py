@@ -25,6 +25,7 @@ def pre_process(opt):
     opt.gpus_list = [int(i) for i in opt.gpus.split(',')]
     opt.coco_data_set=[i for i in opt.coco_data_set.split(',')]
     opt.lsp_data_set=[i for i in opt.lsp_data_set.split(',')]
+    opt.mpii_data_set=[i for i in opt.mpii_data_set.split(',')]
     opt.hum36m_data_set=[i for i in opt.hum36m_data_set.split(',')]
     opt.pw3d_data_set=[i for i in opt.pw3d_data_set.split(',')]
     opt.coco_val_data_set=[i for i in opt.coco_val_data_set.split(',')]

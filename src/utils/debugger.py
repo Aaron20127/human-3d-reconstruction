@@ -300,6 +300,13 @@ class Debugger(object):
       self.imgs = {}
 
 
+  def show_all_imgs_no_wait(self):
+      for i, v in self.imgs.items():
+         cv2.imshow('{}'.format(i), v)
+
+      self.imgs = {}
+
+
   def save_all_imgs(self, iter_id, img_path):
       ## image
      for i, v in self.imgs.items():
