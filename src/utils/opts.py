@@ -187,7 +187,7 @@ agt('--keep_truncation_kps', action='store_true', help='keep points of kp2d out 
 agt('--min_truncation_kps', default=10, type=int, help='total key points of trunction people.')
 agt('--min_truncation_kps_in_image', default=6, type=int, help='minimum number of visible points of kp2d in image when trunction.')
 agt('--keep_truncation_dp', action='store_true',  help='keep points of densepose out of image when trunction.')
-agt('--min_trunction_vis_dp_ratio',  default=0.5, type=int,  help='when dense points ratio in image less than this value, '
+agt('--min_trunction_vis_dp_ratio',  default=0.0, type=float,  help='when dense points ratio in image less than this value, '
                                                                   'donot keep this label.')
 
 

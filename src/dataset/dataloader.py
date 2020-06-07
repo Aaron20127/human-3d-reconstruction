@@ -30,7 +30,7 @@ def coco_data_loader():
                 split='train',
                 image_scale_range=(0.4, 1.11),
                 trans_scale=0.5,
-                flip_prob=-1, # TODO debug densepose flip
+                flip_prob=0.5,
                 rot_prob=-1,
                 rot_degree=30,
                 min_vis_kps= opt.min_vis_kps,
@@ -39,7 +39,9 @@ def coco_data_loader():
                 keep_truncation_kps = opt.keep_truncation_kps,
                 min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
                 min_truncation_kps=opt.min_truncation_kps,
-                min_bbox_area = opt.min_bbox_area
+                min_bbox_area = opt.min_bbox_area,
+                keep_truncation_dp = opt.keep_truncation_dp,
+                min_trunction_vis_dp_ratio = opt.min_trunction_vis_dp_ratio
             )
         elif name == 'coco2017':
             dataset = COCO2017(

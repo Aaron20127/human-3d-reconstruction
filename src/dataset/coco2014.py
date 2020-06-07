@@ -407,9 +407,11 @@ class COCO2014(Dataset):
             if 'dense_points' in ann.keys():
                 anns.append({
                     'dp2d': {
-                        'pts_2d': np.array(ann['dense_points']['pts_2d']).reshape(-1,2),
-                        'v_ind': np.array(ann['dense_points']['v_ind']).reshape(-1,3),
-                        'v_rat': np.array(ann['dense_points']['v_rat']).reshape(-1,3),
+                        'pts_2d': np.array(ann['dense_points']['pts_2d']).reshape(-1, 2),
+                        'v_ind': np.array(ann['dense_points']['v_ind']).reshape(-1, 3),
+                        'v_rat': np.array(ann['dense_points']['v_rat']).reshape(-1, 3),
+                        'v_ind_fp': np.array(ann['dense_points']['v_ind_fp']).reshape(-1, 3),
+                        'v_rat_fp': np.array(ann['dense_points']['v_rat_fp']).reshape(-1, 3)
                     },
                     'bbox': ann['bbox'],
                     'kp2d': np.array(ann['keypoints']).reshape(-1,3)}
@@ -449,20 +451,19 @@ if __name__ == '__main__':
                split='train',
                image_scale_range=(0.4, 1.11),
                trans_scale=0.5,
-               flip_prob=0,
+               flip_prob=1,
                rot_prob=-1,
                rot_degree=20,
                 keep_truncation_kps=True,
                 min_truncation_kps_in_image=8,
                 min_truncation_kps=12,
                 min_trunction_vis_dp_ratio=0.5,
-                keep_truncation_dp=True,
+                keep_truncation_dp=False,
                 min_vis_kps=6,
                 max_data_len=-1)
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
     for batch in data_loader:
-
         debugger = Debugger(opt.smpl_path)
 
         img = batch['input'][0].detach().cpu().numpy().transpose(1, 2, 0)
