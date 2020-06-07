@@ -84,7 +84,7 @@ class Lsp(Dataset):
 
     def _load_data_set(self):
         clk = Clock()
-        print('==> loading LSP data.'.format(self.split))
+        print('==> loading LSP HR data.'.format(self.split))
         self.images = []
         self.kp2ds = []
 
