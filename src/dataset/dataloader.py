@@ -85,6 +85,7 @@ def lsp_data_loader():
         if name in ['lsp', 'lsp_hr']:
             dataset = Lsp(
                 data_path=path,
+                data_name=name,
                 split='train',
                 image_scale_range=(0.3, 1.21),
                 trans_scale=0.5,
@@ -101,6 +102,7 @@ def lsp_data_loader():
         elif name in ['lsp_ext', 'lsp_ext_hr']:
             dataset = LspExt(
                 data_path=path,
+                data_name=name,
                 split='train',
                 image_scale_range=(0.2, 1.11),
                 trans_scale=0.5,

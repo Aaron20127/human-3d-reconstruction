@@ -29,6 +29,7 @@ np.random.seed(opt.data_aug_seed)
 class LspExt(Dataset):
     def __init__(self,
                 data_path,
+                data_name='lsp_ext',
                 image_scale_range=(0.6, 1.4),
                 trans_scale=1,
                 flip_prob=0.5,
@@ -68,6 +69,7 @@ class LspExt(Dataset):
         self.min_truncation_kps_in_image=min_truncation_kps_in_image
         self.min_truncation_kps = min_truncation_kps
         self.min_bbox_area = min_bbox_area
+        self.data_name=data_name
 
         # defaut parameters
         # key points
@@ -84,7 +86,7 @@ class LspExt(Dataset):
 
     def _load_data_set(self):
         clk = Clock()
-        print('==> loading LSP_ext HR data.'.format(self.split))
+        print('==> loading {} {} data.'.format(self.data_name, self.split))
         self.images = []
         self.kp2ds = []
 
