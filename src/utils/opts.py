@@ -136,8 +136,8 @@ agt('--dp2d_weight',  default=1, type=float, help='loss weight for densepose poi
 
 agt('--pose_loss_type',  default=1, type=int, help='1 - rotating vector.'
                                                    '2 - euler angle.')
-# agt('--kp2d_every_weight',  default='4,2,1,1,2,4,4,2,1,1,2,4,1,1,1,1,1,1,1',  help='weight for every 2d point.')
-agt('--kp2d_every_weight',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',  help='weight for every 2d point.')
+agt('--kp2d_every_weight_train',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',  help='weight for every 2d point.')
+agt('--kp2d_every_weight_val',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',  help='weight for every 2d point.')
 
 
 # train
@@ -156,11 +156,13 @@ agt('--resume', action='store_true', help='resume optimizer.')
 agt('--save_iter_interval', default=4000, type=int,  help='number of epochs to save model.')
 agt('--save_epoch_interval', default=1, type=int,  help='number of epochs to save model.')
 
+agt('--not_shuffle_data_train', action='store_true', help='shuffle data loader of train.')
+
 agt('--camera_pose_z', default=10, type=int, help='parameter z of camera pose of translation')
 
 
-
 # value
+agt('--val_num_iters', default=-1, type=int, help='default: #samples / batch_size.')
 agt('--val_iter_interval', default=4000, type=int,  help='number of iter of one epoch to run validation.')
 agt('--val_epoch_interval', default=1, type=int,  help='number of iter of one epoch to run validation.')
 agt('--val_batch_size_coco', default=1, type=int,  help='0: donot use this data set.')
@@ -171,6 +173,9 @@ agt('--eval_average_precision', action='store_true', help='0: donot use this dat
 agt('--iou_thresh', default='0.1,0.2,0.3', help='0: donot use this data set.')
 agt('--eval_data_type', default='kps',  help='if , kps iou_thresh mean the reciprocal of mean joints loss.'
                                              'if , bbox iou_thresh mean the iou of bbox.')
+
+agt('--shuffle_data_val', action='store_true', help='shuffle data loader of val.')
+
 
 
 # dataset

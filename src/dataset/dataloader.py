@@ -71,7 +71,7 @@ def coco_data_loader():
     return DataLoader(
         dataset=new_datasets,
         batch_size=opt.batch_size_coco,
-        shuffle=True,
+        shuffle=not opt.not_shuffle_data_train,
         drop_last=True,
         pin_memory=True,
         num_workers=opt.num_workers
@@ -125,7 +125,7 @@ def lsp_data_loader():
     return DataLoader(
         dataset=new_datasets,
         batch_size=opt.batch_size_lsp,
-        shuffle=True,
+        shuffle=not opt.not_shuffle_data_train,
         drop_last=True,
         pin_memory=True,
         num_workers=opt.num_workers
@@ -162,7 +162,7 @@ def mpii_data_loader():
     return DataLoader(
         dataset=new_datasets,
         batch_size=opt.batch_size_mpii,
-        shuffle=True,
+        shuffle=not opt.not_shuffle_data_train,
         drop_last=True,
         pin_memory=True,
         num_workers=opt.num_workers
@@ -200,7 +200,7 @@ def hum36m_data_loader():
     return DataLoader(
         dataset=new_datasets,
         batch_size=opt.batch_size_hum36m,
-        shuffle=True,
+        shuffle=not opt.not_shuffle_data_train,
         drop_last=True,
         pin_memory=True,
         num_workers=opt.num_workers
@@ -238,7 +238,7 @@ def pw3d_data_loader():
     return DataLoader(
         dataset=new_datasets,
         batch_size=opt.batch_size_3dpw,
-        shuffle=True,
+        shuffle=not opt.not_shuffle_data_train,
         drop_last=True,
         pin_memory=True,
         num_workers=opt.num_workers
@@ -286,7 +286,7 @@ def val_coco_data_loader():
     return DataLoader(
         dataset=new_datasets,
         batch_size=opt.val_batch_size_coco,
-        shuffle=False,
+        shuffle=opt.shuffle_data_val,
         drop_last=False,
         pin_memory=True,
         num_workers=opt.num_workers
@@ -319,7 +319,7 @@ def val_hum36m_data_loader():
     return DataLoader(
         dataset=new_datasets,
         batch_size=opt.val_batch_size_hum36m,
-        shuffle=False,
+        shuffle=opt.shuffle_data_val,
         drop_last=False,
         pin_memory=True,
         num_workers=opt.num_workers
@@ -353,7 +353,7 @@ def val_3dpw_data_loader():
     return DataLoader(
         dataset=new_datasets,
         batch_size=opt.val_batch_size_3dpw,
-        shuffle=False,
+        shuffle=opt.shuffle_data_val,
         drop_last=False,
         pin_memory=True,
         num_workers=opt.num_workers
@@ -398,6 +398,21 @@ class multi_data_loader(object):
 
         batch = self.merge_batch(data_list)
         return batch
+
+
+    def scratch(self):
+        """ restart all of data in all of DataLoader. """
+        data_list = []
+
+        for i in range(len(self.iter_loaders)):
+            self.iter_loaders[i] = iter(self.loaders[i])
+            data = next(self.iter_loaders[i])
+
+            data_list.append(data)
+
+        batch = self.merge_batch(data_list)
+        return batch
+
 
     def merge_batch(self, batch):
         try:

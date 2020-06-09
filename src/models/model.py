@@ -18,7 +18,8 @@ class HmrLoss(nn.Module):
     def __init__(self):
         super(HmrLoss, self).__init__()
         self.smpl = SMPL(opt.smpl_path)
-        self.kp2d_every_weight = torch.tensor(opt.kp2d_every_weight).to(opt.device)
+        self.kp2d_every_weight_train = torch.tensor(opt.kp2d_every_weight_train).to(opt.device)
+        self.kp2d_every_weight_val = torch.tensor(opt.kp2d_every_weight_val).to(opt.device)
         # self.Rx = Rx_mat(torch.tensor([np.pi])).to(opt.device)[0].T
         print('finished create smpl module.')
 
@@ -61,8 +62,10 @@ class HmrLoss(nn.Module):
                 kp2d = self._get_pred_kp2d(output['pose'], output['shape'], output['camera'],
                                            output['box_cd'], output['box_wh'],
                                            batch['box_ind'], batch['kp2d_mask'])
-                kp2d_loss = kp2d_l1_loss(kp2d, batch['kp2d_mask'], batch['kp2d'], self.kp2d_every_weight)
-
+                if self.training:
+                    kp2d_loss = kp2d_l1_loss(kp2d, batch['kp2d_mask'], batch['kp2d'], self.kp2d_every_weight_train)
+                else:
+                    kp2d_loss = kp2d_l1_loss(kp2d, batch['kp2d_mask'], batch['kp2d'], self.kp2d_every_weight_val)
 
         if opt.kp3d_weight > 0 and 'kp3d' in batch:
             if batch['kp3d_mask'].sum() > 0:

@@ -139,12 +139,14 @@ class HMRTrainer(object):
             model_with_loss.eval()
             torch.cuda.empty_cache()
 
+            data_loader.scratch() # reload all data from scratch
+
             ### 2. val
             opt = self.opt
             data_time, batch_time = AverageMeter(), AverageMeter()
             avg_loss_stats = {l: AverageMeter() for l in self.loss_stats}
-            num_iters = len(data_loader)
-            # num_iters = 9
+            # num_iters = len(data_loader)
+            num_iters = len(data_loader) if opt.val_num_iters < 0 else opt.val_num_iters
 
             # get mAP
             eval_data = {
@@ -208,6 +210,8 @@ class HMRTrainer(object):
         data_loader = self.train_loader
         model_with_loss = self.model_with_loss
         model_with_loss.train()
+
+        data_loader.scratch()  # reload all data from scratch
 
         ### 2. train
         opt = self.opt
