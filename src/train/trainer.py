@@ -293,6 +293,7 @@ class HMRTrainer(object):
             ret = {k: v.avg for k, v in avg_loss_stats.items()}
             ret['time'] = clock_ETA.total() / 60.
             self.write_log('train', epoch, (epoch-1) *num_iters + iter_id, iter_id, ret)
+
         return num_iters
 
 
@@ -303,12 +304,12 @@ class HMRTrainer(object):
         start_epoch = self.start_epoch
 
         for epoch in range(start_epoch+1, opt.num_epochs+1):
-            total_iter = self.run_train_epoch(epoch)
+            total_iters_every_epoch = self.run_train_epoch(epoch)
 
             if opt.val_epoch_interval > 0 and \
                 epoch % opt.val_epoch_interval == 0:
                 if self.val_loader is not None:
-                    self.run_val('train', epoch, total_iter)
+                    self.run_val('train', epoch, epoch*total_iters_every_epoch)
 
             if opt.save_epoch_interval > 0 and \
                epoch % opt.save_epoch_interval == 0:

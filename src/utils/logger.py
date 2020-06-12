@@ -90,13 +90,16 @@ class Logger(object):
         """ Log a scalar variable. """
         if USE_TENSORBOARD:
             self.writer.add_scalar(tag, value, step)
+            self.writer.flush()
 
     def add_graph(self, model, input_to_model=None):
         """ add a graph. """
         if USE_TENSORBOARD:
             self.writer.add_graph(model, input_to_model)
+            self.writer.flush()
 
     def add_image(self, name, img, total_step):
         """ add a image. """
         if USE_TENSORBOARD:
             self.writer.add_image(name, img, global_step=total_step)
+            self.writer.flush()
