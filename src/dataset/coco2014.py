@@ -270,7 +270,7 @@ class COCO2014(Dataset):
         return kps
 
 
-    def _get_label(self, trans_mat, flip, anns):
+    def _get_label(self, inp, trans_mat, flip, anns):
         box_hm = np.zeros((1, self.output_res, self.output_res), dtype=np.float32)
 
         box_ind = np.zeros((self.max_objs), dtype=np.int64)
@@ -281,15 +281,23 @@ class COCO2014(Dataset):
         kp2d_mask = np.zeros((self.max_objs), dtype=np.uint8)
         kp2d = np.zeros((self.max_objs, self.num_joints, 3), dtype=np.float32)
 
-        has_theta = np.array([0], dtype=np.uint8)
-        has_kp3d = np.array([0], dtype=np.uint8)
-
         # densepose
         dp_ind = np.zeros((self.max_objs, self.min_dense_pts, 3), dtype=np.int64)
         dp_rat = np.zeros((self.max_objs, self.min_dense_pts, 3), dtype=np.float32)
         dp2d = np.zeros((self.max_objs, self.min_dense_pts, 3), dtype=np.float32)
         dp_mask = np.zeros((self.max_objs), dtype=np.uint8)
-        has_dp = np.array([1], dtype=np.uint8)
+        # has_dp = np.array([1], dtype=np.uint8)
+
+        # kp3d
+        kp3d_mask = np.zeros((self.max_objs), dtype=np.uint8)
+        kp3d = np.zeros((self.max_objs, self.num_joints, 3), dtype=np.float32)
+        # has_kp3d = np.array([1], dtype=np.uint8)
+
+        # smpl
+        # has_theta = np.array([1], dtype=np.uint8)
+        smpl_mask = np.zeros((self.max_objs), dtype=np.uint8)
+        shape = np.zeros((self.max_objs, 10), dtype=np.float32)
+        pose = np.zeros((self.max_objs, 72), dtype=np.float32)
 
         gt = []
 
@@ -389,9 +397,27 @@ class COCO2014(Dataset):
                     'dp_rat': dp_rat[k]
                 })
 
-        return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, has_kp3d, \
-               dp2d, dp_ind, dp_rat, dp_mask, has_dp, gt
-
+        return {
+            'input': inp,
+            'box_hm': box_hm,
+            'box_wh': box_wh,
+            'box_cd': box_cd,
+            'box_ind': box_ind,
+            'box_mask': box_mask,
+            'kp2d': kp2d,
+            'kp2d_mask': kp2d_mask,
+            'kp3d': kp3d,
+            'kp3d_mask': kp3d_mask,
+            'dp2d': dp2d,
+            'dp_ind': dp_ind,
+            'dp_rat': dp_rat,
+            'dp_mask': dp_mask,
+            'shape': shape,
+            'pose': pose,
+            'smpl_mask': smpl_mask,
+            'gt': gt,
+            'dataset': 'COCO2014'
+        }
 
     def __getitem__(self, index):
 
@@ -422,29 +448,8 @@ class COCO2014(Dataset):
                     'kp2d': np.array(ann['keypoints']).reshape(-1,3)}
                 )
 
-        box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, has_theta, has_kp3d, \
-        dp2d, dp_ind, dp_rat, dp_mask, has_dp, gt = \
-            self._get_label(trans_mat, flip, anns)
+        return self._get_label(inp, trans_mat, flip, anns)
 
-        return {
-            'input': inp,
-            'box_hm': box_hm,
-            'box_wh': box_wh,
-            'box_cd': box_cd,
-            'box_ind': box_ind,
-            'box_mask': box_mask,
-            'kp2d': kp2d,
-            'kp2d_mask': kp2d_mask,
-            'has_kp3d': has_kp3d,
-            'has_theta': has_theta,
-            'dp2d': dp2d,
-            'dp_ind': dp_ind,
-            'dp_rat': dp_rat,
-            'dp_mask': dp_mask,
-            'has_dp': has_dp,
-            'gt': gt,
-            'dataset': 'COCO2014'
-        }
 
 if __name__ == '__main__':
     data = COCO2014('D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2014',

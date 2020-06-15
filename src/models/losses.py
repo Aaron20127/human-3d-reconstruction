@@ -78,10 +78,29 @@ def pose_l2_euler_loss(output, mask, ind, target):
     return loss
 
 
-def pose_l2_loss(output, mask, ind, has_theta, target, loss_type):
-    output = output[has_theta.flatten() == 1, ...]
-    ind = ind[has_theta.flatten() == 1, ...]
+# def pose_l2_loss(output, mask, ind, has_theta, target, loss_type):
+#     output = output[has_theta.flatten() == 1, ...]
+#     ind = ind[has_theta.flatten() == 1, ...]
+#     mask = mask[has_theta.flatten() == 1, ...]
+#     target = target[has_theta.flatten() == 1, ...]
+#
+#     if loss_type == 1: # rotating vector
+#         loss = L2loss(output[:, 3:, :, :], mask, ind, target[:, :, 3:])
+#     elif loss_type == 2: # euler angle
+#         loss = pose_l2_euler_loss(output[:, 3:, :, :], mask, ind, target[:, :, 3:])
+#     else:
+#         assert 0, 'wrong pose loss type {}'.format(loss_type)
+#
+#     return loss
 
+# def shape_l2_loss(output, mask, ind, has_theta, target):
+#     output = output[has_theta.flatten() == 1, ...]
+#     ind = ind[has_theta.flatten() == 1, ...]
+#     loss = L2loss(output, mask, ind, target)
+#     return loss
+
+
+def pose_l2_loss(output, mask, ind, target, loss_type):
     if loss_type == 1: # rotating vector
         loss = L2loss(output[:, 3:, :, :], mask, ind, target[:, :, 3:])
     elif loss_type == 2: # euler angle
@@ -92,9 +111,7 @@ def pose_l2_loss(output, mask, ind, has_theta, target, loss_type):
     return loss
 
 
-def shape_l2_loss(output, mask, ind, has_theta, target):
-    output = output[has_theta.flatten() == 1, ...]
-    ind = ind[has_theta.flatten() == 1, ...]
+def shape_l2_loss(output, mask, ind, target):
     loss = L2loss(output, mask, ind, target)
     return loss
 

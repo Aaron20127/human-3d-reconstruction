@@ -255,7 +255,7 @@ def val_coco_data_loader():
             dataset = COCO2014(
                 data_path=path,
                 split='val',
-                image_scale_range=(1.0, 1.01),
+                image_scale_range=opt.val_scale_data,
                 trans_scale=0,
                 flip_prob=-1,
                 rot_prob=-1,
@@ -268,7 +268,7 @@ def val_coco_data_loader():
             dataset = COCO2017(
                 data_path=path,
                 split='val',
-                image_scale_range=(1.0, 1.01),
+                image_scale_range=opt.val_scale_data,
                 trans_scale=0,
                 flip_prob=-1,
                 rot_prob=-1,
@@ -288,11 +288,12 @@ def val_coco_data_loader():
     return DataLoader(
         dataset=new_datasets,
         batch_size=opt.val_batch_size_coco,
-        shuffle=opt.shuffle_data_val,
+        shuffle=opt.val_shuffle_data,
         drop_last=False,
         pin_memory=True,
         num_workers=opt.num_workers
     )
+
 
 def val_hum36m_data_loader():
     datasets = []
@@ -302,7 +303,7 @@ def val_hum36m_data_loader():
             dataset = Hum36m(
                 data_path=path,
                 split='val',
-                image_scale_range=(1.0, 1.01),
+                image_scale_range=opt.val_scale_data,
                 trans_scale=0,
                 flip_prob=-1,
                 rot_prob=-1,
@@ -321,7 +322,7 @@ def val_hum36m_data_loader():
     return DataLoader(
         dataset=new_datasets,
         batch_size=opt.val_batch_size_hum36m,
-        shuffle=opt.shuffle_data_val,
+        shuffle=opt.val_shuffle_data,
         drop_last=False,
         pin_memory=True,
         num_workers=opt.num_workers
@@ -336,7 +337,7 @@ def val_3dpw_data_loader():
             dataset = PW3D(
                 data_path=path,
                 split='val',
-                image_scale_range=(1.0, 1.01),
+                image_scale_range=opt.val_scale_data,
                 trans_scale=0,
                 flip_prob=-1,
                 rot_prob=-1,
@@ -355,7 +356,7 @@ def val_3dpw_data_loader():
     return DataLoader(
         dataset=new_datasets,
         batch_size=opt.val_batch_size_3dpw,
-        shuffle=opt.shuffle_data_val,
+        shuffle=opt.val_shuffle_data,
         drop_last=False,
         pin_memory=True,
         num_workers=opt.num_workers

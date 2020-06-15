@@ -46,18 +46,54 @@ class HmrLoss(nn.Module):
 
 
         ## 2. loss of pose and shape
-        if opt.pose_weight > 0 and 'pose' in batch:
-            pose_loss = pose_l2_loss(output['pose'], batch['theta_mask'],
-                                     batch['box_ind'], batch['has_theta'], batch['pose'],
+        # if opt.pose_weight > 0 and 'pose' in batch:
+            # pose_loss = pose_l2_loss(output['pose'], batch['smpl_mask'],
+            #                          batch['box_ind'], batch['has_theta'], batch['pose'],
+            #                          opt.pose_loss_type)
+        if opt.pose_weight > 0:
+            pose_loss = pose_l2_loss(output['pose'], batch['smpl_mask'],
+                                     batch['box_ind'],  batch['pose'],
                                      opt.pose_loss_type)
 
-        if opt.shape_weight > 0 and 'shape' in batch:
-            shape_loss = shape_l2_loss(output['shape'], batch['theta_mask'],
-                                         batch['box_ind'], batch['has_theta'], batch['shape'])
+
+        # if opt.shape_weight > 0 and 'shape' in batch:
+            # shape_loss = shape_l2_loss(output['shape'], batch['smpl_mask'],
+            #                              batch['box_ind'], batch['has_theta'], batch['shape'])
+        if opt.shape_weight > 0:
+            shape_loss = shape_l2_loss(output['shape'], batch['smpl_mask'],
+                                       batch['box_ind'], batch['shape'])
 
 
         ## 3. loss of key points
-        if opt.kp2d_weight > 0 and 'kp2d' in batch:
+        # if opt.kp2d_weight > 0 and 'kp2d' in batch:
+        #     if batch['kp2d_mask'].sum() > 0:
+        #         kp2d = self._get_pred_kp2d(output['pose'], output['shape'], output['camera'],
+        #                                    output['box_cd'], output['box_wh'],
+        #                                    batch['box_ind'], batch['kp2d_mask'])
+        #         if self.training:
+        #             kp2d_loss = kp2d_l1_loss(kp2d, batch['kp2d_mask'], batch['kp2d'], self.kp2d_every_weight_train)
+        #         else:
+        #             kp2d_loss = kp2d_l1_loss(kp2d, batch['kp2d_mask'], batch['kp2d'], self.kp2d_every_weight_val)
+        #
+        # if opt.kp3d_weight > 0 and 'kp3d' in batch:
+        #     if batch['kp3d_mask'].sum() > 0:
+        #         kp3d = self._get_pred_kp3d(output['pose'], output['shape'], batch['has_kp3d'],
+        #                                    batch['box_ind'], batch['kp3d_mask'])
+        #         kp3d_loss = kp3d_l2_loss(kp3d, batch['kp3d_mask'], batch['kp3d'])
+        #
+        #
+        # ## 4. loss of dense pose 2d
+        # if opt.dp2d_weight > 0 and 'dp2d' in batch:
+        #     if batch['dp_mask'].sum() > 0:
+        #         dp2d = self._get_pred_dp2d(output['pose'], output['shape'], output['camera'],
+        #                                      output['box_cd'], output['box_wh'],
+        #                                      batch['box_ind'], batch['dp_mask'],
+        #                                      batch['dp_ind'], batch['dp_rat'], batch['has_dp'])
+        #         dp2d_loss = dp2d_l1_loss(dp2d, batch['dp_mask'], batch['dp2d'])
+
+
+        # 3. loss of kp2d, kp3d, dp2d
+        if opt.kp2d_weight > 0:
             if batch['kp2d_mask'].sum() > 0:
                 kp2d = self._get_pred_kp2d(output['pose'], output['shape'], output['camera'],
                                            output['box_cd'], output['box_wh'],
@@ -67,20 +103,20 @@ class HmrLoss(nn.Module):
                 else:
                     kp2d_loss = kp2d_l1_loss(kp2d, batch['kp2d_mask'], batch['kp2d'], self.kp2d_every_weight_val)
 
-        if opt.kp3d_weight > 0 and 'kp3d' in batch:
+
+        if opt.kp3d_weight > 0:
             if batch['kp3d_mask'].sum() > 0:
-                kp3d = self._get_pred_kp3d(output['pose'], output['shape'], batch['has_kp3d'],
+                kp3d = self._get_pred_kp3d(output['pose'], output['shape'],
                                            batch['box_ind'], batch['kp3d_mask'])
                 kp3d_loss = kp3d_l2_loss(kp3d, batch['kp3d_mask'], batch['kp3d'])
 
 
-        ## 4. loss of dense pose 2d
-        if opt.dp2d_weight > 0 and 'dp2d' in batch:
+        if opt.dp2d_weight > 0:
             if batch['dp_mask'].sum() > 0:
                 dp2d = self._get_pred_dp2d(output['pose'], output['shape'], output['camera'],
                                              output['box_cd'], output['box_wh'],
                                              batch['box_ind'], batch['dp_mask'],
-                                             batch['dp_ind'], batch['dp_rat'], batch['has_dp'])
+                                             batch['dp_ind'], batch['dp_rat'])
                 dp2d_loss = dp2d_l1_loss(dp2d, batch['dp_mask'], batch['dp2d'])
 
 
@@ -124,7 +160,7 @@ class HmrLoss(nn.Module):
 
 
         ## smpl
-        _, kp3d, _, _ = self.smpl(beta=shape, theta=pose)
+        _, kp3d, _ = self.smpl(beta=shape, theta=pose)
 
 
         ## kp2d
@@ -155,14 +191,14 @@ class HmrLoss(nn.Module):
         return kp2d
 
 
-    def _get_pred_kp3d(self, pose, shape, has_kp3d, ind, mask):
+    def _get_pred_kp3d(self, pose, shape, ind, mask):
         # pose = pose[has_theta.flatten()==1, ...]
         # shape = shape[has_theta.flatten()==1, ...]
         # camera = camera[has_theta.flatten()==1, ...]
         # ind = ind[has_theta.flatten() == 1, ...]
-        pose = pose[(has_kp3d==1).flatten(), ...]
-        shape = shape[(has_kp3d==1).flatten(), ...]
-        ind = ind[(has_kp3d==1).flatten(), ...]
+        # pose = pose[(has_kp3d==1).flatten(), ...]
+        # shape = shape[(has_kp3d==1).flatten(), ...]
+        # ind = ind[(has_kp3d==1).flatten(), ...]
 
         pred = transpose_and_gather_feat(pose, ind)
         mask_pre = mask.unsqueeze(2).expand_as(pred)
@@ -174,18 +210,18 @@ class HmrLoss(nn.Module):
 
 
         ## smpl
-        _, kp3d, _, _ = self.smpl(beta=shape, theta=pose)
+        _, joints, _ = self.smpl(beta=shape, theta=pose)
 
-        return kp3d
+        return joints
 
 
-    def _get_pred_dp2d(self, pose, shape, camera, cd, wh, ind, mask, dp_ind, dp_rat, has_dp):
-        pose = pose[has_dp.flatten()==1, ...]
-        shape = shape[has_dp.flatten()==1, ...]
-        camera = camera[has_dp.flatten()==1, ...]
-        cd = cd[has_dp.flatten()==1, ...]
-        wh = wh[has_dp.flatten()==1, ...]
-        ind = ind[has_dp.flatten() == 1, ...]
+    def _get_pred_dp2d(self, pose, shape, camera, cd, wh, ind, mask, dp_ind, dp_rat):
+        # pose = pose[has_dp.flatten()==1, ...]
+        # shape = shape[has_dp.flatten()==1, ...]
+        # camera = camera[has_dp.flatten()==1, ...]
+        # cd = cd[has_dp.flatten()==1, ...]
+        # wh = wh[has_dp.flatten()==1, ...]
+        # ind = ind[has_dp.flatten() == 1, ...]
 
 
         pred = transpose_and_gather_feat(pose, ind)
@@ -198,7 +234,7 @@ class HmrLoss(nn.Module):
 
 
         ## smpl
-        verts, _, _, _ = self.smpl(beta=shape, theta=pose)
+        verts, _, _ = self.smpl(beta=shape, theta=pose)
 
         ## get verts of dense pose
         dp_ind = dp_ind[mask == 1]
@@ -236,7 +272,6 @@ class HmrLoss(nn.Module):
         dp2d = verts[:,:,:2] * f.view(-1,1,1) + c.view(-1,1,2) # camera transformation
 
         return dp2d
-
 
 
 class ModelWithLoss(nn.Module):

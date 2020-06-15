@@ -174,8 +174,8 @@ agt('--iou_thresh', default='0.1,0.2,0.3', help='0: donot use this data set.')
 agt('--eval_data_type', default='kps',  help='if , kps iou_thresh mean the reciprocal of mean joints loss.'
                                              'if , bbox iou_thresh mean the iou of bbox.')
 
-agt('--shuffle_data_val', action='store_true', help='shuffle data loader of val.')
-
+agt('--val_shuffle_data', action='store_true', help='shuffle data loader of val.')
+agt('--val_scale_data', default='1.0,1.01', help='scale data loader of val.')
 
 
 # dataset
@@ -197,7 +197,7 @@ agt('--min_trunction_vis_dp_ratio',  default=0.0, type=float,  help='when dense 
 
 
 agt('--coco_data_set', default='coco2014,coco2017',  help='0: donot use this data set.')
-agt('--lsp_data_set',  default='lsp_hr,lsp_ext_hr', help='0: donot use this data set.')
+agt('--lsp_data_set',  default='lsp,lsp_ext', help='0: donot use this data set.')
 agt('--mpii_data_set',  default='mpii', help='0: donot use this data set.')
 agt('--hum36m_data_set', default='hum36m',  help='0: donot use this data set.')
 agt('--pw3d_data_set', default='3dpw',  help='0: donot use this data set.')
@@ -244,9 +244,9 @@ opt.data_set_path = {
     'coco2014': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2014',
     'coco2017': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2017',
     'lsp': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp/',
-    'lsp_hr': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_hr/',
+    # 'lsp_hr': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_hr/',
     'lsp_ext': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_extend',
-    'lsp_ext_hr': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_extend_hr',
+    # 'lsp_ext_hr': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_extend_hr',
     # 'ai-ch':'E:/HMR/data/ai_challenger_keypoint_train_20170902',
     # 'mpi-inf-3dhp':'E:/HMR/data/mpi_inf_3dhp',
     'mpii': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/mpii',

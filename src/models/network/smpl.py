@@ -130,7 +130,7 @@ class SMPL(nn.Module):
         # rx_verts = torch.matmul(verts, self.Rx.T)
         # rx_joints = torch.matmul(joints, self.Rx.T)
 
-        return verts, joints, Rs, self.faces
+        return verts, joints, self.faces
 
 
 

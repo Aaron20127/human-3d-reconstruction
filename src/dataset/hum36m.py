@@ -47,6 +47,7 @@ class Hum36m(Dataset):
                 min_bbox_area = 16*16,
                 max_data_len = -1):
 
+        self.min_dense_pts = 184
         self.data_path = data_path
         self.image_scale_range = image_scale_range
         self.trans_scale = trans_scale
@@ -274,7 +275,7 @@ class Hum36m(Dataset):
         return pose
 
 
-    def _get_label(self, trans_mat, flip, anns):
+    def _get_label(self, inp, trans_mat, flip, anns):
         box_hm = np.zeros((1,self.output_res, self.output_res), dtype=np.float32)
 
         box_ind = np.zeros((self.max_objs), dtype=np.int64)
@@ -282,19 +283,26 @@ class Hum36m(Dataset):
         box_wh = np.zeros((self.max_objs, 2), dtype=np.float32)
         box_cd = np.zeros((self.max_objs, 2), dtype=np.float32)  # bbox center decimal
 
+        # kp2d
         kp2d_mask = np.zeros((self.max_objs), dtype=np.uint8)
         kp2d = np.zeros((self.max_objs, self.num_joints, 3), dtype=np.float32)
 
+        # kp3d
         kp3d_mask = np.zeros((self.max_objs), dtype=np.uint8)
         kp3d = np.zeros((self.max_objs, self.num_joints, 3), dtype=np.float32)
-        has_kp3d = np.array([1], dtype=np.uint8)
+        # has_kp3d = np.array([1], dtype=np.uint8)
 
-        has_theta = np.array([1], dtype=np.uint8)
-        theta_mask = np.zeros((self.max_objs), dtype=np.uint8)
+        # has_theta = np.array([1], dtype=np.uint8)
+        # smpl
+        smpl_mask = np.zeros((self.max_objs), dtype=np.uint8)
         shape = np.zeros((self.max_objs, 10), dtype=np.float32)
         pose = np.zeros((self.max_objs, 72), dtype=np.float32)
 
-        has_dp = np.array([0], dtype=np.uint8)
+        # dp2d
+        dp_ind = np.zeros((self.max_objs, self.min_dense_pts, 3), dtype=np.int64)
+        dp_rat = np.zeros((self.max_objs, self.min_dense_pts, 3), dtype=np.float32)
+        dp2d = np.zeros((self.max_objs, self.min_dense_pts, 3), dtype=np.float32)
+        dp_mask = np.zeros((self.max_objs), dtype=np.uint8)
 
         gt = []
 
@@ -358,7 +366,7 @@ class Hum36m(Dataset):
                 ### 4. handle pose and shape
                 pose[k] = self._get_pose(ann['pose'], flip)
                 shape[k] = ann['shape']
-                theta_mask[k] = 1
+                smpl_mask[k] = 1
 
 
                 ### groud truth
@@ -370,8 +378,27 @@ class Hum36m(Dataset):
                     'shape': shape[k]
                 })
 
-        return box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, \
-               theta_mask, pose, shape, has_theta, kp3d, kp3d_mask, has_kp3d, has_dp, gt
+        return {
+            'input': inp,
+            'box_hm': box_hm,
+            'box_wh': box_wh,
+            'box_cd': box_cd,
+            'box_ind': box_ind,
+            'box_mask': box_mask,
+            'kp2d': kp2d,
+            'kp2d_mask': kp2d_mask,
+            'kp3d': kp3d,
+            'kp3d_mask': kp3d_mask,
+            'dp2d': dp2d,
+            'dp_ind': dp_ind,
+            'dp_rat': dp_rat,
+            'dp_mask': dp_mask,
+            'shape': shape,
+            'pose': pose,
+            'smpl_mask': smpl_mask,
+            'gt': gt,
+            'dataset': 'hum36m'
+        }
 
     def __getitem__(self, index):
 
@@ -392,31 +419,7 @@ class Hum36m(Dataset):
             'pose':  self.pose[index]
         }]
 
-        box_hm, box_wh, box_cd, box_ind, box_mask, kp2d, kp2d_mask, \
-        theta_mask, pose, shape, has_theta, kp3d, kp3d_mask, has_kp3d, has_dp, gt = \
-            self._get_label(trans_mat, flip, anns)
-
-
-        return {
-            'input': inp,
-            'box_hm': box_hm,
-            'box_wh': box_wh,
-            'box_cd': box_cd,
-            'box_ind': box_ind,
-            'box_mask': box_mask,
-            'kp2d': kp2d,
-            'kp2d_mask': kp2d_mask,
-            'kp3d': kp3d,
-            'kp3d_mask': kp3d_mask,
-            'has_kp3d': has_kp3d,
-            'pose': pose,
-            'shape': shape,
-            'theta_mask': theta_mask,
-            'has_theta': has_theta,
-            'has_dp': has_dp,
-            'gt': gt,
-            'dataset': 'hum36m'
-        }
+        return self._get_label(inp, trans_mat, flip, anns)
 
 
 if __name__ == '__main__':
@@ -471,6 +474,7 @@ if __name__ == '__main__':
         for obj in batch['gt']:
             camera = get_camera_from_batch(obj['bbox'][0], opt.camera_pose_z)
             debugger.add_smpl(obj['pose'][0], obj['shape'][0], kp3d=obj['kp3d'][0], camera=camera, img_id=gt_id)
+            # debugger.add_smpl_3d(obj['pose'][0], obj['shape'][0], kp3d=obj['kp3d'][0], camera=camera, img_id=gt_id)
 
 
         debugger.show_all_imgs(pause=True)

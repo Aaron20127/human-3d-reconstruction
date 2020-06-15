@@ -191,7 +191,7 @@ class Debugger(object):
     shape = torch.tensor(shape.reshape(1,10)).to(self.device)
 
     # smpl
-    verts, joints, r, faces = self.smpl(shape, pose)
+    verts, joints, faces = self.smpl(shape, pose)
 
     obj = {
         'verts': verts[0],  # 模型顶点
@@ -225,7 +225,7 @@ class Debugger(object):
 
 
     # smpl
-    verts, joints, r, faces = self.smpl(shape, pose)
+    verts, joints, faces = self.smpl(shape, pose)
 
     if kp3d is not None:
         J = kp3d
@@ -247,6 +247,56 @@ class Debugger(object):
     #
     kp2d = perspective_transform(J.detach().cpu().numpy(), camera)
     self.add_kp2d(kp2d, img_id)
+
+
+
+  def add_smpl_3d(self, pose, shape, kp3d=None, camera=None, img_id='default'):
+
+    if camera is None:
+        camera = self.camera
+
+    pose = pose.reshape(24,3).to(self.device)
+    shape = shape.reshape(1,10).to(self.device)
+
+
+    # smpl
+    verts, joints, faces = self.smpl(shape, pose)
+
+    if kp3d is not None:
+        J = kp3d
+    else:
+        J = joints[0]
+
+    obj = {
+        'verts': verts[0],  # 模型顶点
+        'faces': faces,  # 面片序号
+        'J': J,  # 3D关节点
+    }
+
+    verts = obj['verts'].numpy()
+    faces = obj['faces']
+
+    x = verts[:, 0]
+    y = verts[:, 1]
+    z = verts[:, 2]
+
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    elev = 90 + 30
+    azim = -90
+    ax.view_init(elev=elev, azim=azim)
+
+    ax.plot_trisurf(x, y, z, triangles=faces, linewidth=0, antialiased=True)
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+
+    ax.set_xlim(-1, 1)
+    ax.set_ylim(-1, 1)
+    ax.set_zlim(-1, 1)
+
+    plt.show()
+
 
 
   def add_smpl_np(self, pose, shape, kp3d=None, camera=[1,0,0], img_id='default'):

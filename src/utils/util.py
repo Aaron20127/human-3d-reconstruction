@@ -28,14 +28,15 @@ def pre_process(opt):
     opt.mpii_data_set=[i for i in opt.mpii_data_set.split(',')]
     opt.hum36m_data_set=[i for i in opt.hum36m_data_set.split(',')]
     opt.pw3d_data_set=[i for i in opt.pw3d_data_set.split(',')]
-    opt.coco_val_data_set=[i for i in opt.coco_val_data_set.split(',')]
-    opt.hum36m_val_data_set=[i for i in opt.hum36m_val_data_set.split(',')]
-    opt.pw3d_val_data_set=[i for i in opt.pw3d_val_data_set.split(',')]
     opt.kp2d_every_weight_train=[float(i) for i in opt.kp2d_every_weight_train.split(',')]
     opt.kp2d_every_weight_val=[float(i) for i in opt.kp2d_every_weight_val.split(',')]
 
-    if opt.hum36m_rot_prob or opt.pw3d_rot_prob > 0:
-        opt.kp3d_weight = 0
+
+    """val"""
+    opt.coco_val_data_set = [i for i in opt.coco_val_data_set.split(',')]
+    opt.hum36m_val_data_set = [i for i in opt.hum36m_val_data_set.split(',')]
+    opt.pw3d_val_data_set = [i for i in opt.pw3d_val_data_set.split(',')]
+    opt.val_scale_data = [float(i) for i in opt.val_scale_data.split(',')]
 
     """model"""
     if opt.resume and opt.load_model == '':
