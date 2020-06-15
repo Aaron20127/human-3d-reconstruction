@@ -3,8 +3,8 @@ import pickle
 import os
 import cv2
 import time
-
-from .render import perspective_render_obj
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
 
 class SMPL_np():
   def __init__(self, model_path, joint_type='smpl'):
@@ -241,15 +241,32 @@ if __name__ == '__main__':
 
   smpl.set_params(beta=beta, pose=pose)
 
+  obj = smpl.get_obj()
+
+  ## 1.
+  fig = plt.figure()
+  ax = fig.gca(projection='3d')
+  elev = 90 + 30
+  azim = -90
+  ax.view_init(elev=elev, azim=azim)
+
+  verts = obj['verts']
+  faces = obj['faces']
+
+  x = verts[:, 0]
+  y = verts[:, 1]
+  z = verts[:, 2]
+
+  ax.plot_trisurf(x, y, z,  triangles=faces, linewidth=0, antialiased=True)
+  ax.set_xlabel('x')
+  ax.set_ylabel('y')
+  ax.set_zlabel('z')
+
+  ax.set_xlim(-1, 1)
+  ax.set_ylim(-1, 1)
+  ax.set_zlim(-1, 1)
+
+  plt.show()
 
 
-  color, depth = weak_perspective_render_obj(obj, width=512, height=512, show_smpl_joints=False)
-  time_3 = time.time()
-
-
-  cv2.imshow('color', color)
-  cv2.waitKey(0)
-
-  print('run1: ', time_2-time_1)
-  print('run2: ', time_3-time_2)
 
