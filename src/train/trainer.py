@@ -18,6 +18,8 @@ from utils.util import AverageMeter, Clock, str_time, show_net_para, sigmoid
 from utils.decode import decode
 from utils.evaluate import covert_eval_data, eval
 
+from utils.data_parallel import DataParallel
+
 
 class HMRTrainer(object):
     def __init__(self, opt):
@@ -101,10 +103,10 @@ class HMRTrainer(object):
         print('finished create data loader.')
 
 
-    def set_device(self, gpus, device):
+    def set_device(self, gpus, chunk_sizes, device):
         if len(gpus) > 1:
-            self.model_with_loss = nn.DataParallel(
-                self.model_with_loss, device_ids=gpus).to(device)
+            self.model_with_loss = DataParallel(
+                self.model_with_loss, chunk_sizes=chunk_sizes, device_ids=gpus).to(device)
         else:
             self.model_with_loss = self.model_with_loss.to(device)
 

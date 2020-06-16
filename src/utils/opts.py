@@ -141,6 +141,7 @@ agt('--kp2d_every_weight_val',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
 
 
 # train
+agt('--master_batch_size', default=-1, type=int, help='batch size for master GPU')
 agt('--val', action='store_true', help='train or eval.')
 agt('--lr', default=1.25e-4, type=float,  help='learning rate for batch size 32.')
 agt('--lr_scheduler_factor', default=0.978, type=float,  help='learning factor.')

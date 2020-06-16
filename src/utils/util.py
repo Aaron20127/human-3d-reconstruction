@@ -23,6 +23,7 @@ def pre_process(opt):
     """train"""
     opt.iou_thresh = [float(i) for i in opt.iou_thresh.split(',')]
     opt.gpus_list = [int(i) for i in opt.gpus.split(',')]
+    opt.device = torch.device('cuda' if -1 not in opt.gpus_list else 'cpu')
     opt.gpus_list = [i for i in range(len(opt.gpus_list))] if opt.gpus_list[0] >= 0 else [-1]
 
     opt.coco_data_set=[i for i in opt.coco_data_set.split(',')]
@@ -32,13 +33,14 @@ def pre_process(opt):
     opt.pw3d_data_set=[i for i in opt.pw3d_data_set.split(',')]
     opt.kp2d_every_weight_train=[float(i) for i in opt.kp2d_every_weight_train.split(',')]
     opt.kp2d_every_weight_val=[float(i) for i in opt.kp2d_every_weight_val.split(',')]
-
-
+    opt.batch_size = opt.batch_size_coco + opt.batch_size_lsp + opt.batch_size_hum36m + opt.batch_size_mpii
+    
     """val"""
     opt.coco_val_data_set = [i for i in opt.coco_val_data_set.split(',')]
     opt.hum36m_val_data_set = [i for i in opt.hum36m_val_data_set.split(',')]
     opt.pw3d_val_data_set = [i for i in opt.pw3d_val_data_set.split(',')]
     opt.val_scale_data = [float(i) for i in opt.val_scale_data.split(',')]
+    opt.val_batch_size = opt.val_batch_size_coco + opt.val_batch_size_hum36m + opt.val_batch_size_3dpw 
 
     """model"""
     if opt.resume and opt.load_model == '':
@@ -46,11 +48,29 @@ def pre_process(opt):
 
     """debug"""
     if opt.debug > 0:
-        if opt.batch_size_coco + opt.batch_size_lsp + opt.batch_size_hum36m > 1:
+        if opt.batch_size > 1:
             assert 0, 'needed one batch size to debug.'
 
-        if opt.val_batch_size_coco + opt.val_batch_size_hum36m > 1:
+        if opt.val_batch_size > 1:
             assert 0, 'needed one batch size to debug.'
+
+        opt.num_workers = 0
+        opt.gpus_list = [opt.gpus_list[0]]
+        opt.master_batch_size = -1
+
+    """parallel"""
+    if opt.master_batch_size == -1:
+        opt.master_batch_size = opt.batch_size // len(opt.gpus_list)
+
+    rest_batch_size = (opt.batch_size - opt.master_batch_size)
+    opt.chunk_sizes = [opt.master_batch_size]
+
+    for i in range(len(opt.gpus_list) - 1):
+        slave_chunk_size = rest_batch_size // (len(opt.gpus_list) - 1)
+        if i < rest_batch_size % (len(opt.gpus_list) - 1):
+            slave_chunk_size += 1
+        opt.chunk_sizes.append(slave_chunk_size)
+    print('training chunk_sizes:', opt.chunk_sizes)
 
 
 class AverageMeter(object):
