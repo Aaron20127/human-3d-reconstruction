@@ -21,21 +21,14 @@ def main(opt):
     torch.cuda.manual_seed(opt.seed)
     torch.cuda.manual_seed_all(opt.seed)
 
-    # seed=20
-    # torch.manual_seed(seed)
-    # torch.cuda.manual_seed_all(seed)
-    # np.random.seed(seed)
-    # random.seed(seed)
-    # torch.backends.cudnn.deterministic = True
-
     torch.backends.cudnn.benchmark = not opt.not_cuda_benchmark
     os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus
-    opt.device = torch.device('cuda' if -1 not in opt.gpus_list else 'cpu')
+
     opt.logger = Logger(opt)
 
     ## 2. create model
     trainer = HMRTrainer(opt)
-    trainer.set_device(opt.gpus_list, opt.device)
+    trainer.set_device(opt.gpus_list, opt.chunk_sizes, opt.device)
 
     if opt.val:
         trainer.val()
