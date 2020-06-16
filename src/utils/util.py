@@ -23,6 +23,8 @@ def pre_process(opt):
     """train"""
     opt.iou_thresh = [float(i) for i in opt.iou_thresh.split(',')]
     opt.gpus_list = [int(i) for i in opt.gpus.split(',')]
+    opt.gpus_list = [i for i in range(len(opt.gpus_list))] if opt.gpus_list[0] >= 0 else [-1]
+
     opt.coco_data_set=[i for i in opt.coco_data_set.split(',')]
     opt.lsp_data_set=[i for i in opt.lsp_data_set.split(',')]
     opt.mpii_data_set=[i for i in opt.mpii_data_set.split(',')]

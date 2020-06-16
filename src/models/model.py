@@ -18,15 +18,16 @@ class HmrLoss(nn.Module):
     def __init__(self):
         super(HmrLoss, self).__init__()
         self.smpl = SMPL(opt.smpl_path)
-        self.kp2d_every_weight_train = torch.tensor(opt.kp2d_every_weight_train).to(opt.device)
-        self.kp2d_every_weight_val = torch.tensor(opt.kp2d_every_weight_val).to(opt.device)
+        self.register_buffer('kp2d_every_weight_train', torch.tensor(opt.kp2d_every_weight_train).type(torch.float32))
+        self.register_buffer('kp2d_every_weight_val', torch.tensor(opt.kp2d_every_weight_val).type(torch.float32))
+        self.register_buffer('loss', torch.zeros(8).type(torch.float32))
         # self.Rx = Rx_mat(torch.tensor([np.pi])).to(opt.device)[0].T
         print('finished create smpl module.')
 
 
     def forward(self, output, batch):
         hm_loss, wh_loss, cd_loss, pose_loss, \
-            shape_loss, kp2d_loss, kp3d_loss, dp2d_loss = torch.zeros(8).to(opt.device)
+            shape_loss, kp2d_loss, kp3d_loss, dp2d_loss =  self.loss.zero_()
 
         ## 1.loss of object bbox
         # heat map loss of objects center
@@ -37,7 +38,6 @@ class HmrLoss(nn.Module):
         # bbox heigt and lenghth
         wh_loss = L1loss(output['box_wh'], batch['box_mask'],
                                  batch['box_ind'], batch['box_wh'])
-
 
 
         # bbox center decimal loss

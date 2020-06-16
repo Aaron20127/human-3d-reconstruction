@@ -53,9 +53,9 @@ class HMRTrainer(object):
 
         self.model = model
         self.optimizer = optimizer
-        self.model_with_loss = \
-            nn.DataParallel(ModelWithLoss(model, HmrLoss())).to(opt.device)
-        # self.model_with_loss = ModelWithLoss(model, HmrLoss()).to(opt.device)
+        # self.model_with_loss = \
+        #     nn.DataParallel(ModelWithLoss(model, HmrLoss()), device_ids=opt.gpus_list)
+        self.model_with_loss = ModelWithLoss(model, HmrLoss())
 
         show_net_para(model)
         print('finished build model.')
@@ -99,6 +99,19 @@ class HMRTrainer(object):
             self.val_loader = multi_data_loader(loaders)
 
         print('finished create data loader.')
+
+
+    def set_device(self, gpus, device):
+        if len(gpus) > 1:
+            self.model_with_loss = nn.DataParallel(
+                self.model_with_loss, device_ids=gpus).to(device)
+        else:
+            self.model_with_loss = self.model_with_loss.to(device)
+
+        for state in self.optimizer.state.values():
+            for k, v in state.items():
+                if isinstance(v, torch.Tensor):
+                    state[k] = v.to(device=device, non_blocking=True)
 
 
     def write_log(self, phase, epoch, total_iters, num_iters, loss_states):
@@ -429,11 +442,10 @@ class HMRTrainer(object):
                         if 'lr' in param_group.keys():
                             print('Resume start lr', param_group['lr'])
 
-
-                for state in optimizer.state.values():
-                    for k, v in state.items():
-                        if isinstance(v, torch.Tensor):
-                            state[k] = v.to(device)
+                # for state in optimizer.state.values():
+                #     for k, v in state.items():
+                #         if isinstance(v, torch.Tensor):
+                #             state[k] = v.to(device)
             else:
                 print('No optimizer parameters in checkpoint.')
         if optimizer is not None:

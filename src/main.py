@@ -35,6 +35,7 @@ def main(opt):
 
     ## 2. create model
     trainer = HMRTrainer(opt)
+    trainer.set_device(opt.gpus_list, opt.device)
 
     if opt.val:
         trainer.val()

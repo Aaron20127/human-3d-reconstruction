@@ -159,6 +159,8 @@ class Root(nn.Module):
         children = x
         x = self.conv(torch.cat(x, 1))
         x = self.bn(x)
+
+
         if self.residual:
             x += children[0]
         x = self.relu(x)
