@@ -92,9 +92,8 @@ class SMPL(nn.Module):
 
 
     def forward(self, beta, theta):
-        if not self.cur_device:
-            device = beta.device
-            self.cur_device = torch.device(device.type, device.index)
+        device = beta.device
+        self.cur_device = torch.device(device.type, device.index)
 
         num_batch = beta.shape[0]
         # print('smpl num_batch {}'.format(num_batch))
