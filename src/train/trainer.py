@@ -210,6 +210,8 @@ class HMRTrainer(object):
                 del output, loss, loss_stats
                 clock.elapsed()
 
+            model_with_loss.train()
+
         ret = {k: v.avg for k, v in avg_loss_stats.items()}
         ret['time'] = clock_ETA.total() / 60.  # spending time of each epoch.
         if opt.eval_average_precision:
@@ -285,7 +287,6 @@ class HMRTrainer(object):
             if opt.val_iter_interval > 0 and \
                 iter_id % opt.val_iter_interval == 0:
                     self.run_val('train', epoch, (epoch-1) *num_iters + iter_id, iter_id)
-                    model_with_loss.train()
 
             ## log
             if opt.log_iters > 0 and \
