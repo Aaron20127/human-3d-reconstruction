@@ -43,7 +43,7 @@ class HMRTrainer(object):
         if os.path.exists(opt.load_model):
             model, optimizer, self.start_epoch = \
               self.load_model(
-                  model, opt.load_model, opt.device,
+                  model, opt.load_model,
                   optimizer, opt.resume,
                   opt.lr
               )
@@ -393,8 +393,7 @@ class HMRTrainer(object):
                 debugger.save_objs(iter_id, opt.debug_obj_dir)
 
 
-    def load_model(self, model, model_path, device, optimizer=None, resume=False,
-                    lr=0, lr_step=None):
+    def load_model(self, model, model_path, optimizer=None, resume=False, lr=0, lr_step=None):
         start_epoch = 0
         checkpoint = torch.load(model_path, map_location=lambda storage, loc: storage)
         print('loaded {}, epoch {}'.format(model_path, checkpoint['epoch']))

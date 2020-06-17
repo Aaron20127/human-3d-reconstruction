@@ -22,7 +22,7 @@ def get_kp2d(pose, shape, camera):
     shape = torch.tensor(shape.reshape(1, 10)).to('cpu')
 
     # smpl
-    verts, joints, r, faces = smpl(shape, pose)
+    verts, joints, faces = smpl(shape, pose)
 
     ##
     rot_x = Rx_mat(torch.tensor([np.pi])).numpy()[0]
