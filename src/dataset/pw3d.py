@@ -45,7 +45,8 @@ class PW3D(Dataset):
                 normalize = True,
                 box_stretch = 20,
                 min_bbox_area = 16*16,
-                max_data_len = -1):
+                max_data_len = -1,
+                smpl_type = 'cocoplus'):
 
         self.min_dense_pts = 184
         self.data_path = data_path
@@ -71,11 +72,32 @@ class PW3D(Dataset):
 
         # defaut parameters
         # key points
-        self.num_joints = 19
-        self.kps_map = [10,9,8,11,12,13,4,3,2,5,6,7,1,0,0,15,14,17,16]  # key points map lsp to smpl cocoplus key points
-        self.not_exist_kps = [13]
-        self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
-                         [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
+        # self.num_joints = 19
+        # self.kps_map = [10,9,8,11,12,13,4,3,2,5,6,7,1,0,0,15,14,17,16]  # key points map lsp to smpl cocoplus key points
+        # self.not_exist_kps = [13]
+        # self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
+        #                  [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
+
+        # for get box
+        self.cocoplus_kps_map = [10,9,8,11,12,13,4,3,2,5,6,7,1,0,0,15,14,17,16]  # key points map lsp to smpl cocoplus key points
+        self.cocoplus_not_exist_kps = [13]
+        self.cocoplus_flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
+                                  [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
+
+        # key points of out put
+        if smpl_type == 'cocoplus':
+            self.num_joints = 19
+            self.kps_map = [10,9,8,11,12,13,4,3,2,5,6,7,1,0,0,15,14,17,16]  # key points map lsp to smpl cocoplus key points
+            self.not_exist_kps = [13]
+            self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
+                             [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
+        elif smpl_type == 'basic':
+            self.num_joints = 24
+            self.kps_map = [0,11,8,0,12,9,0,13,10,0,0,0,1,0,0,0,5,2,6,3,7,4,0,0] # map  to smpl basic key points
+            self.not_exist_kps = [0, 3, 6, 9, 10, 11, 13, 14, 15, 22, 23]
+            self.flip_idx = [[1, 2], [4, 5], [7, 8], [10, 11], [13, 14],
+                             [16, 17], [18, 19], [20, 21], [22, 23]]  # smpl basic key points flip index
+
 
         # load data set
         self._load_data_set()
@@ -177,6 +199,19 @@ class PW3D(Dataset):
         return inp, trans_mat, flip, rand_scale
 
 
+    def _convert_kp2d_to_cocoplus(self, pts):
+        """
+         covert coco key pints to smpl key points.
+
+         Argument
+            pts (array, (14,3)): lsp 2d key points list.
+        """
+        kps = pts[self.cocoplus_kps_map].copy()
+        kps[self.cocoplus_not_exist_kps] = 0
+        kps[:, 2] = kps[:, 2] > 0  # visible points to be 1 # TODO debug
+        return kps
+
+
     def _convert_kp2d_to_smpl(self, pts):
         """
          covert coco key pints to smpl cocoplus key points.
@@ -203,7 +238,7 @@ class PW3D(Dataset):
 
 
     def _generate_bbox(self, kp, flip, affine_mat, rand_scale):  # TODO use object detection to get bbox
-        kp = self._get_kp_2d(kp, flip, affine_mat)
+        kp = self._get_kp_2d_cocoplus(kp, flip, affine_mat)
         box_stretch = rand_scale * self.box_stretch
 
         v_kp = kp[kp[:, 2] > 0]
@@ -242,6 +277,22 @@ class PW3D(Dataset):
         # bbox = np.clip(bbox, 0, self.input_res - 1)  # save the bbox in the image
 
         return bbox
+
+
+    def _get_kp_2d_cocoplus(self, kps, flipped, affine_mat):
+        # convert key points serial number
+        kps = self._convert_kp2d_to_cocoplus(kps)
+
+        # flip
+        if flipped:
+            for e in self.cocoplus_flip_idx:
+                kps[e[0]], kps[e[1]] = kps[e[1]].copy(), kps[e[0]].copy()  # key points name mirror
+
+        # affine transform
+        kps = affine_transform_kps(kps, affine_mat)
+
+        return kps
+
 
     def _get_kp_2d(self, kps, flipped, affine_mat):
         # convert key points serial number
@@ -445,12 +496,17 @@ if __name__ == '__main__':
                 min_truncation_kps_in_image=8,
                 min_truncation_kps=12,
                 min_vis_kps=6,
-                max_data_len=-1)
+                max_data_len=-1,
+                smpl_type='basic')
     data_loader = DataLoader(data, batch_size=1, shuffle=True)
+
+    if opt.smpl_type == 'basic':
+        debugger = Debugger(opt.smpl_basic_path, opt.smpl_type)
+    elif opt.smpl_type == 'cocoplus':
+        debugger = Debugger(opt.smpl_cocoplus_path, opt.smpl_type)
 
     for batch in data_loader:
 
-        debugger = Debugger(opt.smpl_path)
         img = batch['input'][0].detach().cpu().numpy().transpose(1, 2, 0)
         img = np.clip(((img + 1) / 2 * 255.), 0, 255).astype(np.uint8)
 
@@ -479,11 +535,14 @@ if __name__ == '__main__':
 
 
         # gt smpl
-        gt_id = 'smpl'
-        debugger.add_img(img, img_id=gt_id)
+        blend_smpl_id = 'blend_smpl'
+        pure_smpl_id = 'pure_smpl'
+        debugger.add_img(img, img_id=blend_smpl_id)
+        debugger.add_img(np.zeros(img.shape).astype(np.uint8), img_id=pure_smpl_id)
         for obj in batch['gt']:
             camera = get_camera_from_batch(obj['bbox'][0], opt.camera_pose_z)
-            debugger.add_smpl(obj['pose'][0], obj['shape'][0], camera=camera, img_id=gt_id)
-
+            debugger.add_smpl(obj['pose'][0], obj['shape'][0], camera=camera,
+                              blend_smpl_img_id=blend_smpl_id, pure_smpl_img_id=pure_smpl_id,
+                              show_smpl_joints=False, smpl_color=[1, 1, 1, 1])
 
         debugger.show_all_imgs(pause=True)

@@ -136,11 +136,14 @@ agt('--dp2d_weight',  default=1, type=float, help='loss weight for densepose poi
 
 agt('--pose_loss_type',  default=1, type=int, help='1 - rotating vector.'
                                                    '2 - euler angle.')
-agt('--kp2d_every_weight_train',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',  help='weight for every 2d point.')
-agt('--kp2d_every_weight_val',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',  help='weight for every 2d point.')
+# agt('--kp2d_every_weight_train',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',  help='weight for every 2d point.')
+# agt('--kp2d_every_weight_val',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',  help='weight for every 2d point.')
+agt('--kp2d_every_weight_train',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',  help='weight for every 2d point.')
+agt('--kp2d_every_weight_val',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',  help='weight for every 2d point.')
 
 
 # train
+agt('--smpl_type', default='basic', help='basic, cocoplus')
 agt('--master_batch_size', default=-1, type=int, help='batch size for master GPU')
 agt('--val', action='store_true', help='train or eval.')
 agt('--lr', default=1.25e-4, type=float,  help='learning rate for batch size 32.')
@@ -223,7 +226,8 @@ opt = parser.parse_args()
 
 ################ network ################
 opt.heads = {'box_hm':1, 'box_wh':2, 'box_cd':2, 'pose':72, 'shape':10, 'camera':3}
-opt.smpl_path = os.path.join(root_dir, 'data', 'neutral_smpl_with_cocoplus_reg.pkl')
+opt.smpl_cocoplus_path = os.path.join(root_dir, 'data', 'neutral_smpl_with_cocoplus_reg.pkl')
+opt.smpl_basic_path = os.path.join(root_dir, 'data', 'basicModel_neutral_lbs_10_207_0_v1.0.0.pkl')
 opt.output_res = 128
 opt.input_res = 512
 opt.down_ratio = 4

@@ -19,20 +19,28 @@ sys.path.insert(0, abspath + '/../')
 sys.path.insert(0, abspath + '/../../')
 
 from utils.util import batch_global_rigid_transformation, batch_rodrigues, batch_lrotmin, reflect_pose
+from utils.render import perspective_render_obj_debug
 
 
 class SMPL(nn.Module):
     def __init__(self, model_path,
                        weight_batch_size=128*1,
-                       joint_type='cocoplus'):
+                       smpl_type='cocoplus'
+                       ):
         super(SMPL, self).__init__()
 
-        if joint_type not in ['cocoplus', 'lsp']:
-            msg = 'unknow joint type: {}, it must be either "cocoplus" or "lsp"'.format(joint_type)
+        if smpl_type not in ['cocoplus', 'basic']:
+            msg = 'unknow joint type: {}, it must be either "cocoplus" or "basic"'.format(smpl_type)
             sys.exit(msg)
 
-        self.model_path = model_path
-        self.joint_type = joint_type
+
+        # if output_joint_type is not None and \
+        #         output_joint_type != smpl_type:
+        #     if output_joint_type == 'cocoplus' and smpl_type == 'basic':
+        #         self.kps_map = [8,5,2,1,4,7,21,19,17,16,18,20,12,0,0,0,0,0,0]  # map basic to cocoplus key points
+        #         self.not_exist_kps = [13, 14, 15, 16, 17, 18]
+
+
         with open(model_path, 'rb') as f:
             # model = json.load(reader)
             model = pickle.load(f, encoding='iso-8859-1')
@@ -58,14 +66,21 @@ class SMPL(nn.Module):
 
         self.parents = np.array(model['kintree_table'])[0].astype(np.int32)
 
-        np_joint_regressor = np.array(model['cocoplus_regressor'].toarray(), dtype=np.float)
-        if joint_type == 'lsp':
-            self.register_buffer('joint_regressor', torch.from_numpy(np_joint_regressor[:, :14]).float())
-        else:
-            self.register_buffer('joint_regressor', torch.from_numpy(np_joint_regressor).float())
+        # np_joint_regressor = np.array(model['cocoplus_regressor'].toarray(), dtype=np.float)
+        # if smpl_type == 'basic':
+        #     self.register_buffer('joint_regressor', torch.from_numpy(np_joint_regressor[:, :14]).float())
+        # else:
+        #     self.register_buffer('joint_regressor', torch.from_numpy(np_joint_regressor).float())
+
+        if smpl_type == 'basic':
+            np_joint_regressor = np.array(model['J_regressor'].toarray(), dtype=np.float)
+        elif smpl_type == 'cocoplus':
+            np_joint_regressor = np.array(model['cocoplus_regressor'].toarray(), dtype=np.float)
+
+        self.register_buffer('joint_regressor', torch.from_numpy(np_joint_regressor).float())
+
 
         np_weights = np.array(model['weights'], dtype=np.float)
-
         vertex_count = np_weights.shape[0]
         vertex_component = np_weights.shape[1]
 
@@ -134,56 +149,35 @@ class SMPL(nn.Module):
 
 
 if __name__ == '__main__':
-    device = torch.device('cuda', 0)
-    smpl = SMPL("D:/paper/human_body_reconstruction/code/master/data/neutral_smpl_with_cocoplus_reg.pkl",).to(device)
+    smpl_path = ('D:\\paper\\human_body_reconstruction\\code\\master\\data\\basicModel_neutral_lbs_10_207_0_v1.0.0.pkl')
+    device = 'cpu'
+    smpl= SMPL(smpl_path, smpl_type='basic').to(device)
 
+    # smpl
+    pose = torch.zeros(24,3).to(device)
+    shape = torch.zeros(1,10).to(device)
+    verts, joints, faces = smpl(shape, pose)
 
-    ###1. get pose shape
-    pose = (np.random.rand(24,3) - 0.5) * 0.4
-    beta = (np.random.rand(10) - 0.5) * 0.6
-    vbeta = torch.tensor(np.array([beta])).float().to(device)
-    vpose = torch.tensor(np.array([pose])).float().to(device)
-
-    ## get vertices and joints
-    verts, joints, r, faces = smpl(vbeta, vpose)
-
-    ## render
-    camera = torch.tensor([1, 0, 0]).to(device)  # 弱透视投影参数s,cx,cy
-    verts = weak_perspective(verts[0], camera).detach().cpu().numpy() # 对x,y弱透视投影，投影，平移，放缩
-    J = weak_perspective(joints[0], camera).detach().cpu().numpy()
     obj = {
-        'verts': verts,  # 模型顶点
+        'verts': verts[0],  # 模型顶点
         'faces': faces,  # 面片序号
-        'J': J,  # 3D关节点
+        'J': joints[0],  # 3D关节点
     }
-    color_origin, depth = weak_perspective_render_obj(obj, width=512, height=512, show_smpl_joints=True)
 
-
-    ### 2. reflect pose
-    rpose = reflect_pose(pose)
-    vpose = torch.tensor(np.array([rpose])).float().to(device)
-
-    ## get vertices and joints
-    verts, joints, r, faces = smpl(vbeta, vpose)
-
-    ## render
-    verts = weak_perspective(verts[0], camera).detach().cpu().numpy() # 对x,y弱透视投影，投影，平移，放缩
-    J = weak_perspective(joints[0], camera).detach().cpu().numpy()
-    obj = {
-        'verts': verts,  # 模型顶点
-        'faces': faces,  # 面片序号
-        'J': J,  # 3D关节点
+    # 弱透视投影
+    cam = {
+        'fx': 512,
+        'fy': 512,
+        'cx': 256,
+        'cy': 180,
+        'trans_x': 0,
+        'trans_y': 0,
+        'trans_z': 2
     }
-    color_reflect, depth = weak_perspective_render_obj(obj, width=512, height=512, show_smpl_joints=True)
 
-    # show
-    cv2.imshow('origin', color_origin)
-    cv2.imshow('reflect', color_reflect)
+    color, depth = perspective_render_obj_debug(cam, obj, width=512, height=512,
+                                                show_smpl_joints=True, use_viewer=True)
+
+    cv2.imshow('color', color)
     cv2.waitKey(0)
-
-    # rpose = reflect_pose(pose)
-    # vpose = torch.tensor(np.array([rpose])).float().to(device)
-    #
-    # verts, j, r = smpl(vbeta, vpose, get_skin=True)
-    # smpl.save_obj(verts[0].cpu().numpy(), './rmesh.obj')
 

@@ -58,7 +58,8 @@ def coco_data_loader():
                 keep_truncation_kps=opt.keep_truncation_kps,
                 min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
                 min_truncation_kps=opt.min_truncation_kps,
-                min_bbox_area=opt.min_bbox_area
+                min_bbox_area=opt.min_bbox_area,
+                smpl_type=opt.smpl_type
             )
         else:
             msg = 'invalid dataset {}.'.format(name)
@@ -97,7 +98,8 @@ def lsp_data_loader():
                 keep_truncation_kps=opt.keep_truncation_kps,
                 min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
                 min_truncation_kps=opt.min_truncation_kps,
-                min_bbox_area=opt.min_bbox_area
+                min_bbox_area=opt.min_bbox_area,
+                smpl_type=opt.smpl_type
             )
         elif name in ['lsp_ext', 'lsp_ext_hr']:
             dataset = LspExt(
@@ -114,7 +116,8 @@ def lsp_data_loader():
                 keep_truncation_kps = opt.keep_truncation_kps,
                 min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
                 min_truncation_kps=opt.min_truncation_kps,
-                min_bbox_area=opt.min_bbox_area
+                min_bbox_area=opt.min_bbox_area,
+                smpl_type=opt.smpl_type
             )
         else:
             msg = 'invalid dataset {}.'.format(name)
@@ -189,7 +192,8 @@ def hum36m_data_loader():
                 keep_truncation_kps = opt.keep_truncation_kps,
                 min_truncation_kps_in_image = opt.min_truncation_kps_in_image,
                 min_truncation_kps = opt.min_truncation_kps,
-                min_bbox_area=opt.min_bbox_area
+                min_bbox_area=opt.min_bbox_area,
+                smpl_type=opt.smpl_type
             )
         else:
             msg = 'invalid dataset {}.'.format(name)
@@ -227,7 +231,8 @@ def pw3d_data_loader():
                 keep_truncation_kps=opt.keep_truncation_kps,
                 min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
                 min_truncation_kps=opt.min_truncation_kps,
-                min_bbox_area=opt.min_bbox_area
+                min_bbox_area=opt.min_bbox_area,
+                smpl_type=opt.smpl_type
             )
         else:
             msg = 'invalid dataset {}.'.format(name)
@@ -275,7 +280,8 @@ def val_coco_data_loader():
                 rot_degree=30,
                 min_vis_kps=0,
                 load_min_vis_kps=6,
-                max_data_len=-1
+                max_data_len=-1,
+                smpl_type=opt.smpl_type
             )
         else:
             msg = 'invalid dataset {}.'.format(name)

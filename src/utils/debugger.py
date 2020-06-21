@@ -23,7 +23,7 @@ from .opts import opt
 
 
 class Debugger(object):
-  def __init__(self, smpl_path, theme='white', down_ratio=4, device='cpu'):
+  def __init__(self, smpl_path, smpl_type, theme='white', down_ratio=4, device='cpu'):
 
     self.device = device
     self.imgs = {}
@@ -36,27 +36,47 @@ class Debugger(object):
       self.colors = self.colors.reshape(-1)[::-1].reshape(len(colors), 1, 1, 3)
       self.colors = np.clip(self.colors, 0., 0.6 * 255).astype(np.uint8)
 
-    self.smpl = SMPL(smpl_path).to(device)
+    self.smpl = SMPL(smpl_path, smpl_type=smpl_type).to(device)
 
     self.names = ['p']
-    self.num_joints = 19
 
-    self.edges = [[0, 1], [1, 2], [2, 8], [7, 8], [6, 7], [8, 18], [16, 18], [14, 16],
-                  [4, 5], [3, 4], [3, 9], [9, 10], [10, 11], [9, 17], [17, 15], [14, 15],
-                  [8, 9], [2, 3]]
+    if smpl_type == 'cocoplus':
+        self.num_joints = 19
 
-    self.ec = [(0, 0, 255), (0, 0, 255), (0, 0, 255), (0, 0, 255),
-               (0, 0, 255), (0, 0, 255), (0, 0, 255), (0, 0, 255),
-               (255, 0, 0), (255, 0, 0), (255, 0, 0), (255, 0, 0),
-               (255, 0, 0), (255, 0, 0), (255, 0, 0), (255, 0, 0),
-               (255, 0, 255), (255, 0, 255)]
+        self.edges = [[0, 1], [1, 2], [2, 8], [7, 8], [6, 7], [8, 18], [16, 18], [14, 16],
+                      [4, 5], [3, 4], [3, 9], [9, 10], [10, 11], [9, 17], [17, 15], [14, 15],
+                      [8, 9], [2, 3]]
 
-    self.colors_hp = \
-              [(0, 0, 255), (0, 0, 255), (0, 0, 255), (255, 0, 0),
-               (255, 0, 0), (255, 0, 0), (0, 0, 255), (0, 0, 255),
-               (0, 0, 255), (255, 0, 0), (255, 0, 0), (255, 0, 0),
-               (255, 0, 255), (255, 0, 255), (255, 0, 255), (255, 0, 0),
-               (0, 0, 255), (255, 0, 0), (0, 0, 255)]
+        self.ec = [(0, 0, 255), (0, 0, 255), (0, 0, 255), (0, 0, 255),
+                   (0, 0, 255), (0, 0, 255), (0, 0, 255), (0, 0, 255),
+                   (255, 0, 0), (255, 0, 0), (255, 0, 0), (255, 0, 0),
+                   (255, 0, 0), (255, 0, 0), (255, 0, 0), (255, 0, 0),
+                   (255, 0, 255), (255, 0, 255)]
+
+        self.colors_hp = \
+                  [(0, 0, 255), (0, 0, 255), (0, 0, 255), (255, 0, 0),
+                   (255, 0, 0), (255, 0, 0), (0, 0, 255), (0, 0, 255),
+                   (0, 0, 255), (255, 0, 0), (255, 0, 0), (255, 0, 0),
+                   (255, 0, 255), (255, 0, 255), (255, 0, 255), (255, 0, 0),
+                   (0, 0, 255), (255, 0, 0), (0, 0, 255)]
+    elif smpl_type == 'basic':
+        self.num_joints = 24
+
+        self.edges = [[8, 5], [5, 2], [2, 17], [17, 19], [19, 21],
+                      [4, 7], [4, 1], [1, 16], [16, 18], [18, 20],
+                      [1, 2], [16, 17]]
+
+        self.ec = [(0, 0, 255), (0, 0, 255), (0, 0, 255), (0, 0, 255),(0, 0, 255),
+                   (255, 0, 0), (255, 0, 0), (255, 0, 0), (255, 0, 0), (255, 0, 0),
+                   (255, 0, 255), (255, 0, 255)]
+
+        self.colors_hp = \
+                  [(255, 0, 255), (255, 0, 0),(0, 0, 255),(255, 0, 255), (255, 0, 0),(0, 0, 255),
+                   (255, 0, 255), (255, 0, 0),(0, 0, 255),(255, 0, 255), (255, 0, 0),
+                   (0, 0, 255),(255, 0, 255),(255, 0, 0),(0, 0, 255),(255, 0, 255),
+                   (255, 0, 0),(0, 0, 255), (255, 0, 0),(0, 0, 255), (255, 0, 0),(0, 0, 255),
+                   (255, 0, 0), (0, 0, 255)]
+
 
     self.down_ratio=down_ratio
 
@@ -90,6 +110,14 @@ class Debugger(object):
       # from PIL import Image
       # Image.fromarray(img_mask).show()
 
+  def add_pure_smpl(self, pyrender_color, img_id):
+      gray = cv2.cvtColor(pyrender_color, cv2.COLOR_BGR2GRAY)
+      mask = (gray < 255).astype(np.uint8).reshape(gray.shape[0], gray.shape[1], 1)
+
+      color_mask = pyrender_color * mask
+      img_mask = self.imgs[img_id] * (1 - mask)
+
+      self.imgs[img_id] = color_mask + img_mask
 
 
   def add_img(self, img, img_id='default', revert_color=False):
@@ -185,7 +213,9 @@ class Debugger(object):
                      lineType=cv2.LINE_AA)
 
 
-  def add_smpl_kp2d(self, pose, shape, camera, img_id='default', bbox_img_id=None):
+  def add_smpl_kp2d(self, pose, shape, camera,
+                    blend_smpl_img_id='default', pure_smpl_img_id='default', bbox_kp2d_img_id='default',
+                    show_smpl_joints=True, smpl_color=[0.3, 0.3, 0.3, 0.8]):
 
     pose = torch.tensor(pose.reshape(24,3)).to(self.device)
     shape = torch.tensor(shape.reshape(1,10)).to(self.device)
@@ -203,19 +233,26 @@ class Debugger(object):
 
     # 弱透视投影
     color, depth = perspective_render_obj(camera, obj,
-                   width=512, height=512, rotate_x_axis =True, show_smpl_joints=True, use_viewer=False)
+                   width=512, height=512, rotate_x_axis =True,
+                   show_smpl_joints=show_smpl_joints, use_viewer=False, smpl_color=smpl_color)
 
-    self.add_blend_smpl(color, img_id)
+    # pure smpl
+    self.add_pure_smpl(color, pure_smpl_img_id)
+
+    # smpl + img
+    self.add_blend_smpl(color, blend_smpl_img_id)
 
     ##
     # rot_x = Rx_mat(torch.tensor([np.pi])).numpy()[0]
     # J = np.dot(joints[0], rot_x.T)
     kp2d = perspective_transform(joints[0], camera)
-    self.add_kp2d(kp2d, bbox_img_id)
+    self.add_kp2d(kp2d, bbox_kp2d_img_id)
 
 
 
-  def add_smpl(self, pose, shape, kp3d=None, camera=None, img_id='default'):
+  def add_smpl(self, pose, shape, kp3d=None, camera=None,
+               blend_smpl_img_id='default', pure_smpl_img_id='default',
+               show_smpl_joints=True, smpl_color=[0.3, 0.3, 0.3, 0.8]):
 
     if camera is None:
         camera = self.camera
@@ -240,13 +277,16 @@ class Debugger(object):
 
     # 弱透视投影
     color, depth = perspective_render_obj(camera, obj,
-                   width=512, height=512, show_smpl_joints=True, use_viewer=False)
+                   width=512, height=512, show_smpl_joints=show_smpl_joints,
+                   use_viewer=False, smpl_color=smpl_color)
 
-    self.add_blend_smpl(color, img_id)
+    # pure smpl
+    self.add_pure_smpl(color, pure_smpl_img_id)
 
-    #
+    # smpl + img + kp2d
+    self.add_blend_smpl(color, blend_smpl_img_id)
     kp2d = perspective_transform(J.detach().cpu().numpy(), camera)
-    self.add_kp2d(kp2d, img_id)
+    self.add_kp2d(kp2d, blend_smpl_img_id)
 
 
 

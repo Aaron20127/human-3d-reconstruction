@@ -7,7 +7,8 @@ import torch
 from .util import Rx_mat
 
 def perspective_render_obj(camera, obj, width=512, height=512, show_smpl_joints=False,
-                           rotate_x_axis=True, weak_perspective=False, use_viewer=False):
+                           rotate_x_axis=True, weak_perspective=False, use_viewer=False,
+                           smpl_color = [0.3, 0.3, 0.3, 0.8]):
     scene = pyrender.Scene()
 
     # add camera
@@ -27,7 +28,7 @@ def perspective_render_obj(camera, obj, width=512, height=512, show_smpl_joints=
         obj['verts'][:, 2] = obj['verts'][:, 2].mean()
         obj['J'][:, 2] = obj['J'][:, 1].mean()
 
-    vertex_colors = np.ones([obj['verts'].shape[0], 4]) * [0.3, 0.3, 0.3, 0.8]
+    vertex_colors = np.ones([obj['verts'].shape[0], 4]) * smpl_color
     tri_mesh = trimesh.Trimesh(obj['verts'], obj['faces'],
                             vertex_colors=vertex_colors)
     mesh_obj = pyrender.Mesh.from_trimesh(tri_mesh)
@@ -55,6 +56,59 @@ def perspective_render_obj(camera, obj, width=512, height=512, show_smpl_joints=
     light_pose[2,3] = 2
     light = pyrender.PointLight(color=[1.0, 1.0, 1.0], intensity=10)
     scene.add(light, pose=light_pose)
+
+    # render
+    r = pyrender.OffscreenRenderer(viewport_width=width,viewport_height = height,point_size = 1.0)
+    color, depth = r.render(scene)
+
+    return color, depth
+
+
+
+def perspective_render_obj_debug(cam, obj, width=512,height=512, show_smpl_joints=False, show_smpl=True, use_viewer=False):
+    scene = pyrender.Scene()
+
+    # add camera
+    camera_pose = np.array([
+        [1.0,  0.0,  0.0,   cam['trans_x']],
+        [0.0,  1.0,  0.0,   cam['trans_y']],
+        [0.0,  0.0,  1.0,   cam['trans_z']],
+        [0.0,  0.0,  0.0,   1.0],
+    ])
+    camera=pyrender.camera.IntrinsicsCamera(
+            fx=cam['fx'], fy=cam['fy'],
+            cx=cam['cx'], cy=cam['cy'])
+    scene.add(camera, pose=camera_pose)
+
+    # add verts and faces
+    if show_smpl:
+        vertex_colors = np.ones([obj['verts'].shape[0], 4]) * [0.3, 0.3, 0.3, 0.8]
+        tri_mesh = trimesh.Trimesh(obj['verts'], obj['faces'],
+                                   vertex_colors=vertex_colors)
+        mesh_obj = pyrender.Mesh.from_trimesh(tri_mesh)
+
+        scene.add(mesh_obj)
+
+    # add joints
+    if show_smpl_joints:
+        ms = trimesh.creation.uv_sphere(radius=0.015)
+        ms.visual.vertex_colors = [1.0, 0.0, 0.0]
+
+        pts = obj['J']
+        # pts = pts[22,:]
+
+        tfs = np.tile(np.eye(4), (len(pts), 1, 1))
+        tfs[:, :3, 3] = pts
+
+        mesh_J = pyrender.Mesh.from_trimesh(ms, poses=tfs)
+        scene.add(mesh_J)
+
+    if use_viewer:
+        pyrender.Viewer(scene, use_raymond_lighting=True)
+
+    # add light
+    light = pyrender.PointLight(color=[1.0, 1.0, 1.0], intensity=8*camera_pose[2,3])
+    scene.add(light, pose=camera_pose)
 
     # render
     r = pyrender.OffscreenRenderer(viewport_width=width,viewport_height = height,point_size = 1.0)

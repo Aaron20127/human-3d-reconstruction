@@ -46,7 +46,8 @@ class Lsp(Dataset):
                 min_truncation_kps = 12,
                 min_truncation_kps_in_image=6,
                 min_bbox_area=16 * 16,
-                max_data_len = -1):
+                max_data_len = -1,
+                smpl_type = 'cocoplus'):
 
         self.min_dense_pts = 184
         self.data_path = data_path
@@ -73,12 +74,35 @@ class Lsp(Dataset):
 
         # defaut parameters
         # key points
-        self.num_joints = 19
-        self.kps_map = [0, 1, 2, 3, 4, 5, 6, 7, 8,
-                        9, 10, 11, 12, 13, 0, 0, 0, 0, 0]  # key points map lsp to smpl cocoplus key points
-        self.not_exist_kps = [14, 15, 16, 17, 18]
-        self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
-                         [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
+        # self.num_joints = 19
+        # self.kps_map = [0, 1, 2, 3, 4, 5, 6, 7, 8,
+        #                 9, 10, 11, 12, 13, 0, 0, 0, 0, 0]  # key points map lsp to smpl cocoplus key points
+        # self.not_exist_kps = [14, 15, 16, 17, 18]
+        # self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
+        #                  [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
+
+        # for get bbox
+        self.cocoplus_kps_map = [0, 1, 2, 3, 4, 5, 6, 7, 8,
+                                 9, 10, 11, 12, 13, 0, 0, 0, 0, 0]  # key points map lsp to smpl cocoplus key points
+        self.cocoplus_not_exist_kps = [14, 15, 16, 17, 18]
+        self.cocoplus_flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
+                                  [6, 11], [15, 16], [17, 18]]  # smpl cocoplus key points flip index
+
+        # key points of out put
+        if smpl_type == 'cocoplus':
+            self.num_joints = 19
+            self.kps_map = [0, 1, 2, 3, 4, 5, 6, 7, 8,
+                            9, 10, 11, 12, 13, 0, 0, 0, 0, 0]  # key points map lsp to smpl cocoplus key points
+            self.not_exist_kps = [14, 15, 16, 17, 18]
+            self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
+                             [6, 11], [15, 16], [17, 18]]  # smpl cocoplus key points flip index
+        elif smpl_type == 'basic':
+            self.num_joints = 24
+            self.kps_map = [0, 3, 2, 0, 4, 1, 0, 5, 0, 0, 0, 0, 12, 0, 0, 0, 9, 8, 10, 7, 11, 6, 0,
+                            0]  # map  to smpl basic key points
+            self.not_exist_kps = [0, 3, 6, 9, 10, 11, 13, 14, 15, 22, 23]
+            self.flip_idx = [[1, 2], [4, 5], [7, 8], [10, 11], [13, 14],
+                             [16, 17], [18, 19], [20, 21], [22, 23]]  # smpl basic key points flip index
 
 
         # load data set
@@ -182,6 +206,19 @@ class Lsp(Dataset):
         return inp, trans_mat, flip, rand_scale
 
 
+    def _convert_kp2d_to_cocoplus(self, pts):
+        """
+         covert coco key pints to smpl key points.
+
+         Argument
+            pts (array, (14,3)): lsp 2d key points list.
+        """
+        kps = pts[self.cocoplus_kps_map].copy()
+        kps[self.cocoplus_not_exist_kps] = 0
+        kps[:, 2] = kps[:, 2] > 0  # visible points to be 1 # TODO debug
+        return kps
+
+
     def _convert_kp2d_to_smpl(self, pts):
         """
          covert coco key pints to smpl cocoplus key points.
@@ -208,7 +245,7 @@ class Lsp(Dataset):
 
 
     def _generate_bbox(self, kp, flip, affine_mat, rand_scale):  # TODO use object detection to get bbox
-        kp = self._get_kp_2d(kp, flip, affine_mat)
+        kp = self._get_kp_2d_cocoplus(kp, flip, affine_mat)
 
         v_kp = kp[kp[:, 2] > 0]
         x_min = v_kp[:, 0].min()
@@ -261,6 +298,21 @@ class Lsp(Dataset):
         # bbox = np.clip(bbox, 0, self.input_res - 1)  # save the bbox in the image
 
         return bbox
+
+
+    def _get_kp_2d_cocoplus(self, kps, flipped, affine_mat):
+        # convert key points serial number
+        kps = self._convert_kp2d_to_cocoplus(kps)
+
+        # flip
+        if flipped:
+            for e in self.cocoplus_flip_idx:
+                kps[e[0]], kps[e[1]] = kps[e[1]].copy(), kps[e[0]].copy()  # key points name mirror
+
+        # affine transform
+        kps = affine_transform_kps(kps, affine_mat)
+
+        return kps
 
 
     def _get_kp_2d(self, kps, flipped, affine_mat):
@@ -444,12 +496,18 @@ if __name__ == '__main__':
                   min_truncation_kps=12,
                   min_vis_kps=6,
                   min_bbox_area=100,
-                  max_data_len=-1)
+                  max_data_len=-1,
+                  smpl_type='basic')
     data_loader = DataLoader(data, batch_size=1, shuffle=True)
+
+    if opt.smpl_type == 'basic':
+        debugger = Debugger(opt.smpl_basic_path, opt.smpl_type)
+    elif opt.smpl_type == 'cocoplus':
+        debugger = Debugger(opt.smpl_cocoplus_path, opt.smpl_type)
 
     for batch in data_loader:
 
-        debugger = Debugger(opt.smpl_path)
+        # debugger = Debugger(opt.smpl_path)
         img = batch['input'][0].detach().cpu().numpy().transpose(1, 2, 0)
         img = np.clip(((img + 1) / 2 * 255.), 0, 255).astype(np.uint8)
 

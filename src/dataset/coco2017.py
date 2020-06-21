@@ -45,7 +45,8 @@ class COCO2017(Dataset):
                  min_truncation_kps_in_image=6,
                  normalize=True,
                  min_bbox_area = 16*16,
-                 max_data_len=-1):
+                 max_data_len=-1,
+                 smpl_type = 'cocoplus'):
 
         self.data_path = data_path
         self.image_scale_range = image_scale_range
@@ -69,13 +70,27 @@ class COCO2017(Dataset):
         self.min_bbox_area = min_bbox_area
 
         # defaut parameters
-        self.num_joints = 19
-        self.kps_map = [16, 14, 12, 11, 13, 15, 10, 8, 6,
-                        5, 7, 9, -1, -1, 0, 1, 2, 3, 4]  # key points map coco to smpl cocoplus key points
-        self.not_exist_kps = [12, 13] # not exist kps in cocoplus
-        self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
-                         [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
+        # self.num_joints = 19
+        # self.kps_map = [16, 14, 12, 11, 13, 15, 10, 8, 6,
+        #                 5, 7, 9, -1, -1, 0, 1, 2, 3, 4]  # key points map coco to smpl cocoplus key points
+        # self.not_exist_kps = [12, 13] # not exist kps in cocoplus
+        # self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
+        #                  [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
 
+        # key points of out put
+        if smpl_type == 'cocoplus':
+            self.num_joints = 19
+            self.kps_map = [16, 14, 12, 11, 13, 15, 10, 8, 6,
+                            5, 7, 9, -1, -1, 0, 1, 2, 3, 4]  # key points map coco to smpl cocoplus key points
+            self.not_exist_kps = [12, 13] # not exist kps in cocoplus
+            self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
+                             [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
+        elif smpl_type == 'basic':
+            self.num_joints = 24
+            self.kps_map = [-1,11,12,-1,13,14,-1,15,16,-1,-1,-1,-1,-1,-1,-1,5,6,7,8,9,10,0,0] # map  to smpl basic key points
+            self.not_exist_kps = [0, 3, 6, 9, 10, 11, 12, 13, 14, 15, 22, 23]
+            self.flip_idx = [[1, 2], [4, 5], [7, 8], [10, 11], [13, 14],
+                             [16, 17], [18, 19], [20, 21], [22, 23]]  # smpl basic key points flip index
         # load data set
         self._load_data_set()
 
@@ -386,11 +401,25 @@ class COCO2017(Dataset):
 
 
 if __name__ == '__main__':
+    # data = COCO2017('D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2017',
+    #            split='train',
+    #            image_scale_range=(0.4, 1.11),
+    #            trans_scale=0.5,
+    #            flip_prob=0.5,
+    #            rot_prob=-1,
+    #            rot_degree=20,
+    #            max_data_len=-1,
+    #            load_min_vis_kps=6,
+    #            min_vis_kps=6,
+    #            min_truncation_kps=12,
+    #            keep_truncation_kps=True,
+    #            min_truncation_kps_in_image=6)
+
     data = COCO2017('D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2017',
                split='train',
-               image_scale_range=(0.4, 1.11),
-               trans_scale=0.5,
-               flip_prob=0.5,
+               image_scale_range=(1.0, 1.01),
+               trans_scale=0,
+               flip_prob=0,
                rot_prob=-1,
                rot_degree=20,
                max_data_len=-1,
@@ -398,12 +427,17 @@ if __name__ == '__main__':
                min_vis_kps=6,
                min_truncation_kps=12,
                keep_truncation_kps=True,
-               min_truncation_kps_in_image=6)
+               min_truncation_kps_in_image=6,
+               smpl_type='basic')
 
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
+    if opt.smpl_type == 'basic':
+        debugger = Debugger(opt.smpl_basic_path, opt.smpl_type)
+    elif opt.smpl_type == 'cocoplus':
+        debugger = Debugger(opt.smpl_cocoplus_path, opt.smpl_type)
+
     for batch in data_loader:
-        debugger = Debugger(opt.smpl_path)
 
         img = batch['input'][0].detach().cpu().numpy().transpose(1, 2, 0)
         img = np.clip(((img + 1) / 2 * 255.), 0, 255).astype(np.uint8)

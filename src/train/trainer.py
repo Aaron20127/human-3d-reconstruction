@@ -346,11 +346,17 @@ class HMRTrainer(object):
 
         pred = decode(output, thresh=opt.score_thresh)
 
-        debugger = Debugger(opt.smpl_path)
+        if opt.smpl_type == 'basic':
+            debugger = Debugger(opt.smpl_basic_path, opt.smpl_type)
+        elif opt.smpl_type == 'cocoplus':
+            debugger = Debugger(opt.smpl_cocoplus_path, opt.smpl_type)
 
         for i, img in enumerate(batch['label']['input']):
             img = batch['label']['input'][i].detach().cpu().numpy().transpose(1, 2, 0)
             img = np.clip(((img + 1) / 2 * 255.), 0, 255).astype(np.uint8)
+
+            # input img
+            debugger.add_img(img, img_id='input')
 
             # gt heat map
             # gt_box_hm = debugger.gen_colormap(batch['label']['box_hm'][i].detach().cpu().numpy())
@@ -367,21 +373,28 @@ class HMRTrainer(object):
                         debugger.add_densepose_2d(obj['dp2d'][0].detach().cpu().numpy(), img_id=gt_id)
 
             # pred heat map
-            # pred_box_hm = debugger.gen_colormap(output['box_hm'][i].detach().cpu().numpy())
-            # debugger.add_blend_img(img, pred_box_hm, 'pred_box_hm')
+            pred_box_hm = debugger.gen_colormap(output['box_hm'][i].detach().cpu().numpy())
+            debugger.add_blend_img(img, pred_box_hm, 'pred_box_hm')
+            debugger.add_img(pred_box_hm, img_id='pred_heat_map')
+
 
             # pred bbox, key points
-            bbox_kp2d_id = 'pred_bbox_kp2d'
-            smpl_id = 'pred_smpl'
-            debugger.add_img(img, img_id=bbox_kp2d_id)
-            debugger.add_img(img, img_id=smpl_id)
+            bbox_id = 'pred_box'
+            kp2d_id = 'pred_kp2d'
+            blend_smpl_id = 'blend_smpl'
+            pure_smpl_id = 'pure_smpl'
+            debugger.add_img(img, img_id=bbox_id)
+            debugger.add_img(img, img_id=kp2d_id)
+            debugger.add_img(img, img_id=blend_smpl_id)
+            debugger.add_img(255*np.ones(img.shape).astype(np.uint8), img_id=pure_smpl_id)
 
             obj = pred[i]
             if len(obj) > 0:
                 for j in range(obj['bbox'].shape[0]):
-                    debugger.add_bbox(obj['bbox'][j],conf=obj['score'][j], img_id=bbox_kp2d_id)
+                    debugger.add_bbox(obj['bbox'][j],conf=obj['score'][j], img_id=bbox_id)
                     debugger.add_smpl_kp2d(obj['pose'][j], obj['shape'][j], obj['camera'][j],
-                                            img_id=smpl_id, bbox_img_id=bbox_kp2d_id)
+                    blend_smpl_img_id=blend_smpl_id, pure_smpl_img_id=pure_smpl_id, bbox_kp2d_img_id=kp2d_id,
+                    show_smpl_joints=False, smpl_color=[1, 1, 1, 1])
 
             if opt.debug == 1:
                 debugger.show_all_imgs(pause=True)
