@@ -41,7 +41,8 @@ def coco_data_loader():
                 min_truncation_kps=opt.min_truncation_kps,
                 min_bbox_area = opt.min_bbox_area,
                 keep_truncation_dp = opt.keep_truncation_dp,
-                min_trunction_vis_dp_ratio = opt.min_trunction_vis_dp_ratio
+                min_trunction_vis_dp_ratio = opt.min_trunction_vis_dp_ratio,
+                smpl_type=opt.smpl_type
             )
         elif name == 'coco2017':
             dataset = COCO2017(
@@ -267,7 +268,8 @@ def val_coco_data_loader():
                 rot_degree=30,
                 min_vis_kps=0,
                 load_min_vis_kps=6,
-                max_data_len=-1
+                max_data_len=-1,
+                smpl_type=opt.smpl_type
             )
         elif name == 'coco2017':
             dataset = COCO2017(
@@ -315,7 +317,8 @@ def val_hum36m_data_loader():
                 rot_prob=-1,
                 rot_degree=45,
                 box_stretch=20,
-                max_data_len=-1
+                max_data_len=-1,
+                smpl_type=opt.smpl_type
             )
         else:
             msg = 'invalid dataset {}.'.format(name)
@@ -349,7 +352,8 @@ def val_3dpw_data_loader():
                 rot_prob=-1,
                 rot_degree=45,
                 box_stretch=28,
-                max_data_len=-1
+                max_data_len=-1,
+                smpl_type=opt.smpl_type
             )
         else:
             msg = 'invalid dataset {}.'.format(name)

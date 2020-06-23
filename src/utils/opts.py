@@ -134,16 +134,23 @@ agt('--kp2d_weight',  default=1, type=float, help='loss weight for bounding box 
 agt('--kp3d_weight',  default=1, type=float, help='loss weight for bounding box center decimal.')
 agt('--dp2d_weight',  default=1, type=float, help='loss weight for densepose points.')
 
-agt('--pose_loss_type',  default=1, type=int, help='1 - rotating vector.'
-                                                   '2 - euler angle.')
 # agt('--kp2d_every_weight_train',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',  help='weight for every 2d point.')
 # agt('--kp2d_every_weight_val',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',  help='weight for every 2d point.')
-agt('--kp2d_every_weight_train',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',  help='weight for every 2d point.')
-agt('--kp2d_every_weight_val',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',  help='weight for every 2d point.')
+# agt('--kp2d_every_weight_train',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',  help='weight for every 2d point.')
+# agt('--kp2d_every_weight_val',  default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',  help='weight for every 2d point.')
+agt('--kp2d_every_weight_train',
+     default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0',
+     help='weight for every 2d point.')
+agt('--kp2d_every_weight_val',
+     default='1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0',
+     help='weight for every 2d point.')
+
+agt('--pose_loss_type',  default=1, type=int, help='1 - rotating vector.'
+                                                   '2 - euler angle.')
 
 
 # train
-agt('--smpl_type', default='basic', help='basic, cocoplus')
+agt('--smpl_type', default='synthesis', help='basic, cocoplus, synthesis')
 agt('--master_batch_size', default=-1, type=int, help='batch size for master GPU')
 agt('--val', action='store_true', help='train or eval.')
 agt('--lr', default=1.25e-4, type=float,  help='learning rate for batch size 32.')

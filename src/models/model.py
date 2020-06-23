@@ -17,10 +17,7 @@ from network.smpl import SMPL
 class HmrLoss(nn.Module):
     def __init__(self):
         super(HmrLoss, self).__init__()
-        if opt.smpl_type == 'basic':
-            self.smpl = SMPL(opt.smpl_basic_path, smpl_type=opt.smpl_type)
-        elif opt.smpl_type == 'cocoplus':
-            self.smpl  = SMPL(opt.smpl_cocoplus_path, smpl_type=opt.smpl_type)
+        self.smpl = SMPL(opt.smpl_basic_path, opt.smpl_cocoplus_path, smpl_type=opt.smpl_type)
         self.register_buffer('kp2d_every_weight_train', torch.tensor(opt.kp2d_every_weight_train).type(torch.float32))
         self.register_buffer('kp2d_every_weight_val', torch.tensor(opt.kp2d_every_weight_val).type(torch.float32))
         self.register_buffer('loss', torch.zeros(8).type(torch.float32))

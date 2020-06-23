@@ -14,11 +14,7 @@ from .decode import decode
 from .util import Rx_mat, perspective_transform
 from models.network.smpl import SMPL
 
-if opt.smpl_type == 'basic':
-    smpl = SMPL(opt.smpl_basic_path, smpl_type=opt.smpl_type).to('cpu')
-elif opt.smpl_type == 'cocoplus':
-    smpl = SMPL(opt.smpl_cocoplus_path, smpl_type=opt.smpl_type).to('cpu')
-
+smpl = SMPL(opt.smpl_basic_path, opt.smpl_cocoplus_path, smpl_type=opt.smpl_type)
 
 def get_kp2d(pose, shape, camera):
     pose = torch.tensor(pose.reshape(24, 3)).to('cpu')

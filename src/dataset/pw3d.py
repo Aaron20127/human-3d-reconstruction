@@ -46,7 +46,7 @@ class PW3D(Dataset):
                 box_stretch = 20,
                 min_bbox_area = 16*16,
                 max_data_len = -1,
-                smpl_type = 'cocoplus'):
+                smpl_type = 'synthesis'):
 
         self.min_dense_pts = 184
         self.data_path = data_path
@@ -97,6 +97,15 @@ class PW3D(Dataset):
             self.not_exist_kps = [0, 3, 6, 9, 10, 11, 13, 14, 15, 22, 23]
             self.flip_idx = [[1, 2], [4, 5], [7, 8], [10, 11], [13, 14],
                              [16, 17], [18, 19], [20, 21], [22, 23]]  # smpl basic key points flip index
+
+        elif smpl_type == 'synthesis':
+            self.num_joints = 19+24
+            self.kps_map = [10, 9, 8, 11, 12, 13, 4, 3, 2, 5, 6, 7, 1, 0, 0, 15, 14, 17, 16] + \
+                           [0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] # map to smpl synthesis key points
+            self.not_exist_kps = [13] + \
+                                 [19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42]
+            self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
+                             [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
 
 
         # load data set
@@ -486,7 +495,7 @@ class PW3D(Dataset):
 if __name__ == '__main__':
     data = PW3D('D:/paper/human_body_reconstruction/datasets/human_reconstruction/3DPW/',
                 split='train',
-                image_scale_range=(0.2, 1.11),
+                image_scale_range=(1.0, 1.01),
                 trans_scale=0.6,
                 flip_prob=0.5,
                 rot_prob=-1,
@@ -497,13 +506,10 @@ if __name__ == '__main__':
                 min_truncation_kps=12,
                 min_vis_kps=6,
                 max_data_len=-1,
-                smpl_type='basic')
+                smpl_type='synthesis')
     data_loader = DataLoader(data, batch_size=1, shuffle=True)
 
-    if opt.smpl_type == 'basic':
-        debugger = Debugger(opt.smpl_basic_path, opt.smpl_type)
-    elif opt.smpl_type == 'cocoplus':
-        debugger = Debugger(opt.smpl_cocoplus_path, opt.smpl_type)
+    debugger = Debugger(opt.smpl_basic_path, opt.smpl_cocoplus_path, opt.smpl_type)
 
     for batch in data_loader:
 

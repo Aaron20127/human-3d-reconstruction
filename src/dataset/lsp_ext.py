@@ -104,6 +104,14 @@ class LspExt(Dataset):
             self.not_exist_kps = [0, 3, 6, 9, 10, 11, 13, 14, 15, 22, 23]
             self.flip_idx = [[1, 2], [4, 5], [7, 8], [10, 11], [13, 14],
                              [16, 17], [18, 19], [20, 21], [22, 23]]  # smpl basic key points flip index
+        elif smpl_type == 'synthesis':
+            self.num_joints = 19+24
+            self.kps_map = [0, 1, 0, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 0, 0, 0, 0, 0] + \
+                           [0, 3, 2, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] # map to smpl synthesis key points
+            self.not_exist_kps = [2, 3, 14, 15, 16, 17, 18] + \
+                                 [19, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42]
+            self.flip_idx = [[0, 5], [1, 4], [20, 21], [8, 9], [7, 10],
+                             [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
 
         # load data set
         self._load_data_set()
@@ -486,7 +494,7 @@ if __name__ == '__main__':
                   # image_scale_range=(0.2, 1.11),
                   image_scale_range=(1.0, 1.01),
                   trans_scale=0.5,
-                  flip_prob=0.5,
+                  flip_prob=1,
                   rot_prob=0.5,
                   rot_degree=30,
                   box_stretch=30,
@@ -495,13 +503,10 @@ if __name__ == '__main__':
                   min_truncation_kps=12,
                   min_vis_kps=6,
                   max_data_len=-1,
-                  smpl_type = 'basic')
+                  smpl_type = 'synthesis')
     data_loader = DataLoader(data, batch_size=1, shuffle=True)
 
-    if opt.smpl_type == 'basic':
-        debugger = Debugger(opt.smpl_basic_path, opt.smpl_type)
-    elif opt.smpl_type == 'cocoplus':
-        debugger = Debugger(opt.smpl_cocoplus_path, opt.smpl_type)
+    debugger = Debugger(opt.smpl_basic_path, opt.smpl_cocoplus_path, opt.smpl_type)
 
     for batch in data_loader:
 

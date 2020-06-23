@@ -118,7 +118,7 @@ def shape_l2_loss(output, mask, ind, target):
 
 def kp2d_l1_loss(output, mask, target, weight):
     weight = weight.unsqueeze(1).expand_as(output).reshape(-1, 2)
-    output = output.view(-1, 2)
+    output = output.reshape(-1, 2)
     target = target[mask == 1, ...].view(-1, 3)
 
     mask = target[:, 2] == 1

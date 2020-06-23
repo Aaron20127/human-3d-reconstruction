@@ -50,7 +50,8 @@ class COCO2014(Dataset):
                  min_trunction_vis_dp_ratio=0.5,
                  normalize=True,
                  min_bbox_area=16 * 16,
-                 max_data_len=-1):
+                 max_data_len=-1,
+                 smpl_type = 'synthesis'):
 
         self.min_dense_pts = 184
         self.data_path = data_path
@@ -77,12 +78,31 @@ class COCO2014(Dataset):
         self.min_bbox_area = min_bbox_area
 
         # defaut parameters
-        self.num_joints = 19
-        self.kps_map = [16, 14, 12, 11, 13, 15, 10, 8, 6,
-                        5, 7, 9, -1, -1, 0, 1, 2, 3, 4]  # key points map coco to smpl cocoplus key points
-        self.not_exist_kps = [12, 13] # not exist kps in cocoplus
-        self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
-                         [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
+        # key points of out put
+        if smpl_type == 'cocoplus':
+            self.num_joints = 19
+            self.kps_map = [16, 14, 12, 11, 13, 15, 10, 8, 6, 5, 7, 9, -1, -1, 0, 1, 2, 3,
+                            4]  # key points map coco to smpl cocoplus key points
+            self.not_exist_kps = [12, 13]  # not exist kps in cocoplus
+            self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
+                             [6, 11], [15, 16], [17, 18]]  # smpl cocoplus key points flip index
+        elif smpl_type == 'basic':
+            self.num_joints = 24
+            self.kps_map = [-1, 11, 12, -1, 13, 14, -1, 15, 16, -1, -1, -1, -1, -1, -1, -1, 5, 6, 7, 8, 9, 10, 0,
+                            0]  # map  to smpl basic key points
+            self.not_exist_kps = [0, 3, 6, 9, 10, 11, 12, 13, 14, 15, 22, 23]
+            self.flip_idx = [[1, 2], [4, 5], [7, 8], [10, 11], [13, 14],
+                             [16, 17], [18, 19], [20, 21], [22, 23]]  # smpl basic key points flip index
+        elif smpl_type == 'synthesis':
+            self.num_joints = 19 + 24
+            self.kps_map = [16, 14, 0, 0, 13, 15, 10, 8, 6, 5, 7, 9, -1, -1, 0, 1, 2, 3, 4] + \
+                           [0, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                            0]  # map to smpl synthesis key points
+            self.not_exist_kps = [2, 3, 12, 13] + \
+                                 [19, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+                                  42]
+            self.flip_idx = [[0, 5], [1, 4], [20, 21], [8, 9], [7, 10],
+                             [6, 11], [15, 16], [17, 18]]  # smpl cocoplus key points flip index
 
         # load data set
         self._load_data_set()
@@ -203,6 +223,7 @@ class COCO2014(Dataset):
         kps[self.not_exist_kps] = 0
         kps[:, 2] = kps[:, 2] > 0  # visible points to be 1 # TODO debug
         return kps
+
 
     def _convert_kp3d_to_smpl(self, pts):
         """
@@ -452,24 +473,41 @@ class COCO2014(Dataset):
 
 
 if __name__ == '__main__':
+    # data = COCO2014('D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2014',
+    #            split='train',
+    #            image_scale_range=(0.4, 1.11),
+    #            trans_scale=0.5,
+    #            flip_prob=0.5,
+    #            rot_prob=-1,
+    #            rot_degree=20,
+    #             keep_truncation_kps=True,
+    #             min_truncation_kps_in_image=8,
+    #             min_truncation_kps=12,
+    #             min_trunction_vis_dp_ratio=0.5,
+    #             keep_truncation_dp=False,
+    #             min_vis_kps=6,
+    #             max_data_len=-1,
+    #             smpl_type='synthesis')
     data = COCO2014('D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2014',
-               split='train',
-               image_scale_range=(0.4, 1.11),
-               trans_scale=0.5,
-               flip_prob=1,
-               rot_prob=-1,
-               rot_degree=20,
-                keep_truncation_kps=True,
-                min_truncation_kps_in_image=8,
-                min_truncation_kps=12,
-                min_trunction_vis_dp_ratio=0.5,
-                keep_truncation_dp=False,
-                min_vis_kps=6,
-                max_data_len=-1)
+                    split='train',
+                    image_scale_range=(0.4, 1.11),
+                    trans_scale=0,
+                    flip_prob=0,
+                    rot_prob=-1,
+                    rot_degree=20,
+                    keep_truncation_kps=True,
+                    min_truncation_kps_in_image=8,
+                    min_truncation_kps=12,
+                    min_trunction_vis_dp_ratio=0.5,
+                    keep_truncation_dp=False,
+                    min_vis_kps=6,
+                    max_data_len=-1,
+                    smpl_type='synthesis')
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
+    debugger = Debugger(opt.smpl_basic_path, opt.smpl_cocoplus_path, opt.smpl_type)
+
     for batch in data_loader:
-        debugger = Debugger(opt.smpl_path)
 
         img = batch['input'][0].detach().cpu().numpy().transpose(1, 2, 0)
         img = np.clip(((img + 1) / 2 * 255.), 0, 255).astype(np.uint8)

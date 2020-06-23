@@ -9,7 +9,7 @@ from .util import Rx_mat
 def perspective_render_obj(camera, obj, width=512, height=512, show_smpl_joints=False,
                            rotate_x_axis=True, weak_perspective=False, use_viewer=False,
                            smpl_color = [0.3, 0.3, 0.3, 0.8]):
-    scene = pyrender.Scene()
+    scene = pyrender.Scene(bg_color=[0,0,0,0])
 
     # add camera
     camera_pose = np.eye(4,4)
@@ -53,8 +53,8 @@ def perspective_render_obj(camera, obj, width=512, height=512, show_smpl_joints=
 
     # add light
     light_pose = np.eye(4,4)
-    light_pose[2,3] = 2
-    light = pyrender.PointLight(color=[1.0, 1.0, 1.0], intensity=10)
+    light_pose[2,3] = 4
+    light = pyrender.PointLight(color=[1.0, 1.0, 1.0], intensity=55)
     scene.add(light, pose=light_pose)
 
     # render
@@ -66,7 +66,7 @@ def perspective_render_obj(camera, obj, width=512, height=512, show_smpl_joints=
 
 
 def perspective_render_obj_debug(cam, obj, width=512,height=512, show_smpl_joints=False, show_smpl=True, use_viewer=False):
-    scene = pyrender.Scene()
+    scene = pyrender.Scene(bg_color=[0,0,0,0])
 
     # add camera
     camera_pose = np.array([

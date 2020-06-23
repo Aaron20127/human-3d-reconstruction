@@ -346,10 +346,7 @@ class HMRTrainer(object):
 
         pred = decode(output, thresh=opt.score_thresh)
 
-        if opt.smpl_type == 'basic':
-            debugger = Debugger(opt.smpl_basic_path, opt.smpl_type)
-        elif opt.smpl_type == 'cocoplus':
-            debugger = Debugger(opt.smpl_cocoplus_path, opt.smpl_type)
+        debugger = Debugger(opt.smpl_basic_path, opt.smpl_cocoplus_path, opt.smpl_type)
 
         for i, img in enumerate(batch['label']['input']):
             img = batch['label']['input'][i].detach().cpu().numpy().transpose(1, 2, 0)

@@ -23,7 +23,7 @@ from .opts import opt
 
 
 class Debugger(object):
-  def __init__(self, smpl_path, smpl_type, theme='white', down_ratio=4, device='cpu'):
+  def __init__(self, smpl_basic_path, smpl_cocoplus_path, smpl_type, theme='white', down_ratio=4, device='cpu'):
 
     self.device = device
     self.imgs = {}
@@ -36,7 +36,9 @@ class Debugger(object):
       self.colors = self.colors.reshape(-1)[::-1].reshape(len(colors), 1, 1, 3)
       self.colors = np.clip(self.colors, 0., 0.6 * 255).astype(np.uint8)
 
-    self.smpl = SMPL(smpl_path, smpl_type=smpl_type).to(device)
+    self.smpl= SMPL(basic_model_path=smpl_basic_path,
+               cocoplus_model_path=smpl_cocoplus_path,
+               smpl_type=smpl_type).to(device)
 
     self.names = ['p']
 
@@ -77,6 +79,34 @@ class Debugger(object):
                    (255, 0, 0),(0, 0, 255), (255, 0, 0),(0, 0, 255), (255, 0, 0),(0, 0, 255),
                    (255, 0, 0), (0, 0, 255)]
 
+    elif smpl_type == 'synthesis':
+        self.num_joints = 19 + 24
+
+        self.edges = [[0, 1], [1, 2], [2, 8], [7, 8],
+                      [6, 7], [8, 18], [16, 18], [14, 16],
+                      [4, 5], [3, 4], [3, 9], [9, 10],
+                      [10, 11], [9, 17], [17, 15], [14, 15],
+                      [8, 9], [2, 3], [20, 21], [21,8],
+                      [20,9], [21,1], [20,4]]
+
+        self.ec = [(0, 0, 255), (0, 0, 255), (0, 0, 255), (0, 0, 255),
+                   (0, 0, 255), (0, 0, 255), (0, 0, 255), (0, 0, 255),
+                   (255, 0, 0), (255, 0, 0), (255, 0, 0), (255, 0, 0),
+                   (255, 0, 0), (255, 0, 0), (255, 0, 0), (255, 0, 0),
+                   (255, 0, 255), (255, 0, 255), (255, 0, 255),(0, 0, 255),
+                   (255, 0, 0), (0, 0, 255), (255, 0, 0)]
+
+        self.colors_hp = \
+                  [(0, 0, 255), (0, 0, 255), (0, 0, 255), (255, 0, 0),
+                   (255, 0, 0), (255, 0, 0), (0, 0, 255), (0, 0, 255),
+                   (0, 0, 255), (255, 0, 0), (255, 0, 0), (255, 0, 0),
+                   (255, 0, 255), (255, 0, 255), (255, 0, 255), (255, 0, 0),
+                   (0, 0, 255), (255, 0, 0), (0, 0, 255)] + \
+                  [(255, 0, 255), (255, 0, 0), (0, 0, 255), (255, 0, 255), (255, 0, 0), (0, 0, 255),
+                   (255, 0, 255), (255, 0, 0), (0, 0, 255), (255, 0, 255), (255, 0, 0),
+                   (0, 0, 255), (255, 0, 255), (255, 0, 0), (0, 0, 255), (255, 0, 255),
+                   (255, 0, 0), (0, 0, 255), (255, 0, 0), (0, 0, 255), (255, 0, 0), (0, 0, 255),
+                   (255, 0, 0), (0, 0, 255)]
 
     self.down_ratio=down_ratio
 
@@ -100,7 +130,7 @@ class Debugger(object):
 
   def add_blend_smpl(self, pyrender_color, img_id):
       gray = cv2.cvtColor(pyrender_color, cv2.COLOR_BGR2GRAY)
-      mask =  (gray < 255).astype(np.uint8).reshape(gray.shape[0], gray.shape[1], 1)
+      mask =  (gray > 50).astype(np.uint8).reshape(gray.shape[0], gray.shape[1], 1)
 
       color_mask = pyrender_color * mask
       img_mask = self.imgs[img_id] * (1 - mask)
@@ -112,7 +142,7 @@ class Debugger(object):
 
   def add_pure_smpl(self, pyrender_color, img_id):
       gray = cv2.cvtColor(pyrender_color, cv2.COLOR_BGR2GRAY)
-      mask = (gray < 255).astype(np.uint8).reshape(gray.shape[0], gray.shape[1], 1)
+      mask = (gray > 0).astype(np.uint8).reshape(gray.shape[0], gray.shape[1], 1)
 
       color_mask = pyrender_color * mask
       img_mask = self.imgs[img_id] * (1 - mask)

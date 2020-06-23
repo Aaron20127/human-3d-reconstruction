@@ -46,7 +46,7 @@ class COCO2017(Dataset):
                  normalize=True,
                  min_bbox_area = 16*16,
                  max_data_len=-1,
-                 smpl_type = 'cocoplus'):
+                 smpl_type = 'synthesis'):
 
         self.data_path = data_path
         self.image_scale_range = image_scale_range
@@ -70,18 +70,10 @@ class COCO2017(Dataset):
         self.min_bbox_area = min_bbox_area
 
         # defaut parameters
-        # self.num_joints = 19
-        # self.kps_map = [16, 14, 12, 11, 13, 15, 10, 8, 6,
-        #                 5, 7, 9, -1, -1, 0, 1, 2, 3, 4]  # key points map coco to smpl cocoplus key points
-        # self.not_exist_kps = [12, 13] # not exist kps in cocoplus
-        # self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
-        #                  [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
-
         # key points of out put
         if smpl_type == 'cocoplus':
             self.num_joints = 19
-            self.kps_map = [16, 14, 12, 11, 13, 15, 10, 8, 6,
-                            5, 7, 9, -1, -1, 0, 1, 2, 3, 4]  # key points map coco to smpl cocoplus key points
+            self.kps_map = [16, 14, 12, 11, 13, 15, 10, 8, 6, 5, 7, 9, -1, -1, 0, 1, 2, 3, 4]  # key points map coco to smpl cocoplus key points
             self.not_exist_kps = [12, 13] # not exist kps in cocoplus
             self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
                              [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
@@ -91,6 +83,16 @@ class COCO2017(Dataset):
             self.not_exist_kps = [0, 3, 6, 9, 10, 11, 12, 13, 14, 15, 22, 23]
             self.flip_idx = [[1, 2], [4, 5], [7, 8], [10, 11], [13, 14],
                              [16, 17], [18, 19], [20, 21], [22, 23]]  # smpl basic key points flip index
+        elif smpl_type == 'synthesis':
+            self.num_joints = 19+24
+            self.kps_map = [16, 14, 0, 0, 13, 15, 10, 8, 6, 5, 7, 9, -1, -1, 0, 1, 2, 3, 4] + \
+                           [0, 11, 12, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] # map to smpl synthesis key points
+            self.not_exist_kps = [2, 3, 12, 13] + \
+                                 [19, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42]
+            self.flip_idx = [[0, 5], [1, 4], [20, 21], [8, 9], [7, 10],
+                             [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
+
+
         # load data set
         self._load_data_set()
 
@@ -209,6 +211,7 @@ class COCO2017(Dataset):
         kps[self.not_exist_kps] = 0
         kps[:, 2] = kps[:, 2] > 0  # visible points to be 1 # TODO debug
         return kps
+
 
     def _convert_kp3d_to_smpl(self, pts):
         """
@@ -428,14 +431,11 @@ if __name__ == '__main__':
                min_truncation_kps=12,
                keep_truncation_kps=True,
                min_truncation_kps_in_image=6,
-               smpl_type='basic')
+               smpl_type='synthesis')
 
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
-    if opt.smpl_type == 'basic':
-        debugger = Debugger(opt.smpl_basic_path, opt.smpl_type)
-    elif opt.smpl_type == 'cocoplus':
-        debugger = Debugger(opt.smpl_cocoplus_path, opt.smpl_type)
+    debugger = Debugger(opt.smpl_basic_path, opt.smpl_cocoplus_path, opt.smpl_type)
 
     for batch in data_loader:
 

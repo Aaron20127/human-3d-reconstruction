@@ -46,7 +46,7 @@ class Hum36m(Dataset):
                 box_stretch = 20,
                 min_bbox_area = 16*16,
                 max_data_len = -1,
-                smpl_type = 'cocoplus'):
+                smpl_type = 'synthesis'):
 
         self.min_dense_pts = 184
         self.data_path = data_path
@@ -80,17 +80,24 @@ class Hum36m(Dataset):
         # key points of out put
         if smpl_type == 'cocoplus':
             self.num_joints = 19
-            self.kps_map = [0, 1, 2, 3, 4, 5, 6, 7, 8,
-                            9, 10, 11, 12, 13, 0, 0, 0, 0, 0]  # key points map lsp to smpl cocoplus key points
+            self.kps_map = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 0, 0, 0, 0, 0]  # key points map lsp to smpl cocoplus key points
             self.not_exist_kps = [14, 15, 16, 17, 18]
             self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
                              [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
         elif smpl_type == 'basic':
             self.num_joints = 24
-            self.kps_map = [0,3,2,0,4,1,0,5,0,0,0,0,12,0,0,0,9,8,10,7,11,6,0,0]  # map  to smpl basic key points
+            self.kps_map = [0, 3, 2, 0, 4, 1, 0, 5, 0, 0, 0, 0, 12, 0, 0, 0, 9, 8, 10, 7, 11, 6, 0, 0]  # map  to smpl basic key points
             self.not_exist_kps = [0, 3, 6, 9, 10, 11, 13, 14, 15, 22, 23]
             self.flip_idx = [[1, 2], [4, 5], [7, 8], [10, 11], [13, 14],
                              [16, 17], [18, 19], [20, 21],[22,23]] # smpl basic key points flip index
+        elif smpl_type == 'synthesis':
+            self.num_joints = 19+24
+            self.kps_map = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 0, 0, 0, 0, 0] + \
+                           [0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] # map to smpl synthesis key points
+            self.not_exist_kps = [14, 15, 16, 17, 18] + \
+                                 [19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42]
+            self.flip_idx = [[0, 5], [1, 4], [2, 3], [8, 9], [7, 10],
+                             [6, 11], [15, 16], [17, 18]] # smpl cocoplus key points flip index
 
 
         # load data set
@@ -482,13 +489,10 @@ if __name__ == '__main__':
               min_truncation_kps=12,
               min_vis_kps=6,
               max_data_len=-1,
-              smpl_type='basic')
+              smpl_type='synthesis')
     data_loader = DataLoader(data, batch_size=1, shuffle=False)
 
-    if opt.smpl_type == 'basic':
-        debugger = Debugger(opt.smpl_basic_path, opt.smpl_type)
-    elif opt.smpl_type == 'cocoplus':
-        debugger = Debugger(opt.smpl_cocoplus_path, opt.smpl_type)
+    debugger = Debugger(opt.smpl_basic_path, opt.smpl_cocoplus_path, opt.smpl_type)
 
     for batch in data_loader:
         img = batch['input'][0].detach().cpu().numpy().transpose(1, 2, 0)
