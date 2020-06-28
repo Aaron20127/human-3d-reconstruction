@@ -379,7 +379,7 @@ class COCO2014(Dataset):
 
 
                 ###3. handle denspose points
-                if 'dp2d' in ann.keys():
+                if 'dp2d' in ann.keys() and ann['dp2d']['pts_2d'].shape[0] > 0:
                     pts = self._get_dense_2d(ann['dp2d']['pts_2d'],  trans_mat)
                     if flip:
                         v_ind = ann['dp2d']['v_ind_fp']
@@ -508,7 +508,6 @@ if __name__ == '__main__':
     debugger = Debugger(opt.smpl_basic_path, opt.smpl_cocoplus_path, opt.smpl_type)
 
     for batch in data_loader:
-
         img = batch['input'][0].detach().cpu().numpy().transpose(1, 2, 0)
         img = np.clip(((img + 1) / 2 * 255.), 0, 255).astype(np.uint8)
 
