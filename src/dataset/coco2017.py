@@ -422,7 +422,7 @@ if __name__ == '__main__':
                split='train',
                image_scale_range=(1.0, 1.01),
                trans_scale=0,
-               flip_prob=0,
+               flip_prob=1,
                rot_prob=-1,
                rot_degree=20,
                max_data_len=-1,

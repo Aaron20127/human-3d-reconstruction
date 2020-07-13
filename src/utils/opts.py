@@ -173,6 +173,7 @@ agt('--camera_pose_z', default=10, type=int, help='parameter z of camera pose of
 
 
 # value
+agt('--val_start_frame', default=0, type=int, help='which number of frame to start to value.')
 agt('--val_num_iters', default=-1, type=int, help='default: #samples / batch_size.')
 agt('--val_iter_interval', default=4000, type=int,  help='number of iter of one epoch to run validation.')
 agt('--val_epoch_interval', default=1, type=int,  help='number of iter of one epoch to run validation.')
@@ -253,18 +254,18 @@ opt.down_ratio = 4
 
 
 opt.data_set_path = {
-    'coco2014': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2014',
-    'coco2017': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/coco/coco2017',
-    'lsp': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp/',
+    'coco2014': 'F:\\paper\\dataset\\coco\\coco\\coco2014',
+    'coco2017': 'F:\\paper\\dataset\\coco\\coco\\coco2017',
+    'lsp': 'F:\\paper\\dataset\\lsp',
     # 'lsp_hr': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_hr/',
-    'lsp_ext': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_extend',
+    'lsp_ext': 'F:\\paper\\dataset\\lsp_extend',
     # 'lsp_ext_hr': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_extend_hr',
     # 'ai-ch':'E:/HMR/data/ai_challenger_keypoint_train_20170902',
     # 'mpi-inf-3dhp':'E:/HMR/data/mpi_inf_3dhp',
-    'mpii': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/mpii',
-    'hum36m': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/hum36m-toy',
-    '3dpw': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/3DPW/',
-    'mosh': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/mosh/neutrMosh'
+    'mpii': 'F:\\paper\\dataset\\mpii',
+    'hum36m': 'F:\\paper\\dataset\\hum36m-toy',
+    '3dpw': 'F:\\paper\\dataset\\3DPW',
+    'mosh': 'F:\\paper\\dataset\\mosh\\neutrMosh'
 }
 
 pre_process(opt)

@@ -162,6 +162,7 @@ class HMRTrainer(object):
             avg_loss_stats = {l: AverageMeter() for l in self.loss_stats}
             # num_iters = len(data_loader)
             num_iters = len(data_loader) if opt.val_num_iters < 0 else opt.val_num_iters
+            val_start_frame = opt.val_start_frame
 
             # get mAP
             eval_data = {
@@ -173,6 +174,15 @@ class HMRTrainer(object):
             clock_ETA = Clock()
             for iter_id in range(num_iters):
                 batch = next(data_loader)
+
+                # start with a specified frame
+                if iter_id < val_start_frame:
+                    print('drop {}'.format(iter_id))
+                    continue
+                elif iter_id == val_start_frame:
+                    clock = Clock()
+                    clock_ETA = Clock()
+
                 data_time.update(clock.elapsed())
 
                 # forward
