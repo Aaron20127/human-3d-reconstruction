@@ -180,6 +180,7 @@ agt('--val_epoch_interval', default=1, type=int,  help='number of iter of one ep
 agt('--val_batch_size_coco', default=1, type=int,  help='0: donot use this data set.')
 agt('--val_batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
 agt('--val_batch_size_3dpw', default=0, type=int,  help='0: donot use this data set.')
+agt('--val_batch_size_crowdpose', default=0, type=int,  help='0: donot use this data set.')
 
 agt('--eval_average_precision', action='store_true', help='0: donot use this data set.')
 agt('--iou_thresh', default='0.1,0.2,0.3', help='0: donot use this data set.')
@@ -196,6 +197,7 @@ agt('--batch_size_lsp',  default=0, type=int, help='0: donot use this data set.'
 agt('--batch_size_mpii',  default=0, type=int, help='0: donot use this data set.')
 agt('--batch_size_hum36m', default=0, type=int,  help='0: donot use this data set.')
 agt('--batch_size_3dpw', default=0, type=int,  help='0: donot use this data set.')
+agt('--batch_size_crowdpose', default=0, type=int,  help='0: donot use this data set.')
 agt('--num_workers', default=0, type=int, help='dataloader threads. 0 for single-thread.')
 
 agt('--min_bbox_area', default=256, type=float, help='minimum number of oringinal visible points of kp2d to train.')
@@ -213,9 +215,11 @@ agt('--lsp_data_set',  default='lsp,lsp_ext', help='0: donot use this data set.'
 agt('--mpii_data_set',  default='mpii', help='0: donot use this data set.')
 agt('--hum36m_data_set', default='hum36m',  help='0: donot use this data set.')
 agt('--pw3d_data_set', default='3dpw',  help='0: donot use this data set.')
+agt('--crowdpose_data_set', default='crowdpose',  help='0: donot use this data set.')
 agt('--coco_val_data_set', default='coco2017',  help='0: donot use this data set.')
 agt('--hum36m_val_data_set', default='hum36m',  help='0: donot use this data set.')
 agt('--pw3d_val_data_set', default='3dpw',  help='0: donot use this data set.')
+agt('--crowdpose_val_data_set', default='crowdpose',  help='0: donot use this data set.')
 
 
 ## dataset coco
@@ -265,6 +269,7 @@ opt.data_set_path = {
     'mpii': 'F:\\paper\\dataset\\mpii',
     'hum36m': 'F:\\paper\\dataset\\hum36m-toy',
     '3dpw': 'F:\\paper\\dataset\\3DPW',
+    'crowdpose': 'F:\\paper\\dataset\\crowdpose',
     'mosh': 'F:\\paper\\dataset\\mosh\\neutrMosh'
 }
 

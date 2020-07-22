@@ -440,7 +440,8 @@ class Debugger(object):
          os.makedirs(obj_dir)
      for i, verts in enumerate(self.smpl_obj):
          path = os.path.join(obj_dir, str(i) + '.obj')
-         self.smpl.save_obj(verts + np.random.random() * 10, path)
+         # self.smpl.save_obj(verts + np.random.random() * 10, path)
+         self.smpl.save_obj(verts, path)
 
 
   def show_densepose_smpl(self, dp2d, dp_ind, dp_rat, img_id):

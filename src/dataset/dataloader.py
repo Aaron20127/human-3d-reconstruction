@@ -17,6 +17,7 @@ from .lsp_ext import LspExt
 from .mpii import MPII
 from .hum36m import Hum36m
 from .pw3d import PW3D
+from .crowdpose import CrowdPose
 
 
 
@@ -73,6 +74,46 @@ def coco_data_loader():
     return DataLoader(
         dataset=new_datasets,
         batch_size=opt.batch_size_coco,
+        shuffle=not opt.not_shuffle_data_train,
+        drop_last=True,
+        pin_memory=True,
+        num_workers=opt.num_workers
+    )
+
+
+def crowdpose_data_loader():
+    datasets = []
+    for name in opt.crowdpose_data_set:
+        path = opt.data_set_path[name]
+        if name == 'crowdpose':
+            dataset = CrowdPose(
+                data_path=path,
+                split='train',
+                image_scale_range=(0.4, 1.11),
+                trans_scale=0.5,
+                flip_prob=0.5,
+                rot_prob=-1,
+                rot_degree=30,
+                min_vis_kps= opt.min_vis_kps,
+                load_min_vis_kps=opt.load_min_vis_kps,
+                max_data_len=-1,
+                keep_truncation_kps = opt.keep_truncation_kps,
+                min_truncation_kps_in_image=opt.min_truncation_kps_in_image,
+                min_truncation_kps=opt.min_truncation_kps,
+                min_bbox_area = opt.min_bbox_area,
+                smpl_type=opt.smpl_type
+            )
+        else:
+            msg = 'invalid dataset {}.'.format(name)
+            sys.exit(msg)
+
+        datasets.append(dataset)
+
+    new_datasets = ConcatDataset(datasets)
+
+    return DataLoader(
+        dataset=new_datasets,
+        batch_size=opt.batch_size_crowdpose,
         shuffle=not opt.not_shuffle_data_train,
         drop_last=True,
         pin_memory=True,
@@ -251,6 +292,42 @@ def pw3d_data_loader():
         pin_memory=True,
         num_workers=opt.num_workers
     )
+
+def val_crowdpose_data_loader():
+    datasets = []
+    for name in opt.crowdpose_val_data_set:
+        path = opt.data_set_path[name]
+        if name == 'crowdpose':
+            dataset = CrowdPose(
+                data_path=path,
+                split='val',
+                image_scale_range=opt.val_scale_data,
+                trans_scale=0,
+                flip_prob=-1,
+                rot_prob=-1,
+                rot_degree=30,
+                min_vis_kps=0,
+                load_min_vis_kps=6,
+                max_data_len=-1,
+                smpl_type=opt.smpl_type
+            )
+        else:
+            msg = 'invalid dataset {}.'.format(name)
+            sys.exit(msg)
+
+        datasets.append(dataset)
+
+    new_datasets = ConcatDataset(datasets)
+
+    return DataLoader(
+        dataset=new_datasets,
+        batch_size=opt.val_batch_size_crowdpose,
+        shuffle=opt.val_shuffle_data,
+        drop_last=False,
+        pin_memory=True,
+        num_workers=opt.num_workers
+    )
+
 
 
 def val_coco_data_loader():

@@ -65,7 +65,7 @@ def perspective_render_obj(camera, obj, width=512, height=512, show_smpl_joints=
 
 
 
-def perspective_render_obj_debug(cam, obj, width=512,height=512, show_smpl_joints=False, show_smpl=True, use_viewer=False):
+def perspective_render_obj_debug(cam, obj, rotate_x_axis=True, width=512,height=512, show_smpl_joints=False, show_smpl=True, use_viewer=False):
     scene = pyrender.Scene(bg_color=[0,0,0,0])
 
     # add camera
@@ -79,6 +79,12 @@ def perspective_render_obj_debug(cam, obj, width=512,height=512, show_smpl_joint
             fx=cam['fx'], fy=cam['fy'],
             cx=cam['cx'], cy=cam['cy'])
     scene.add(camera, pose=camera_pose)
+
+    # add verts and faces
+    if rotate_x_axis:
+        rot_x = Rx_mat(torch.tensor([np.pi])).numpy()[0]
+        obj['verts'] = np.dot(obj['verts'], rot_x.T)
+        obj['J'] = np.dot(obj['J'], rot_x.T)
 
     # add verts and faces
     if show_smpl:

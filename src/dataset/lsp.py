@@ -487,14 +487,15 @@ class Lsp(Dataset):
 
         return self._get_label(inp, trans_mat, flip, anns)
 
+
 if __name__ == '__main__':
     torch.manual_seed(opt.seed)
-    data = Lsp('D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp',
+    data = Lsp('F:\\paper\\dataset\\lsp',
                   split='train',
-                  image_scale_range=(0.3, 1.21),
+                  image_scale_range=(1.0, 1.01),
                   trans_scale=0.5,
-                  flip_prob=0.5,
-                  rot_prob=0.5,
+                  flip_prob=0,
+                  rot_prob=0,
                   rot_degree=30,
                   box_stretch_ratio=(0.2,0.1),
                   keep_truncation_kps=True,

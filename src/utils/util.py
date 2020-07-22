@@ -31,16 +31,20 @@ def pre_process(opt):
     opt.mpii_data_set=[i for i in opt.mpii_data_set.split(',')]
     opt.hum36m_data_set=[i for i in opt.hum36m_data_set.split(',')]
     opt.pw3d_data_set=[i for i in opt.pw3d_data_set.split(',')]
+    opt.crowdpose_data_set=[i for i in opt.crowdpose_data_set.split(',')]
     opt.kp2d_every_weight_train=[float(i) for i in opt.kp2d_every_weight_train.split(',')]
     opt.kp2d_every_weight_val=[float(i) for i in opt.kp2d_every_weight_val.split(',')]
-    opt.batch_size = opt.batch_size_coco + opt.batch_size_lsp + opt.batch_size_hum36m + opt.batch_size_3dpw + opt.batch_size_mpii
+    opt.batch_size = opt.batch_size_coco + opt.batch_size_lsp + opt.batch_size_hum36m + \
+                     opt.batch_size_3dpw + opt.batch_size_mpii + opt.batch_size_crowdpose
     
     """val"""
     opt.coco_val_data_set = [i for i in opt.coco_val_data_set.split(',')]
     opt.hum36m_val_data_set = [i for i in opt.hum36m_val_data_set.split(',')]
     opt.pw3d_val_data_set = [i for i in opt.pw3d_val_data_set.split(',')]
+    opt.crowdpose_val_data_set = [i for i in opt.crowdpose_val_data_set.split(',')]
     opt.val_scale_data = [float(i) for i in opt.val_scale_data.split(',')]
-    opt.val_batch_size = opt.val_batch_size_coco + opt.val_batch_size_hum36m  + opt.val_batch_size_3dpw
+    opt.val_batch_size = opt.val_batch_size_coco + opt.val_batch_size_hum36m  + \
+                         opt.val_batch_size_3dpw + opt.val_batch_size_crowdpose
 
     """model"""
     if opt.resume and opt.load_model == '':

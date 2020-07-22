@@ -10,7 +10,8 @@ abspath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, abspath + '/../')
 
 from dataset.dataloader import coco_data_loader, lsp_data_loader, hum36m_data_loader, mpii_data_loader, multi_data_loader, \
-                               val_coco_data_loader, val_hum36m_data_loader, pw3d_data_loader, val_3dpw_data_loader
+                               val_coco_data_loader, val_hum36m_data_loader, pw3d_data_loader, val_3dpw_data_loader, \
+                               crowdpose_data_loader, val_crowdpose_data_loader
 from models.model import HmrNetBase, ModelWithLoss, HmrLoss
 from utils.debugger import Debugger
 
@@ -80,6 +81,8 @@ class HMRTrainer(object):
                 loaders.append(hum36m_data_loader())
             if opt.batch_size_3dpw > 0:
                 loaders.append(pw3d_data_loader())
+            if opt.batch_size_crowdpose > 0:
+                loaders.append(crowdpose_data_loader())
 
             if not loaders:
                 assert 0, 'no data loaders.'
@@ -94,6 +97,8 @@ class HMRTrainer(object):
             loaders.append(val_hum36m_data_loader())
         if opt.val_batch_size_3dpw > 0:
             loaders.append(val_3dpw_data_loader())
+        if opt.val_batch_size_crowdpose > 0:
+            loaders.append(val_crowdpose_data_loader())
 
         if len(loaders) == 0:
             self.val_loader = None
