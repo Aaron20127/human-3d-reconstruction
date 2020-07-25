@@ -428,7 +428,10 @@ class Debugger(object):
 
 
   def save_all_imgs(self, iter_id, img_path):
-      ## image
+     ## image
+     if not os.path.exists(img_path):
+          os.makedirs(img_path)
+
      for i, v in self.imgs.items():
          cv2.imwrite(img_path + '/{}_{}.jpg'.format(str(iter_id).zfill(6), i), v)
 
