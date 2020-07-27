@@ -8,6 +8,8 @@ agt('--lr',  default=1e-4, type=float)
 agt('--epoches',  default=20000, type=int)
 agt('--val', action='store_true')
 agt('--batch_size', default=128, type=int)
+agt('--crowdpose_path', default='F:\\paper\\dataset\\crowdpose')
+
 
 
 opt = parser.parse_args()

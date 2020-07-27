@@ -42,7 +42,7 @@ class NetLoss(nn.Module):
 
 class BaseNet(nn.Module):
     def __init__(self):
-        super(BaseNet_1, self).__init__()
+        super(BaseNet, self).__init__()
         self.base = nn.Sequential(
             nn.Linear(280, 2048),
             nn.ReLU(),
