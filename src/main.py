@@ -6,6 +6,9 @@ import torch.utils.data
 import numpy as np
 import random
 
+# OAM错误
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+
 abspath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, abspath + '/../')
 

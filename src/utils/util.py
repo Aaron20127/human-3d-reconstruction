@@ -454,3 +454,15 @@ def perspective_transform(kp3d, camera):
 
     return kp2d.T
 
+
+def conver_crowdpose_to_cocoplus(pts):
+    kps_map = [11, 9, 7, 6, 8, 10, 5, 3, 1, 0, 2, 4, 13, 12, -1, -1, -1, -1, -1]
+    not_exist_kps = [14, 15, 16, 17, 18]
+
+    kps = pts[kps_map].copy()
+    kps[not_exist_kps] = 0
+
+    if kps.shape[1] == 3:
+        kps[:, 2] = kps[:, 2] > 0  # visible points to be 1 # TODO debug
+
+    return kps
