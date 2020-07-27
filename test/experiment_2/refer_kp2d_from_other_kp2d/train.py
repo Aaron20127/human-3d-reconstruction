@@ -135,7 +135,7 @@ for epoch in range(opt.epoches):
         for i, batch in enumerate(train_loader):
             for k, v in batch.items():
                 if type(v) == torch.Tensor:
-                    batch[k].to(device=opt.device, non_blocking=True)
+                    batch[k] = batch[k].to(device=opt.device, non_blocking=True)
 
             output, loss, loss_stats = network(batch)
 
@@ -169,7 +169,7 @@ for epoch in range(opt.epoches):
                     for j, batch in enumerate(val_loader):
                         for k, v in batch.items():
                             if type(v) == torch.Tensor:
-                                batch[k].to(device=opt.device, non_blocking=True)
+                                batch[k] = batch[k].to(device=opt.device, non_blocking=True)
                         output, loss, loss_stats = network(batch)
 
                         print('val | {} / {} '.format(j, len_val_set))
@@ -201,7 +201,8 @@ for epoch in range(opt.epoches):
                 for j, batch in enumerate(val_loader):
                     for k, v in batch.items():
                         if type(v) == torch.Tensor:
-                            batch[k].to(device=opt.device, non_blocking=True)
+                            batch[k] = batch[k].to(device=opt.device, non_blocking=True)
+
                     output, loss, loss_stats = network(batch)
 
                     for key, value in loss_stats.items():
