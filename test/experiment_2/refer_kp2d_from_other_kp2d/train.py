@@ -27,8 +27,8 @@ from utils.util import conver_crowdpose_to_cocoplus
 
 root_path = abspath + '/../../../'
 
-debugger = Debugger(root_path + 'data\\basicModel_neutral_lbs_10_207_0_v1.0.0.pkl',
-                    root_path + 'data\\neutral_smpl_with_cocoplus_reg.pkl',
+debugger = Debugger(root_path + 'data/basicModel_neutral_lbs_10_207_0_v1.0.0.pkl',
+                    root_path + 'data/neutral_smpl_with_cocoplus_reg.pkl',
                     'cocoplus')
 
 
@@ -93,17 +93,17 @@ def debug(output, batch, save_dir, id, debug_level=0):
 
 ## 1.log
 log_id = time.strftime('%Y-%m-%d_%H-%M-%S')
-writer = SummaryWriter(abspath+'\\log\\'+ log_id)
+writer = SummaryWriter(abspath+'/log/'+ log_id)
 
 
 ## 2.data loader
 train_dataset = crowdpose(
-    data_path=abspath+'\\data',
+    data_path=abspath+'/data',
     image_path=opt.crowdpose_path,
     split='train'
 )
 val_dataset = crowdpose(
-    data_path=abspath+'\\data',
+    data_path=abspath+'/data',
     image_path=opt.crowdpose_path,
     split='val',
     max_data_len=5000
