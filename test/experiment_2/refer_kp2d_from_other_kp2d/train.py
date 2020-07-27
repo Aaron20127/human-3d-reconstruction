@@ -31,6 +31,7 @@ debugger = Debugger(root_path + 'data/basicModel_neutral_lbs_10_207_0_v1.0.0.pkl
                     root_path + 'data/neutral_smpl_with_cocoplus_reg.pkl',
                     'cocoplus')
 
+os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus
 
 def total_parameters(net):
     total_num = sum(p.numel() for p in net.parameters())
@@ -114,7 +115,7 @@ val_loader = DataLoader(val_dataset, batch_size=opt.batch_size, shuffle=False)
 
 
 ## 3. init network
-model = BaseNet()
+model = BaseNet().to(opt.device)
 # initialize_weights(model)
 
 optimizer = torch.optim.Adam(model.parameters(), opt.lr)
@@ -132,6 +133,10 @@ for epoch in range(opt.epoches):
     train_stats = {}
     if opt.val == False:
         for i, batch in enumerate(train_loader):
+            for k, v in batch.items():
+                if type(v) == torch.Tensor:
+                    batch[k].to(device=opt.device, non_blocking=True)
+
             output, loss, loss_stats = network(batch)
 
             loss = loss.mean()
@@ -162,6 +167,9 @@ for epoch in range(opt.epoches):
 
                 with torch.no_grad():
                     for j, batch in enumerate(val_loader):
+                        for k, v in batch.items():
+                            if type(v) == torch.Tensor:
+                                batch[k].to(device=opt.device, non_blocking=True)
                         output, loss, loss_stats = network(batch)
 
                         print('val | {} / {} '.format(j, len_val_set))
@@ -191,6 +199,9 @@ for epoch in range(opt.epoches):
 
             with torch.no_grad():
                 for j, batch in enumerate(val_loader):
+                    for k, v in batch.items():
+                        if type(v) == torch.Tensor:
+                            batch[k].to(device=opt.device, non_blocking=True)
                     output, loss, loss_stats = network(batch)
 
                     for key, value in loss_stats.items():
