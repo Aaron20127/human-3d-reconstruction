@@ -3,6 +3,9 @@ import numpy as np
 import trimesh
 import pyrender
 import torch
+import os
+
+# os.environ['PYOPENGL_PLATFORM'] = 'egl'
 
 from .util import Rx_mat
 

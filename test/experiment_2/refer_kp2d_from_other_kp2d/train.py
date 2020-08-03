@@ -14,16 +14,20 @@ import torch.optim as optim
 import sys
 import os
 import time
-from torch.utils.tensorboard import SummaryWriter
-from dataset import crowdpose
-from model_exp_2 import NetLoss, BaseNet, ModelWithLoss, initialize_weights
-from opts import opt
 
 abspath = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, abspath + '/../../../src')
+sys.path.insert(0, abspath + '/model_exp_2')
+
+from torch.utils.tensorboard import SummaryWriter
+from dataset import crowdpose
+from train_utils import *
+from model_2 import *
+
+from opts import opt
 
 from utils.debugger import Debugger
 from utils.util import conver_crowdpose_to_cocoplus
+
 
 root_path = abspath + '/../../../'
 
@@ -93,8 +97,9 @@ def debug(output, batch, save_dir, id, debug_level=0):
 
 
 ## 1.log
-log_id = time.strftime('%Y-%m-%d_%H-%M-%S')
-writer = SummaryWriter(abspath+'/log/'+ log_id)
+# log_id = time.strftime('%Y-%m-%d_%H-%M-%S')
+# log_dir = abspath + '/log/' +  opt.experiment_name + '/' + opt.network + '/' + log_id + '/'
+writer = SummaryWriter(opt.log_dir)
 
 
 ## 2.data loader
@@ -110,15 +115,16 @@ val_dataset = crowdpose(
     max_data_len=5000
 )
 
-train_loader = DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=opt.batch_size, shuffle=False)
+train_loader = DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=opt.num_workers)
+val_loader = DataLoader(val_dataset, batch_size=opt.batch_size, shuffle=False, num_workers=opt.num_workers)
 
 
 ## 3. init network
-model = BaseNet().to(opt.device)
+model = BaseNet[opt.network]().to(opt.device)
+load_model(opt.load_model, model)
 # initialize_weights(model)
 
-optimizer = torch.optim.Adam(model.parameters(), opt.lr)
+optimizer = torch.optim.Adam(model.parameters(), opt.lr, weight_decay=opt.weight_decay)
 network = ModelWithLoss(model, NetLoss())
 network.train()
 
@@ -126,6 +132,8 @@ total_parameters(model)
 
 
 ##4. train
+min_val_loss = 1000
+
 for epoch in range(opt.epoches):
     len_train_set = len(train_loader)
     len_val_set = len(val_loader)
@@ -179,16 +187,30 @@ for epoch in range(opt.epoches):
                             else:
                                 value_stats[key] += value
 
-                        debug(output['kp2d'], batch, abspath + '/log/' + log_id, j, debug_level=1)
+                        # debug(output['kp2d'], batch, opt.log_dir, j, debug_level=1)
 
 
-                msg = "val | epoch {} ".format(epoch)
-                for key, value in value_stats.items():
-                    writer.add_scalar('val_{}'.format(key),
-                                      value / len_val_set,
-                                      epoch * len_train_set + i)
-                    msg += '| {} {:.4f} '.format(key, value / len_val_set)
-                print(msg)
+                    msg = "val | epoch {} ".format(epoch)
+                    for key, value in value_stats.items():
+                        writer.add_scalar('val_{}'.format(key),
+                                          value / len_val_set,
+                                          epoch * len_train_set + i)
+                        msg += '| {} {:.4f} '.format(key, value / len_val_set)
+                    print(msg)
+
+                    # save
+                    val_loss = value_stats['kp2d'].detach().cpu().numpy()
+                    if val_loss < min_val_loss:
+                        save_model(opt.log_dir+'/best_model.pth', network, epoch)
+                        min_val_loss = val_loss
+
+                        # debug best
+                        for j, batch in enumerate(val_loader):
+                            for k, v in batch.items():
+                                if type(v) == torch.Tensor:
+                                    batch[k] = batch[k].to(device=opt.device, non_blocking=True)
+                            output, _, _ = network(batch)
+                            debug(output['kp2d'], batch, opt.log_dir, j, debug_level=1)
 
                 network.train()
 

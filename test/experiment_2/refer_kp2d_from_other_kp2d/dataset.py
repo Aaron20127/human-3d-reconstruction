@@ -109,10 +109,11 @@ class crowdpose(Dataset):
 if __name__ == '__main__':
     torch.manual_seed(opt.seed)
 
-    image_path = 'F:\paper\dataset\crowdpose'
+    # image_path = 'F:\paper\dataset\crowdpose'
+    image_path = '/home/icvhpc1/bluce/dataset/crowdpose'
 
     data = crowdpose(
-        data_path = 'G:\\paper\\code\\master\\test\\experiment_2\\refer_kp2d_from_other_kp2d\\data',
+        data_path = abspath + '//data',
         image_path = image_path,
         split = 'train',
         max_data_len=10

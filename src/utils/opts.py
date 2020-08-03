@@ -273,6 +273,22 @@ opt.data_set_path = {
     'mosh': 'F:\\paper\\dataset\\mosh\\neutrMosh'
 }
 
+# opt.data_set_path = {
+#     'coco2014': '/home/icvhpc1/bluce/dataset/coco/coco2014',
+#     'coco2017': '/home/icvhpc1/bluce/dataset/coco/coco/coco2017',
+#     'lsp': '/home/icvhpc1/bluce/dataset/lsp',
+#     # 'lsp_hr': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_hr/',
+#     'lsp_ext': '/home/icvhpc1/bluce/dataset/lsp_extend',
+#     # 'lsp_ext_hr': 'D:/paper/human_body_reconstruction/datasets/human_reconstruction/lsp_extend_hr',
+#     # 'ai-ch':'E:/HMR/data/ai_challenger_keypoint_train_20170902',
+#     # 'mpi-inf-3dhp':'E:/HMR/data/mpi_inf_3dhp',
+#     'mpii': '/home/icvhpc1/bluce/dataset/mpii',
+#     'hum36m': '/home/icvhpc1/bluce/dataset/hum36m-toy',
+#     '3dpw': '/home/icvhpc1/bluce/dataset/3DPW',
+#     'crowdpose': '/home/icvhpc1/bluce/dataset/crowdpose',
+#     'mosh': '/home/icvhpc1/bluce/dataset/neutrMosh'
+# }
+
 pre_process(opt)
 
 ################### preprocess ##################

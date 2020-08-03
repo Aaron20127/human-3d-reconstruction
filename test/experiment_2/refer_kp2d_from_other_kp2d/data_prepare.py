@@ -173,6 +173,9 @@ class crowdpose():
                             num += 1
 
 
+        if not os.path.exists(self.save_path):
+            os.makedirs(self.save_path)
+
         dst_file = os.path.join(self.save_path, self.split+'.h5')
         dst_fp = h5py.File(dst_file, 'w')
 
@@ -185,13 +188,13 @@ class crowdpose():
 
 
 if __name__ == '__main__':
-    data = crowdpose( 'F:\\paper\\dataset\\crowdpose',
-                    'G:\\paper\\code\\master\\test\\experiment_2\\refer_kp2d_from_other_kp2d\\data',
+    data = crowdpose( '/home/icvhpc1/bluce/dataset/crowdpose',
+                    abspath + '/data',
                     min_kps = 10,
                     min_num_person = 2,
                     max_num_person = 10,
                     num_kps = 14,
-                    split = 'val',
+                    split = 'train',
                     max_data_len = -1)
 
     data.save_data()
